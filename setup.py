@@ -12,7 +12,7 @@ VERSIONFILE = os.path.join(this_dir, "smauto", "__init__.py")
 VERSION = None
 for line in open(VERSIONFILE, "r").readlines():
     if line.startswith('__version__'):
-        VERSION = line.split('\'')[1]
+        VERSION = line.split('\"')[1]
 
 if not VERSION:
     raise RuntimeError('No version defined in smauto.__init__.py')
@@ -67,12 +67,12 @@ setup(
             'smauto=smauto.generator:generate',
         ],
         'textx_languages': [
-            'smauto = smauto:smauto_language',
+            'smauto = smauto:language',
         ]
     },
     install_requires=requirements,
     license="MIT license",
-    long_description=readme + '\n\n' + history,
+    long_description=readme,
     include_package_data=True,
     package_data={'': ['*.tx']},
     keywords='smauto',

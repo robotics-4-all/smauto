@@ -4,6 +4,7 @@
 import logging
 import os
 import time
+import pathlib
 
 from colorama import Fore, Style, init
 from commlib.endpoints import EndpointType, TransportType, endpoint_factory
@@ -19,6 +20,9 @@ from smauto.lib.broker import (AMQPBroker, Broker, BrokerAuthPlain, MQTTBroker,
 from smauto.lib.entity import (Attribute, BoolAttribute, DictAttribute, Entity,
                         FloatAttribute, IntAttribute, ListAttribute,
                         StringAttribute)
+
+
+CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 
 
 def run_automation(automation):
@@ -40,7 +44,7 @@ def run_automation(automation):
 def interpret_model_from_path(model_path: str):
     # Initialize full metamodel
     metamodel = metamodel_from_file(
-        'lang/smauto.tx',
+        CURRENT_FPATH.joinpath('lang/smauto.tx'),
         classes=[Entity, Attribute, IntAttribute, FloatAttribute,
                  StringAttribute, BoolAttribute, ListAttribute,
                  DictAttribute, Broker, MQTTBroker, AMQPBroker,
