@@ -27,20 +27,28 @@ from smauto.lib.entity import (Attribute, BoolAttribute, DictAttribute, Entity,
 CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 
 
+def print_auto(automation):
+    print(f"[*] Automation <{automation.name}>, "
+          f"Condition: {automation.condition.cond_lambda}")
+
+
 def run_automation(automation):
     automation.build_condition()
     triggered = False
-    print(f"{automation.name} condition:\n{automation.condition.cond_lambda}\n")
+    print_auto(automation)
     # Evaluate
     while not triggered:
         triggered, msg = automation.evaluate()
         # Check if action is triggered
         if triggered:
-            print(f"{Fore.MAGENTA}{automation.name}: {triggered}{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}[*] Automation <{automation.name}> "
+                  f"Triggered!{Style.RESET_ALL}")
             # If automation triggered run its actions
             automation.trigger()
         else:
-            print(f"{automation.name}: {triggered}")
+            pass
+            # print(f"{automation.name}: {triggered}")
+        time.sleep(1)
 
 
 def interpret_model_from_path(model_path: str, max_workers: int = 10):
