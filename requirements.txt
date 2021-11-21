@@ -1,0 +1,10 @@
+Arpeggio==1.10.2
+click==7.1.2
+colorama==0.4.4
+commlib-py==0.6.4
+hiredis==2.0.0
+paho-mqtt==1.5.1
+pika==1.2.0
+redis==3.5.3
+textX==2.3.0
+ujson==4.0.2

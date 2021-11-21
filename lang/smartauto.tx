@@ -1,0 +1,13 @@
+import automation
+import broker
+import entity
+
+SmartAutoModel:
+    brokers+=Broker
+    entities*=Entity
+    automations*=Automation
+;
+
+Comment:
+  /\/\/.*$/
+;

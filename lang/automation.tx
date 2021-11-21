@@ -1,0 +1,173 @@
+import entity
+
+// === Overall Automation ===
+Automation:
+    'automation:'
+        (
+        ('name:' name=ID)
+        ('condition:' condition=Condition)
+        ('actions:' actions*=Action)
+        ('enabled:' enabled=BOOL)
+        ('continuous:' continuous=BOOL)
+        )#
+;
+
+// === Conditions ===
+Condition: ConditionGroup | PrimitiveCondition;
+
+ConditionGroup:
+    '(' r1=Condition ')' operator=BooleanOperatorType '(' r2=Condition ')'
+;
+
+PrimitiveCondition: StringCondition | NumericCondition | BoolCondition | ListCondition | DictCondition;
+
+// String Conditions
+StringCondition:
+    StringR | StringL | StringDouble
+;
+
+StringR:
+    (operand1=[StringAttribute|FQN|entities.attributes] operator=StringOperatorType operand2=STRING)
+;
+
+StringL:
+    (operand1=STRING operator=StringOperatorType operand2=[StringAttribute|FQN|entities.attributes])
+;
+
+StringDouble:
+    (operand1=[StringAttribute|FQN|entities.attributes] operator=StringOperatorType operand2=[StringAttribute|FQN|entities.attributes])
+;
+
+// Numeric Conditions
+NumericCondition:
+    NumericR | NumericL | NumericDouble
+;
+
+NumericR:
+    (operand1=[NumericAttribute|FQN|entities.attributes] operator=NumericOperatorType operand2=NUMBER)
+;
+
+NumericL:
+    (operand1=NUMBER operator=NumericOperatorType operand2=[NumericAttribute|FQN|entities.attributes])
+;
+
+NumericDouble:
+    (operand1=[NumericAttribute|FQN|entities.attributes] operator=NumericOperatorType operand2=[NumericAttribute|FQN|entities.attributes])
+;
+
+// Boolean Conditions
+BoolCondition:
+    BoolR | BoolL | BoolDouble
+;
+
+BoolR:
+    (operand1=[BoolAttribute|FQN|entities.attributes] operator=BooleanOperatorType operand2=BOOL)
+;
+
+BoolL:
+    (operand1=BOOL operator=BooleanOperatorType operand2=[BoolAttribute|FQN|entities.attributes])
+;
+
+BoolDouble:
+    (operand1=[BoolAttribute|FQN|entities.attributes] operator=BooleanOperatorType operand2=[BoolAttribute|FQN|entities.attributes])
+;
+
+// List Conditions
+ListCondition:
+    ListR | ListL | ListDouble
+;
+
+List:
+    '[' items*=ListElements[','] ']'
+;
+
+//TODO: Add Dict to enable nested Dictionaries in Lists
+ListElements:
+    NUMBER | STRING | BOOL | List | Dict
+;
+
+ListR:
+    (operand1=[ListAttribute|FQN|entities.attributes] operator=ListOperatorType operand2=List)
+;
+
+ListL:
+    (operand1=List operator=ListOperatorType operand2=[ListAttribute|FQN|entities.attributes])
+;
+
+ListDouble:
+    (operand1=[ListAttribute|FQN|entities.attributes] operator=ListOperatorType operand2=[ListAttribute|FQN|entities.attributes])
+;
+
+// Dictionary Conditions
+DictCondition:
+    DictR | DictL | DictDouble
+;
+
+DictItem:
+    name=STRING ':' value=DictTypes
+;
+
+//TODO: Add Dict, List into DictTypes to enable nested Lists and Dictionaries in Dictionaries
+DictTypes:
+    NUMBER | STRING | BOOL | Dict
+;
+
+Dict:
+    '{' items*=DictItem[','] '}'
+;
+
+DictR:
+    (operand1=[DictAttribute|FQN|entities.attributes] operator=DictOperatorType operand2=Dict)
+;
+
+DictL:
+    (operand1=Dict operator=DictOperatorType operand2=[DictAttribute|FQN|entities.attributes])
+;
+
+DictDouble:
+    (operand1=[DictAttribute|FQN|entities.attributes] operator=DictOperatorType operand2=[DictAttribute|FQN|entities.attributes])
+;
+
+
+// Operators
+StringOperatorType: '~' | '!~' | '==' | '!=';
+
+NumericOperatorType: '>' | '<' | '==' | '!=';
+
+BooleanOperatorType: 'AND' | 'OR' | 'NOT' | 'XOR' | 'NOR' | 'XNOR' | 'NAND';
+
+ListOperatorType: '==' | '!=';
+
+DictOperatorType: '==' | '!=';
+
+// === Actions ===
+Action:
+    FloatAction | IntAction | BoolAction | StringAction | ListAction | DictAction
+;
+
+IntAction:
+    ('-' attribute=[IntAttribute|FQN|entities.attributes] ':' value=INT)
+;
+
+FloatAction:
+    ('-' attribute=[FloatAttribute|FQN|entities.attributes] ':' value=STRICTFLOAT)
+;
+
+StringAction:
+    ('-' attribute=[StringAttribute|FQN|entities.attributes] ':' value=STRING)
+;
+
+BoolAction:
+    ('-' attribute=[BoolAttribute|FQN|entities.attributes] ':' value=BOOL)
+;
+
+ListAction:
+    ('-' attribute=[ListAttribute|FQN|entities.attributes] ':' value=List)
+;
+
+DictAction:
+    ('-' attribute=[DictAttribute|FQN|entities.attributes] ':' value=Dict)
+;
+
+// === Fully Qualified Names Rule ===
+FQN: ID('.'ID)*;

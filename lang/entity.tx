@@ -1,0 +1,47 @@
+import broker
+
+//TODO: Model mqtt topics?
+Entity:
+    'entity:'
+        (
+        'name:' name=ID
+        'topic:' topic=STRING
+        'broker:' broker=[Broker]
+        'attributes:'
+                attributes*=Attribute
+        )#
+;
+
+Attribute:
+    NumericAttribute | BoolAttribute | StringAttribute | ListAttribute | DictAttribute
+;
+
+NumericAttribute:
+    IntAttribute | FloatAttribute
+;
+
+IntAttribute:
+    '-' name=ID ':' 'int'
+;
+
+FloatAttribute:
+    '-' name=ID ':' 'float'
+;
+
+StringAttribute:
+    '-' name=ID ':' 'string'
+;
+
+BoolAttribute:
+    '-' name=ID ':' 'bool'
+;
+
+ListAttribute:
+    '-' name=ID ':' 'list'
+;
+
+DictAttribute:
+    '-' name=ID ':' '{'
+        items*=Attribute
+        '}'
+;
