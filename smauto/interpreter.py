@@ -14,13 +14,6 @@ from commlib.transports.mqtt import \
 from commlib.transports.mqtt import Credentials as MQTT_Credentials
 from textx import metamodel_from_file
 
-from smauto.lib.automation import (Action, Automation, BoolAction, Dict, FloatAction,
-                            IntAction, List, StringAction)
-from smauto.lib.broker import (AMQPBroker, Broker, BrokerAuthPlain, MQTTBroker,
-                        RedisBroker)
-from smauto.lib.entity import (Attribute, BoolAttribute, DictAttribute, Entity,
-                        FloatAttribute, IntAttribute, ListAttribute,
-                        StringAttribute)
 from smauto.language import build_model
 
 
