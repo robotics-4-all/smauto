@@ -6,6 +6,8 @@ import os
 import time
 import pathlib
 
+from concurrent.futures import ThreadPoolExecutor
+
 from colorama import Fore, Style, init
 from commlib.endpoints import EndpointType, TransportType, endpoint_factory
 from commlib.transports.mqtt import \
@@ -41,7 +43,7 @@ def run_automation(automation):
             print(f"{automation.name}: {triggered}")
 
 
-def interpret_model_from_path(model_path: str):
+def interpret_model_from_path(model_path: str, max_workers: int = 10):
     # Initialize full metamodel
     metamodel = metamodel_from_file(
         CURRENT_FPATH.joinpath('lang/smauto.tx'),
@@ -60,11 +62,7 @@ def interpret_model_from_path(model_path: str):
     model.entities_dict = {entity.name: entity for entity in model.entities}
 
     # Evaluate automations, run applicable actions and print results
-    for automation in model.automations:
-        run_automation(automation)
-
-
-if __name__ == '__main__':
-    model_path = sys.argv[1]
-    print(f'SmartAuto Interpreter started for model: {model_path}')
-
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for automation in model.automations:
+            executor.submit(run_automation, (automation))
+    print('[*] All automations completed!!')
