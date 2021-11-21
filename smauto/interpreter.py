@@ -4,7 +4,6 @@
 import logging
 import os
 import time
-import pathlib
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -22,9 +21,7 @@ from smauto.lib.broker import (AMQPBroker, Broker, BrokerAuthPlain, MQTTBroker,
 from smauto.lib.entity import (Attribute, BoolAttribute, DictAttribute, Entity,
                         FloatAttribute, IntAttribute, ListAttribute,
                         StringAttribute)
-
-
-CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
+from smauto.language import build_model
 
 
 def print_auto(automation):
@@ -52,19 +49,7 @@ def run_automation(automation):
 
 
 def interpret_model_from_path(model_path: str, max_workers: int = 10):
-    # Initialize full metamodel
-    metamodel = metamodel_from_file(
-        CURRENT_FPATH.joinpath('lang/smauto.tx'),
-        classes=[Entity, Attribute, IntAttribute, FloatAttribute,
-                 StringAttribute, BoolAttribute, ListAttribute,
-                 DictAttribute, Broker, MQTTBroker, AMQPBroker,
-                 RedisBroker, BrokerAuthPlain, Automation, Action,
-                 IntAction, FloatAction, StringAction, BoolAction,
-                 List, Dict]
-    )
-
-    # Parse model
-    model = metamodel.model_from_file(model_path)
+    model = build_model(model_path)
 
     # Build entities dictionary in model. Needed for evaluating conditions
     model.entities_dict = {entity.name: entity for entity in model.entities}
