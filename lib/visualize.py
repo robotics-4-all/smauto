@@ -1,6 +1,6 @@
 # NOTE: If you want to run visualize directly, since it is considered part of the lib package, you can execute
 # "python -m lib.visualize". The -m tells Python to load it as a module, not as the top-level script.
-# Example call: python -m lib.visualize visualize lang\smartauto.tx config\example.smartauto gpsAutomation --out gpsAutomation.pu
+# Example call: python -m lib.visualize visualize lang\smauto.tx config\example.smauto gpsAutomation --out gpsAutomation.pu
 
 import click
 

@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
     # Initialize full metamodel
     metamodel = metamodel_from_file(
-        'lang/smartauto.tx',
+        'lang/smauto.tx',
         classes=[Entity, Attribute, IntAttribute, FloatAttribute,
                  StringAttribute, BoolAttribute, ListAttribute,
                  DictAttribute, Broker, MQTTBroker, AMQPBroker,
