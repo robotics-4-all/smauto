@@ -102,3 +102,17 @@ For more in-depth description of this example head to the `examples/simple_model
 ### Conditions
 
 ...
+
+
+### Actions
+
+...
+
+## Generate Graphs of Automations
+
+A generator is provided which takes a model as input and generates an image
+of the automation graph, showing conditions and actions.
+
+Below is the graph of the automation defined in ![simple_model example](examples/simple_model)
+
+![automation_graph_example](examples/simple_model/simple_model.smauto)
