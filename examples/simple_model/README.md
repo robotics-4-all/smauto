@@ -39,8 +39,7 @@ automation:
         - aircondition.on:  true
 ```
 
-If you do not already have installed [smauto-cli](), please head to the main page of
-this repo and follow the [installation instructions](https://github.com/robotics-4-all/smauto-dsl#installation).
+If you do not already have installed [smauto-cli](), please follow the [installation instructions](https://github.com/robotics-4-all/smauto-cli#installation).
 
 To execute the model, simply call the interpreter.
 
@@ -65,3 +64,11 @@ You should see at the console reporting completion of the automation.
 [*] Automation <start_aircondition> Triggered!
 [*] All automations completed!!
 ```
+
+To generate the automation graph of the model:
+
+```
+smauto gen-automation-graph simple_model.smauto
+```
+
+![automation_graph_example](automation_start_aircondition.png)

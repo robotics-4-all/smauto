@@ -48,7 +48,7 @@ diagrams of each of the Broker, Entity and Automation concepts.
 ![AutomationMetamodel](assets/images/automation.png)
 
 
-## Define automation models
+## Write SmartAutomation Models
 
 A SmartAutomation Model contains information about the various devices in
 the smart environment (e.g: lights, thermostats, smart fridges etc.),
