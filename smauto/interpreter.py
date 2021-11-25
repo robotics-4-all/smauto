@@ -23,12 +23,16 @@ def print_auto(automation):
 
 
 def run_automation(automation):
+    print(f'[*] Executing automation <{automation.name}>...')
     automation.build_condition()
+    print(f"[*] Condition: {automation.condition.cond_lambda}")
     triggered = False
-    print_auto(automation)
     # Evaluate
     while not triggered:
-        triggered, msg = automation.evaluate()
+        try:
+            triggered, msg = automation.evaluate()
+        except Exception as e:
+            print(e)
         # Check if action is triggered
         if triggered:
             print(f"{Fore.YELLOW}[*] Automation <{automation.name}> "
@@ -47,8 +51,11 @@ def interpret_model_from_path(model_path: str, max_workers: int = 10):
     # Build entities dictionary in model. Needed for evaluating conditions
     model.entities_dict = {entity.name: entity for entity in model.entities}
 
+    automations = model.automations
     # Evaluate automations, run applicable actions and print results
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for automation in model.automations:
-            executor.submit(run_automation, (automation))
+        works = []
+        for automation in automations:
+            work = executor.submit(run_automation, (automation))
+            works.append(work)
     print('[*] All automations completed!!')

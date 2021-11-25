@@ -3,6 +3,9 @@ import broker
 import entity
 
 SmartAutoModel:
+    'name:' name=ID
+    'version:' version=STRING
+    ('description:' description=STRING)?
     brokers+=Broker
     entities*=Entity
     automations*=Automation

@@ -14,7 +14,6 @@ def cli(ctx):
 @click.pass_context
 @click.argument('model_path')
 def interpret(ctx, model_path):
-    print(model_path)
     interpret_model_from_path(model_path)
 
 

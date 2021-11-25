@@ -26,7 +26,7 @@ pip install .
 
 ## SmartAutomation (smauto) Metamodel
 
-Tthe Metamodel of the smauto DSL can be found ![here](assets/images/smauto.png).
+Tthe Metamodel of the smauto DSL can be found [here](assets/images/smauto.png).
 
 
 The main concepts of the language are:
@@ -62,7 +62,7 @@ temperature and humidity measurements:
 ```yaml
 mqtt:
     name: home_broker
-    host: "192.168.1.2"
+    host: "localhost"
     port: 1883
     credentials:
         username: "george"
@@ -96,6 +96,8 @@ automation:
         - aircondition.on:  true
 
 ```
+
+For more in-depth description of this example head to the `examples/simple_model`
 
 ### Conditions
 

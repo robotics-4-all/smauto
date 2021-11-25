@@ -1,6 +1,10 @@
+name: SimpleHomeAutomation
+version: "0.1.0"
+description: "Simple home automation model."
+
 mqtt:
     name: home_broker
-    host: "192.168.1.2"
+    host: "localhost"
     port: 1883
     credentials:
         username: "george"
@@ -27,7 +31,7 @@ automation:
     name: start_aircondition
     condition: ((weather_station.temperature > 32) AND (weather_station.humidity > 30)) AND (aircondition.on NOT true)
     enabled: true
-    continuous: false
+    continuous: true
     actions:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
