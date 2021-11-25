@@ -99,6 +99,101 @@ automation:
 
 For more in-depth description of this example head to the `examples/simple_model`
 
+## Entities
+
+Entities are your connected smart devices that send and receive information
+using a message broker. Entities have the following properties:
+
+`a Name, a Broker, a Topic and a set of Attributes.`
+
+Attributes are what define the structure and the type of information in the
+messages the Entity sends via the Broker.
+
+You can configure an Entity  using the following syntax:
+
+```yaml
+entity:
+    name: robot_cleaner
+    topic: "bedroom.robot_cleaner"
+    broker: upstairs_broker
+    attributes:
+        - battery: float,
+        - cleaning_mode: string,
+        - on: bool,
+        - destinations: list,
+        - location: {
+            - x: int,
+            - y: int
+        }
+```
+
+
+- name: The name for the Entity. Should start with a letter, can contain only
+letters, numbers and underscores.
+- topic: The Topic in the Broker used by the Entity to send and receive
+messages. Note that / should be substituted with .
+(e.g: bedroom/aircondition -> bedroom.aircondition).
+- broker: The name property of a previously defined Broker which the
+Entity uses to communicate.
+- attributes: Attributes have a name and a type. As can be seen in the above
+example, HA-Auto supports int, float, string, bool, list and dictionary types.
+Note that nested dictionaries are also supported.
+
+
+## Brokers
+
+The Broker acts as the communication layer for messages where each device has
+its own Topic which is basically a mailbox for sending and receiving messages.
+SmartAutomation DSL supports Brokers which support the MQTT, AMQP and Redis
+protocols. You can define a Broker using the syntax in the following example:
+
+```yaml
+mqtt:
+    name: upstairs_broker
+    host: "localhost"
+    port: 1883
+    credentials:
+        username: "my_username"
+        password: "my_password"
+```
+
+- type: The first line can be mqtt, amqp or redis according to the Broker type
+- host: Host IP address or hostname for the Broker
+- port: Broker Port number
+- vhost: Vhost parameter. Only for AMQP brokers
+- exchange: (Optional) Exchange parameter. Only for AMQP brokers.
+- credentials:
+    - username: Username used for authentication
+    - password: Password used for authentication
+- db: (Optional) Database number parameter. Only for Redis brokers.
+
+
+## Automations
+
+Automations allow the execution of a set of actions when a condition is met.
+Actions are performed by sending messages to Entities.
+
+You can define an Automation using the syntax in the following example:
+
+```yaml
+automation:
+    name: start_aircondition
+    condition: ((thermometer.temperature > 32) AND (humidity.humidity > 30)) AND (aircondition.on NOT true)
+    enabled: true
+    continuous: false
+    actions:
+        - aircondition.temperature:  25.0
+        - aircondition.mode:  "cool"
+        - aircondition.on:  true
+```
+
+- name: The name for the Automation. Should start with a letter, can contain only letters, numbers and underscores.
+- condition: The condition used to determine if actions should be run. See Writing Conditions for more information.
+- enabled: Whether the Automation should be run or not.
+- continuous: Whether the Automation should automatically remain enabled once its actions have been executed.
+- actions: The actions that should be run once the condition is met. See Writing Actions for more information.
+
+
 ### Conditions
 
 Conditions are very similar to conditions in imperative programming languages
@@ -142,15 +237,13 @@ dictionary to another but cannot use individual dictionary items in conditions.
 
 #### Example Conditions
 
-Bellow you will find some example conditions. You can find more by visiting
-the examples folder in the HA-Auto repository here.
+Bellow you will find some example conditions.
 
 ```
 (bedroom_humidity.humidity < 0.3) AND (bedroom_humidifier.state == 0)
 
 ((bedroom_human_detector.position != []) AND (bedroom_thermometer.temperature < 27.5)) AND (bedroom_thermostat.state == 0)
 ```
-
 
 ### Actions
 
