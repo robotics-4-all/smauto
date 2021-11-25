@@ -63,9 +63,9 @@ setup(
         'console_scripts': [
             'smauto=smauto.cli:main',
         ],
-        'textx_generators': [
-            'smauto=smauto.generator:generate',
-        ],
+        # 'textx_generators': [
+        #     'smauto=smauto.generator:generate',
+        # ],
         'textx_languages': [
             'smauto = smauto:language',
         ]
