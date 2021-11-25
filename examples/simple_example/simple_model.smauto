@@ -1,0 +1,35 @@
+mqtt:
+    name: home_broker
+    host: "192.168.1.2"
+    port: 1883
+    credentials:
+        username: "george"
+        password: "georgesPassword"
+
+entity:
+    name: weather_station
+    topic: "porch.weather_station"
+    broker: home_broker
+    attributes:
+        - temperature: float
+        - humidity: int
+
+entity:
+    name: aircondition
+    topic: "bedroom.aircondition"
+    broker: home_broker
+    attributes:
+        - temperature: float
+        - mode: string
+        - on: bool
+
+automation:
+    name: start_aircondition
+    condition: ((weather_station.temperature > 32) AND (weather_station.humidity > 30)) AND (aircondition.on NOT true)
+    enabled: true
+    continuous: false
+    actions:
+        - aircondition.temperature:  25.0
+        - aircondition.mode:  "cool"
+        - aircondition.on:  true
+
