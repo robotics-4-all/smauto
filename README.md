@@ -26,7 +26,7 @@ pip install .
 
 ## SmartAutomation (smauto) Metamodel
 
-Tthe Metamodel of the smauto DSL can be found [here](assets/images/smauto.png).
+The Metamodel of SmAuto DSL can be found [here](assets/images/smauto.png).
 
 
 The main concepts of the language are:
@@ -50,7 +50,7 @@ diagrams of each of the Broker, Entity and Automation concepts.
 
 ## Define automation models
 
-A SmartAutomation Model tells HA-Auto contains information about the various devices in
+A SmartAutomation Model contains information about the various devices in
 the smart environment (e.g: lights, thermostats, smart fridges etc.),
 the way they communicate and all the automated tasks you want them to perform.
 
