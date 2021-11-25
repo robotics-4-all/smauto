@@ -1,6 +1,6 @@
 ---
 
-Simple example for beginners. In this example, in which the air conditioner is turned on according to the temperature and humidity..
+Simple example for beginners. In this example, in which the air conditioner is turned on according to the temperature and humidity.
 
 ```yaml
 mqtt:

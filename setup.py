@@ -60,9 +60,6 @@ setup(
     ],
     description="",
     entry_points={
-        'console_scripts': [
-            'smauto=smauto.cli:main',
-        ],
         # 'textx_generators': [
         #     'smauto=smauto.generator:generate',
         # ],
