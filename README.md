@@ -115,4 +115,4 @@ of the automation graph, showing conditions and actions.
 
 Below is the graph of the automation defined in ![simple_model example](examples/simple_model)
 
-![automation_graph_example](examples/simple_model/simple_model.smauto)
+![automation_graph_example](examples/simple_model/automation_start_aircondition.png)
