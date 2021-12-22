@@ -78,7 +78,7 @@ setup(
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/klpanagi/smauto-dsl',
+    url='https://github.com/robotics-4-all/smauto-dsl',
     version=VERSION,
     zip_safe=False,
 )
