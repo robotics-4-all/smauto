@@ -1,3 +1,7 @@
+name: SmartHomeAutomations
+version: "1.0.0"
+
+
 // ===== Brokers =====
 mqtt:
     name: home_broker
@@ -360,7 +364,7 @@ automation:
         - bedroom_humidifier.state: 1
 
 automation:
-    name: bedroomHumidifierDisable
+    name: bedroomHumidifierHigh
     condition: (bedroom_humidity.humidity > 0.35) AND (bedroom_humidifier.state == 1)
     enabled: true
     continuous: true
