@@ -89,8 +89,8 @@ def visit_node(node, depth, metamodel, file_writer):
         file_writer.write(f"{'-' * (depth + 1)} {operand2}\n")
 
 
-def pu_to_png_transformation(pu_file_path: str):
-    subprocess.Popen(['plantuml', pu_file_path])
+def pu_to_png_transformation(pu_file_path: str, out_dir: str = '.'):
+    subprocess.Popen(['plantuml', pu_file_path, '-o', out_dir]).wait()
 
 
 def generate_automation_graph(automation, dest=""):
