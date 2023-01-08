@@ -15,13 +15,13 @@ validation and interpretation of smauto models.
 
 ## Installation
 
-This project is delivered as a python package. To install, simply clone this
-repository and install using pip.
+This project is delivered as a python package. To install, clone this
+repository and install in development mode.
 
 ```bash
 git clone https://github.com/robotics-4-all/smauto-dsl
 cd smauto-dsl
-pip install .
+python setup.py develop
 ```
 
 ## SmartAutomation (smauto) Metamodel
