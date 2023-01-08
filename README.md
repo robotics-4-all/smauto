@@ -270,13 +270,13 @@ Actions must be separated by a comma and a change of line (newline).
 A generator is provided which takes a model as input and generates an image
 of the automation graph, showing conditions and actions.
 
-Below is the graph of the automation defined in ![simple_model example](examples/simple_model)
+Below is the graph of the automation defined in [simple_model example](https://github.com/robotics-4-all/smauto-dsl/tree/main/examples/simple_model)
 
-![automation_graph_example](examples/simple_model/automation_start_aircondition.png)
+![automation_start_aircondition](https://user-images.githubusercontent.com/4770702/211201286-def896ce-6ec1-4121-b705-33a3f9b0a20b.png)
 
-To generate the graph of automations defined within an smauto model, use
-[smauto-cli](https://github.com/robotics-4-all/smauto-cli).
+To generate the graph of automations defined within an smauto model, use the
+[smauto-cli](https://github.com/robotics-4-all/smauto-cli) package.
 
 ```bash
-smauto gen-automation-graph simple_model.smauto
+smauto graph simple_model.smauto
 ```
