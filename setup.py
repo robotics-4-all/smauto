@@ -37,12 +37,6 @@ if sys.argv[-1].startswith('publish'):
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-requirements = ['Click>=7.0', 'textx', ]
-
-setup_requirements = [ ]
-
-test_requirements = [ ]
-
 setup(
     author="Konstantinos Panayiotou",
     author_email='klpanagi@gmail.com',
@@ -67,7 +61,6 @@ setup(
             'smauto = smauto:language',
         ]
     },
-    install_requires=requirements,
     license="MIT license",
     long_description=readme,
     include_package_data=True,
@@ -75,9 +68,7 @@ setup(
     keywords='smauto',
     name='smauto',
     packages=find_packages(include=['smauto', 'smauto.*']),
-    setup_requires=setup_requirements,
     test_suite='tests',
-    tests_require=test_requirements,
     url='https://github.com/robotics-4-all/smauto-dsl',
     version=VERSION,
     zip_safe=False,
