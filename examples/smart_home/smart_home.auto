@@ -446,3 +446,21 @@ automation:
         }
         - tv_relay.state: 1
         - audio_play_from_youtube.track_name: 'Never Gonna Give You Up - Rick Astley'
+
+// Light control at night
+automation:
+    name: LightControl
+    condition: ((clock.hour > 19) OR (clock.hour < 6)) AND
+    enabled: true
+    continuous: false
+    actions:
+        - robot_pose.translation: {
+            'x': 3,
+            'y': 3,
+            'z': 0
+        }
+        - robot_pose.orientation: {
+            'x': 0,
+            'y': 0,
+            'z': 0
+        }
