@@ -8,3 +8,4 @@ pika==1.2.0
 redis==3.5.3
 textX==2.3.0
 ujson==4.0.2
+plantuml
