@@ -54,16 +54,12 @@ setup(
     ],
     description="",
     entry_points={
-        # 'textx_generators': [
-        #     'smauto=smauto.generator:generate',
-        # ],
         'textx_languages': [
             'smauto = smauto:language',
         ]
     },
     license="MIT license",
     long_description=readme,
-    include_package_data=True,
     package_data={'': ['*.tx']},
     keywords='smauto',
     name='smauto',
