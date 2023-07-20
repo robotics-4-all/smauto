@@ -39,20 +39,45 @@ StringDouble:
 ;
 
 // Numeric Conditions
+NumericFilter: StandardDeviation | MeanFilter | MultiplyAttrFilter | NoneFilter;
+
+StandardDeviation:
+    'std' '(' attribute=[NumericAttribute|FQN|entities.attributes] ',' size=INT ')'
+;
+
+MeanFilter:
+    'mean' '(' attribute=[NumericAttribute|FQN|entities.attributes]  ',' size=INT ')'
+;
+
+MultiplyAttrFilter:
+    'mul' '(' attributeA=[NumericAttribute|FQN|entities.attributes]  ','
+        attributeB=[NumericAttribute|FQN|entities.attributes] ')'
+;
+
+NoneFilter:
+    attribute=[NumericAttribute|FQN|entities.attributes]
+;
+
 NumericCondition:
     NumericR | NumericL | NumericDouble
 ;
 
 NumericR:
-    (operand1=[NumericAttribute|FQN|entities.attributes] operator=NumericOperatorType operand2=NUMBER)
+    (operand1=NumericFilter
+     operator=NumericOperatorType
+     operand2=NUMBER)
 ;
 
 NumericL:
-    (operand1=NUMBER operator=NumericOperatorType operand2=[NumericAttribute|FQN|entities.attributes])
+    (operand1=NUMBER
+     operator=NumericOperatorType
+     operand2=NumericFilter)
 ;
 
 NumericDouble:
-    (operand1=[NumericAttribute|FQN|entities.attributes] operator=NumericOperatorType operand2=[NumericAttribute|FQN|entities.attributes])
+    (operand1=NumericFilter
+     operator=NumericOperatorType
+     operand2=NumericFilter)
 ;
 
 // Boolean Conditions

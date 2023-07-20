@@ -29,7 +29,12 @@ entity:
 
 automation:
     name: start_aircondition
-    condition: ((weather_station.temperature > 32) AND (weather_station.humidity > 30)) AND (aircondition.on NOT true)
+    condition:
+        (
+            (std(weather_station.temperature, 10) > 32) AND
+            (mean(weather_station.humidity, 10) > 30)
+        ) AND
+        (aircondition.on NOT true)
     enabled: true
     continuous: true
     actions:
@@ -37,3 +42,13 @@ automation:
         - aircondition.mode:  "cool"
         - aircondition.on:  true
 
+automation:
+    name: start_aircondition_2
+    condition:
+        mul(weather_station.humidity, weather_station.temperature) > 30
+    enabled: true
+    continuous: true
+    actions:
+        - aircondition.temperature:  25.0
+        - aircondition.mode:  "cool"
+        - aircondition.on:  true
