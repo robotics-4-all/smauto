@@ -16,7 +16,8 @@ entity:
     broker: home_mqtt_broker
     attributes:
         - temperature: float
-        - humidity: int
+        - humidity: float
+        - airQuality: float
 
 entity:
     name: aircondition
@@ -45,7 +46,7 @@ automation:
 automation:
     name: start_aircondition_2
     condition:
-        mul(weather_station.humidity, weather_station.temperature) > 30
+        mul(weather_station.humidity, weather_station.temperature, weather_station.airQuality) > 30
     enabled: true
     continuous: true
     actions:
