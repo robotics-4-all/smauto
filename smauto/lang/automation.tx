@@ -27,15 +27,21 @@ StringCondition:
 ;
 
 StringR:
-    (operand1=[StringAttribute|FQN|entities.attributes] operator=StringOperatorType operand2=STRING)
+    (operand1=[StringAttribute|FQN|entities.attributes]
+     operator=StringOperatorType
+     operand2=STRING)
 ;
 
 StringL:
-    (operand1=STRING operator=StringOperatorType operand2=[StringAttribute|FQN|entities.attributes])
+    (operand1=STRING
+     operator=StringOperatorType
+     operand2=[StringAttribute|FQN|entities.attributes])
 ;
 
 StringDouble:
-    (operand1=[StringAttribute|FQN|entities.attributes] operator=StringOperatorType operand2=[StringAttribute|FQN|entities.attributes])
+    (operand1=[StringAttribute|FQN|entities.attributes]
+     operator=StringOperatorType
+     operand2=[StringAttribute|FQN|entities.attributes])
 ;
 
 // Numeric Conditions

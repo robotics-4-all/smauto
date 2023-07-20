@@ -30,7 +30,7 @@ operators = {
 
 # Returns printed version of operand if operand is a primitive.
 # Else if attribute returns code pointing to the Attribute.
-def print_operand(node):
+def transform_operand(node):
     # If node is a primitive type return as is (if string, add quotation marks)
     if type(node) in primitives:
         if type(node) is str:
@@ -162,9 +162,16 @@ class Automation:
 
         # If we are in a primitive condition node, form conditions using operands
         else:
-            operand1 = print_operand(cond_node.operand1)
-            operand2 = print_operand(cond_node.operand2)
-            cond_node.cond_lambda = (operators[cond_node.operator])(operand1, operand2)
+            if operand1.__class__.__name__ == 'StdAttr':
+                print('Standard Deviation Attribute')
+            elif operand1.__class__.__name__ == 'MeanAttr':
+                print('Mean Attribute')
+            elif operand1.__class__.__name__ == 'MultiplyAttr':
+                print('Multiply Attribute')
+            else:
+                operand1 = transform_operand(cond_node.operand1)
+                operand2 = transform_operand(cond_node.operand2)
+                cond_node.cond_lambda = (operators[cond_node.operator])(operand1, operand2)
 
     # Builds Automation Condition into Python expression string so that it can later be evaluated using eval()
     def build_condition(self):
