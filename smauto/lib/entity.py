@@ -74,9 +74,11 @@ class Entity:
             if type(attribute) is DictAttribute:
                 attribute.items_dict = {item.name: item for item in attribute.items}
 
+    def start(self):
         # Create and start communications subscriber on Entity's topic
-        self.subscriber = endpoint_factory(EndpointType.Subscriber, broker_tt[type(self.broker)])(
-            topic=topic,
+        self.subscriber = endpoint_factory(
+            EndpointType.Subscriber, broker_tt[type(self.broker)])(
+            topic=self.topic,
             conn_params=self.broker.conn_params,
             on_message=self.update_state
         )
@@ -84,10 +86,8 @@ class Entity:
 
         # Create communications publisher on Entity's topic
         self.publisher = endpoint_factory(EndpointType.Publisher, broker_tt[type(self.broker)])(
-            topic=topic,
+            topic=self.topic,
             conn_params=self.broker.conn_params,
-            # TODO: Remove debug flag
-            debug=True
         )
 
     # Callback function for updating Entity state and triggering automations evaluation

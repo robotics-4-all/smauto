@@ -3,17 +3,17 @@ version: "0.1.0"
 description: "Simple home automation model."
 
 mqtt:
-    name: home_broker
+    name: home_mqtt_broker
     host: "localhost"
     port: 1883
     credentials:
-        username: "george"
-        password: "georgesPassword"
+        username: ""
+        password: ""
 
 entity:
     name: weather_station
     topic: "porch.weather_station"
-    broker: home_broker
+    broker: home_mqtt_broker
     attributes:
         - temperature: float
         - humidity: int
@@ -21,7 +21,7 @@ entity:
 entity:
     name: aircondition
     topic: "bedroom.aircondition"
-    broker: home_broker
+    broker: home_mqtt_broker
     attributes:
         - temperature: float
         - mode: string

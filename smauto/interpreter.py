@@ -50,6 +50,10 @@ def interpret_model_from_path(model_path: str, max_workers: int = 10):
 
     # Build entities dictionary in model. Needed for evaluating conditions
     model.entities_dict = {entity.name: entity for entity in model.entities}
+    entities = [e for e in model.entities]
+
+    for e in entities:
+        e.start()
 
     automations = model.automations
     # Evaluate automations, run applicable actions and print results
