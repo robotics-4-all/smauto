@@ -1,10 +1,10 @@
 from textx import textx_isinstance, get_metamodel
 
 # List of primitive types that can be directly printed
-primitives = (int, float, str, bool)
+PRIMITIVES = (int, float, str, bool)
 
 # Lambdas used to build expression strings based on their corresponding operators
-operators = {
+OPERATORS = {
     # String operators
     '~': lambda left, right: f"({left} in {right})",
     '!~': lambda left, right: f"({left} not in {right})",
@@ -32,7 +32,7 @@ operators = {
 # Else if attribute returns code pointing to the Attribute.
 def transform_operand(node):
     # If node is a primitive type return as is (if string, add quotation marks)
-    if type(node) in primitives:
+    if type(node) in PRIMITIVES:
         if type(node) is str:
             return f"'{node}'"
         else:
@@ -44,8 +44,17 @@ def transform_operand(node):
     elif type(node) == Dict:
         return node
     # Node is an Attribute, print its full name including Entity
+    elif textx_isinstance(
+        node,
+        get_metamodel(node).namespaces['automation']['AugmentedNumericAttr']
+        ):
+        val = f"model.entities_dict['{node.attribute.parent.name}']." + \
+                f"attributes_dict['{node.attribute.name}'].value"
+        return val
     else:
-        return f"model.entities_dict['{node.parent.name}'].attributes_dict['{node.name}'].value"
+        val = f"model.entities_dict['{node.parent.name}']." + \
+                f"attributes_dict['{node.name}'].value"
+        return val
 
 
 # A class representing an Automation
@@ -158,24 +167,18 @@ class Automation:
             # Visit right node
             self.process_node_condition(cond_node.r2)
             # Build lambda
-            cond_node.cond_lambda = (operators[cond_node.operator])(cond_node.r1.cond_lambda, cond_node.r2.cond_lambda)
+            cond_node.cond_lambda = (OPERATORS[cond_node.operator])(cond_node.r1.cond_lambda, cond_node.r2.cond_lambda)
 
         # If we are in a primitive condition node, form conditions using operands
         else:
-            if operand1.__class__.__name__ == 'StdAttr':
-                print('Standard Deviation Attribute')
-            elif operand1.__class__.__name__ == 'MeanAttr':
-                print('Mean Attribute')
-            elif operand1.__class__.__name__ == 'MultiplyAttr':
-                print('Multiply Attribute')
-            else:
-                operand1 = transform_operand(cond_node.operand1)
-                operand2 = transform_operand(cond_node.operand2)
-                cond_node.cond_lambda = (operators[cond_node.operator])(operand1, operand2)
+            operand1 = transform_operand(cond_node.operand1)
+            operand2 = transform_operand(cond_node.operand2)
+            cond_node.cond_lambda = (OPERATORS[cond_node.operator])(operand1, operand2)
 
     # Builds Automation Condition into Python expression string so that it can later be evaluated using eval()
     def build_condition(self):
         self.process_node_condition(self.condition)
+        print(f'[*] Condition: {self.condition.cond_lambda}')
 
 
 # List class for List type

@@ -45,7 +45,7 @@ StringDouble:
 ;
 
 // Numeric Conditions
-AugmentedNumericAttr: StdAttr | MeanAttr | MultiplyAttr | NoneFilter;
+AugmentedNumericAttr: StdAttr | MeanAttr | MultiplyAttr | NoneFilterAttr;
 
 StdAttr:
     'std' '(' attribute=[NumericAttribute|FQN|entities.attributes] ',' size=INT ')'
@@ -59,7 +59,7 @@ MultiplyAttr:
     'mul' '(' attributes*=[NumericAttribute|FQN|entities.attributes][','] ')'
 ;
 
-NoneFilter:
+NoneFilterAttr:
     attribute=[NumericAttribute|FQN|entities.attributes]
 ;
 
