@@ -68,7 +68,7 @@ def automation_worker_clb(f):
     }))
 
 
-def interpret_model_from_path(model_path: str, max_workers: int = 10):
+def execute_model_from_path(model_path: str, max_workers: int = 10):
     model = build_model(model_path)
 
     # Build entities dictionary in model. Needed for evaluating conditions

@@ -1,6 +1,6 @@
 import click
 
-from smauto.interpreter import interpret_model_from_path
+from smauto.interpreter import execute_model_from_path
 from smauto.generator import generate_automation_graph_from_file
 from smauto.language import build_model
 
@@ -23,14 +23,14 @@ def validate(ctx, model_path):
         print(str(e))
 
 
-@cli.command(help='Interpreter')
+@cli.command(help='Interpreter - Dynamically execute models')
 @click.pass_context
 @click.argument('model_path')
 def interpret(ctx, model_path):
-    interpret_model_from_path(model_path)
+    execute_model_from_path(model_path)
 
 
-@cli.command(help='Automation Graph generator')
+@cli.command(help='Graph generator - Generate automation visualization graphs')
 @click.pass_context
 @click.argument('model_path')
 def graph(ctx, model_path):
