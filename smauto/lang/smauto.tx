@@ -11,6 +11,9 @@ SmartAutoModel:
     automations*=Automation
 ;
 
-Comment:
-  /\/\/.*$/
-;
+// Comments
+Comment: CommentLine | CommentBlock ;
+
+CommentLine: /\/\/.*?$/;
+
+CommentBlock: /\/\*(.|\n)*?\*\//;
