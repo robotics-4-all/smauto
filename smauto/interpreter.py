@@ -1,20 +1,9 @@
 #!/usr/bin/env python3
 
-
-import logging
 import traceback
-import os
 import time
-
 from concurrent.futures import ThreadPoolExecutor
-
-from colorama import Fore, Style, init
-from commlib.endpoints import EndpointType, TransportType, endpoint_factory
-from commlib.transports.mqtt import \
-    ConnectionParameters as MQTT_ConnectionParameters
-from commlib.transports.mqtt import Credentials as MQTT_Credentials
-from textx import metamodel_from_file
-
+from colorama import Fore, Style
 from smauto.language import build_model
 
 

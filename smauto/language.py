@@ -36,7 +36,7 @@ CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 
 def get_metamodel():
     metamodel = metamodel_from_file(
-        CURRENT_FPATH.joinpath('lang/smauto.tx'),
+        CURRENT_FPATH.joinpath('grammar/smauto.tx'),
         classes=[Entity, Attribute, IntAttribute, FloatAttribute,
                  StringAttribute, BoolAttribute, ListAttribute,
                  DictAttribute, Broker, MQTTBroker, AMQPBroker,
