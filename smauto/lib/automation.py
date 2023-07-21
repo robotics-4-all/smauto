@@ -160,7 +160,8 @@ class Automation:
         metamodel = get_metamodel(self.parent)
 
         # If we are in a ConditionGroup node, recursively visit the left and right sides
-        if textx_isinstance(cond_node, metamodel.namespaces['automation']['ConditionGroup']):
+        if textx_isinstance(
+            cond_node, metamodel.namespaces['automation']['ConditionGroup']):
 
             # Visit left node
             self.process_node_condition(cond_node.r1)
@@ -173,12 +174,12 @@ class Automation:
         else:
             operand1 = transform_operand(cond_node.operand1)
             operand2 = transform_operand(cond_node.operand2)
-            cond_node.cond_lambda = (OPERATORS[cond_node.operator])(operand1, operand2)
+            cond_node.cond_lambda = (OPERATORS[cond_node.operator])(operand1,
+                                                                    operand2)
 
     # Builds Automation Condition into Python expression string so that it can later be evaluated using eval()
     def build_condition(self):
         self.process_node_condition(self.condition)
-        print(f'[*] Condition: {self.condition.cond_lambda}')
 
 
 # List class for List type
@@ -187,16 +188,19 @@ class List:
         Attributes
     ----------
         items: list
-            Python list of items included in the List. Can be primitives or other List items
+            Python list of items included in the List.
+            Can be primitives or other List items
         parent: obj
             Reference to the parent element in the parsed textX hierarchy
 
     Methods
     -------
         __repr__():
-            Used to print out a string of the List with subList items also being printed out as strings
+            Used to print out a string of the List with subList
+            items also being printed out as strings
         print_item():
-            Static method used by __repr__() and called recursively to return a python list of sub-items.
+            Static method used by __repr__() and called recursively to
+            return a python list of sub-items.
     """
 
     def __init__(self, parent, items):
@@ -211,9 +215,11 @@ class List:
     @staticmethod
     def print_item(item):
         """
-        Static method used by __repr__() and called recursively to return a python list of sub-items.
+        Static method used by __repr__() and called recursively
+            to return a python list of sub-items.
         :param item: List or primitive item to open up
-        :return: Python list of primitives or python lists (previously sub-List items)
+        :return: Python list of primitives or python lists
+            (previously sub-List items)
         """
         # If item is a list return list of items printed out including sublists
         if type(item) == List:

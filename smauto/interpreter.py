@@ -2,36 +2,37 @@
 
 import traceback
 import time
+from rich import print, pretty, inspect
 from concurrent.futures import ThreadPoolExecutor
 from colorama import Fore, Style
 from smauto.language import build_model
 
+pretty.install()
+
 
 def print_auto(automation):
-    print(f"[*] Automation <{automation.name}>, "
-          f"Condition: {automation.condition.cond_lambda}")
+    # print(f"[*] Automation <{automation.name}>, "
+    #       f"Condition: {automation.condition.cond_lambda}")
+    inspect(automation, methods=False)
+    print(f'[*] Condition -> {automation.condition.cond_lambda}')
 
 
 def run_automation(automation):
-    print(f'[*] Executing automation <{automation.name}>...')
     automation.build_condition()
-    print(f"[*] Condition: {automation.condition.cond_lambda}")
+    print_auto(automation)
     triggered = False
     # Evaluate
     while not triggered:
         try:
-            triggered, msg = automation.evaluate()
+            triggered, _ = automation.evaluate()
         except Exception as e:
             print(e)
         # Check if action is triggered
         if triggered:
-            print(f"{Fore.YELLOW}[*] Automation <{automation.name}> "
-                  f"Triggered!{Style.RESET_ALL}")
+            print(f"[bold yellow][*] Automation <{automation.name}> "
+                  f"Triggered![/bold magenta]")
             # If automation triggered run its actions
             automation.trigger()
-        else:
-            pass
-            # print(f"{automation.name}: {triggered}")
         time.sleep(1)
 
 
@@ -72,10 +73,9 @@ def execute_model_from_path(model_path: str, max_workers: int = 10):
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         works = []
         for automation in automations:
-            print(f'[*] Starting Automation: {automation.name}')
             work = executor.submit(
                 run_automation,
                 (automation)
             ).add_done_callback(automation_worker_clb)
             works.append(work)
-    print('[*] All automations completed!!')
+    print('[bold magenta][*] All automations completed!![/bold magenta]')
