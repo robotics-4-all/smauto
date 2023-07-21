@@ -11,10 +11,9 @@ pretty.install()
 
 
 def print_auto(automation):
-    # print(f"[*] Automation <{automation.name}>, "
-    #       f"Condition: {automation.condition.cond_lambda}")
-    inspect(automation, methods=False)
-    print(f'[*] Condition -> {automation.condition.cond_lambda}')
+    print(f"[*] Automation <{automation.name}>\n"
+          f"    Condition: {automation.condition.cond_lambda}")
+    # inspect(automation, methods=False)
 
 
 def run_automation(automation):

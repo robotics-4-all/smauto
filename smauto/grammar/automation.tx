@@ -2,7 +2,7 @@ import entity
 
 // === Overall Automation ===
 Automation:
-    'automation:'
+    'Automation'
         (
         ('name:' name=ID)
         ('condition:' condition=Condition)
@@ -10,6 +10,7 @@ Automation:
         ('enabled:' enabled=BOOL)
         ('continuous:' continuous=BOOL)
         )#
+    'end'
 ;
 
 // === Conditions ===

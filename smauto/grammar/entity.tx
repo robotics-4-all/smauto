@@ -2,7 +2,7 @@ import broker
 
 //TODO: Model mqtt topics?
 Entity:
-    'entity:'
+    'Entity'
         (
         'name:' name=ID
         'topic:' topic=STRING
@@ -10,6 +10,7 @@ Entity:
         'attributes:'
                 attributes*=Attribute
         )#
+    'end'
 ;
 
 Attribute:

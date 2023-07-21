@@ -2,15 +2,16 @@ name: SimpleHomeAutomation
 version: "0.1.0"
 description: "Simple home automation model."
 
-mqtt:
+Broker<MQTT>
     name: home_mqtt_broker
     host: "localhost"
     port: 1883
     credentials:
         username: ""
         password: ""
+end
 
-entity:
+Entity
     name: weather_station
     topic: "porch.weather_station"
     broker: home_mqtt_broker
@@ -18,8 +19,10 @@ entity:
         - temperature: float
         - humidity: float
         - airQuality: float
+end
 
-entity:
+
+Entity
     name: aircondition
     topic: "bedroom.aircondition"
     broker: home_mqtt_broker
@@ -27,9 +30,10 @@ entity:
         - temperature: float
         - mode: string
         - on: bool
+end
 
 
-automation:
+Automation
     name: start_aircondition
     condition:
         (
@@ -43,9 +47,10 @@ automation:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
         - aircondition.on:  true
+end
 
 /*
-automation:
+Automation
     name: start_aircondition
     condition:
         (
@@ -59,8 +64,9 @@ automation:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
         - aircondition.on:  true
+end
 
-automation:
+Automation
     name: start_aircondition_2
     condition:
         mul(weather_station.humidity,
@@ -72,4 +78,5 @@ automation:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
         - aircondition.on:  true
+end
 */
