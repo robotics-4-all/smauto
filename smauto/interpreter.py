@@ -1,38 +1,12 @@
 #!/usr/bin/env python3
 
 import traceback
-import time
 from rich import print, pretty, inspect
 from concurrent.futures import ThreadPoolExecutor
 from colorama import Fore, Style
 from smauto.language import build_model
 
 pretty.install()
-
-
-def print_auto(automation):
-    print(f"[*] Automation <{automation.name}>\n"
-          f"    Condition: {automation.condition.cond_lambda}")
-    # inspect(automation, methods=False)
-
-
-def run_automation(automation):
-    automation.build_condition()
-    print_auto(automation)
-    triggered = False
-    # Evaluate
-    while not triggered:
-        try:
-            triggered, _ = automation.evaluate()
-        except Exception as e:
-            print(e)
-        # Check if action is triggered
-        if triggered:
-            print(f"[bold yellow][*] Automation <{automation.name}> "
-                  f"Triggered![/bold magenta]")
-            # If automation triggered run its actions
-            automation.trigger()
-        time.sleep(1)
 
 
 def automation_worker_clb(f):
@@ -68,13 +42,12 @@ def execute_model_from_path(model_path: str, max_workers: int = 10):
         e.start()
 
     automations = model.automations
-    # Evaluate automations, run applicable actions and print results
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         works = []
         for automation in automations:
             work = executor.submit(
-                run_automation,
-                (automation)
+                automation.start,
+                # ()
             ).add_done_callback(automation_worker_clb)
             works.append(work)
     print('[bold magenta][*] All automations completed!![/bold magenta]')

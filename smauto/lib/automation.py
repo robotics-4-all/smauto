@@ -1,4 +1,8 @@
 from textx import textx_isinstance, get_metamodel
+import time
+from rich import print, pretty, inspect
+pretty.install()
+
 
 # List of primitive types that can be directly printed
 PRIMITIVES = (int, float, str, bool)
@@ -57,6 +61,13 @@ def transform_operand(node):
         return val
 
 
+class AutomationState:
+    IDLE = 0
+    RUNNING = 1
+    EXITED_SUCCESS = 2
+    EXITED_FAILURE = 3
+
+
 # A class representing an Automation
 class Automation:
     """
@@ -81,7 +92,8 @@ class Automation:
             update_state() function in the Entities listed in condition_entities upon them updating their states.
     """
 
-    def __init__(self, parent, name, condition, actions, enabled, continuous):
+    def __init__(self, parent, name, condition,
+                 actions, enabled, continuous, dependsOn):
         """
         Creates and returns an Automation object
         :param name: Automation name. e.g: 'open_lights'
@@ -103,6 +115,8 @@ class Automation:
         self.continuous = continuous
         # Action function
         self.actions = actions
+        self.dependsOn = dependsOn
+        self.state = AutomationState.IDLE
 
     # Evaluate the Automation's conditions and run the actions
     def evaluate(self):
@@ -177,9 +191,54 @@ class Automation:
             cond_node.cond_lambda = (OPERATORS[cond_node.operator])(operand1,
                                                                     operand2)
 
-    # Builds Automation Condition into Python expression string so that it can later be evaluated using eval()
     def build_condition(self):
+        """Builds Automation Condition into Python expression string
+            so that it can later be evaluated using eval()
+        """
         self.process_node_condition(self.condition)
+
+
+    def print(self):
+        dependsOn = f'\n'.join(
+            [f"      - {dep.automation.name}" for dep in self.dependsOn])
+        print(
+            f"[*] Automation <{self.name}>\n"
+            f"    Condition: {self.condition.cond_lambda}\n"
+            f"    DependsOn:\n"
+            f"      {dependsOn}"
+        )
+
+    def start(self):
+        self.build_condition()
+        self.print()
+        if len(self.dependsOn) == 0:
+            self.state = AutomationState.RUNNING
+        # Wait for dependend automations to finish
+        while self.state == AutomationState.IDLE:
+            time.sleep(1)
+            wait_for = [
+                dep.automation.name for dep in self.dependsOn
+                if dep.automation.state == AutomationState.RUNNING
+            ]
+            print(
+                f'[bold magenta]\[{self.name}] Waiting for dependend '
+                f'automations to finish:[/bold magenta] {wait_for}'
+            )
+        print(f"[bold yellow][*] Running Automation: {self.name}[/bold yellow]")
+        while self.state == AutomationState.RUNNING:
+            try:
+                triggered, _ = self.evaluate()
+            except Exception as e:
+                print(e)
+                return
+            # Check if action is triggered
+            if triggered:
+                print(f"[bold yellow][*] Automation <{self.name}> "
+                      f"Triggered![/bold yellow]")
+                # If automation triggered run its actions
+                self.trigger()
+                self.state = AutomationState.EXITED_SUCCESS
+            time.sleep(1)
 
 
 # List class for List type

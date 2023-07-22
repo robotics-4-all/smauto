@@ -7,10 +7,15 @@ Automation:
         ('name:' name=ID)
         ('condition:' condition=Condition)
         ('actions:' actions*=Action)
-        ('enabled:' enabled=BOOL)
-        ('continuous:' continuous=BOOL)
+        ('enabled:' enabled=BOOL)?
+        ('continuous:' continuous=BOOL)?
+        ('dependsOn:' '-' dependsOn*=AutomationDependency['-'])?
         )#
     'end'
+;
+
+AutomationDependency:
+    automation=[Automation|FQN|automations] ('on' exitStatus=BOOL)?
 ;
 
 // === Conditions ===
@@ -20,7 +25,13 @@ ConditionGroup:
     '(' r1=Condition ')' operator=BooleanOperatorType '(' r2=Condition ')'
 ;
 
-PrimitiveCondition: StringCondition | NumericCondition | BoolCondition | ListCondition | DictCondition;
+PrimitiveCondition:
+    StringCondition     |
+    NumericCondition    |
+    BoolCondition       |
+    ListCondition       |
+    DictCondition
+;
 
 // String Conditions
 StringCondition:
@@ -92,15 +103,21 @@ BoolCondition:
 ;
 
 BoolR:
-    (operand1=[BoolAttribute|FQN|entities.attributes] operator=BooleanOperatorType operand2=BOOL)
+    (operand1=[BoolAttribute|FQN|entities.attributes]
+     operator=BooleanOperatorType
+     operand2=BOOL)
 ;
 
 BoolL:
-    (operand1=BOOL operator=BooleanOperatorType operand2=[BoolAttribute|FQN|entities.attributes])
+    (operand1=BOOL
+     operator=BooleanOperatorType
+     operand2=[BoolAttribute|FQN|entities.attributes])
 ;
 
 BoolDouble:
-    (operand1=[BoolAttribute|FQN|entities.attributes] operator=BooleanOperatorType operand2=[BoolAttribute|FQN|entities.attributes])
+    (operand1=[BoolAttribute|FQN|entities.attributes]
+     operator=BooleanOperatorType
+     operand2=[BoolAttribute|FQN|entities.attributes])
 ;
 
 // List Conditions
@@ -118,15 +135,21 @@ ListElements:
 ;
 
 ListR:
-    (operand1=[ListAttribute|FQN|entities.attributes] operator=ListOperatorType operand2=List)
+    (operand1=[ListAttribute|FQN|entities.attributes]
+     operator=ListOperatorType
+     operand2=List)
 ;
 
 ListL:
-    (operand1=List operator=ListOperatorType operand2=[ListAttribute|FQN|entities.attributes])
+    (operand1=List
+     operator=ListOperatorType
+     operand2=[ListAttribute|FQN|entities.attributes])
 ;
 
 ListDouble:
-    (operand1=[ListAttribute|FQN|entities.attributes] operator=ListOperatorType operand2=[ListAttribute|FQN|entities.attributes])
+    (operand1=[ListAttribute|FQN|entities.attributes]
+     operator=ListOperatorType
+     operand2=[ListAttribute|FQN|entities.attributes])
 ;
 
 // Dictionary Conditions
@@ -140,7 +163,7 @@ DictItem:
 
 //TODO: Add Dict, List into DictTypes to enable nested Lists and Dictionaries in Dictionaries
 DictTypes:
-    NUMBER | STRING | BOOL | Dict
+    NUMBER | STRING | BOOL | Dict | List
 ;
 
 Dict:
@@ -148,15 +171,21 @@ Dict:
 ;
 
 DictR:
-    (operand1=[DictAttribute|FQN|entities.attributes] operator=DictOperatorType operand2=Dict)
+    (operand1=[DictAttribute|FQN|entities.attributes]
+     operator=DictOperatorType
+     operand2=Dict)
 ;
 
 DictL:
-    (operand1=Dict operator=DictOperatorType operand2=[DictAttribute|FQN|entities.attributes])
+    (operand1=Dict
+     operator=DictOperatorType
+     operand2=[DictAttribute|FQN|entities.attributes])
 ;
 
 DictDouble:
-    (operand1=[DictAttribute|FQN|entities.attributes] operator=DictOperatorType operand2=[DictAttribute|FQN|entities.attributes])
+    (operand1=[DictAttribute|FQN|entities.attributes]
+     operator=DictOperatorType
+     operand2=[DictAttribute|FQN|entities.attributes])
 ;
 
 
