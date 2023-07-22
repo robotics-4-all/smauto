@@ -1,10 +1,17 @@
 import click
+import os
 from rich import print
 
 from smauto.interpreter import execute_model_from_path
 from smauto.generator import generate_automation_graph_from_file
 from smauto.language import build_model
 from smauto.transformations import model_to_vnodes
+
+
+def make_executable(path):
+    mode = os.stat(path).st_mode
+    mode |= (mode & 0o444) >> 2    # copy R bits to X
+    os.chmod(path, mode)
 
 
 @click.group()
@@ -50,6 +57,7 @@ def generate(ctx, model_path):
         filepath = f'{vn[0].name}.py'
         with open(filepath, 'w') as fp:
             fp.write(vn[1])
+            make_executable(filepath)
         print(f'[*] Compiled virtual Entity: [bold]{filepath}')
 
 

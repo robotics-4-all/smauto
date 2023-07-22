@@ -10,7 +10,7 @@ from commlib.utils import Rate
 from commlib.node import Node
 
 class AirconditionMsg(PubSubMessage):
-        state: bool = False
+        power: bool = False
         temperature: float = 0.0
         swing: bool = False
         mode: str = ''

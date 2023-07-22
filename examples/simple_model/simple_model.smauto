@@ -28,10 +28,10 @@ Entity
     topic: "bedroom.aircondition"
     broker: home_mqtt_broker
     attributes:
-        - state: bool
+        - power: bool
         - temperature: float
         - swing: bool
-        - mode: string
+        - mode: str
 end
 
 
@@ -44,7 +44,7 @@ Automation
     actions:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
-        - aircondition.state:  true
+        - aircondition.power:  true
 end
 
 Automation
@@ -54,7 +54,7 @@ Automation
     enabled: true
     continuous: true
     actions:
-        - aircondition.state:  false
+        - aircondition.power:  false
     dependsOn:
         - start_aircondition
 end
@@ -73,7 +73,7 @@ Automation
     actions:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
-        - aircondition.state:  true
+        - aircondition.power:  true
 end
 
 Automation
@@ -83,13 +83,13 @@ Automation
             (weather_station.temperature > 32) AND
             (weather_station.humidity > 30)
         ) AND
-        (aircondition.state NOT true)
+        (aircondition.power NOT true)
     enabled: true
     continuous: true
     actions:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
-        - aircondition.state:  true
+        - aircondition.power:  true
 end
 
 
