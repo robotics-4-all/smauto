@@ -19,7 +19,7 @@ Entity
     attributes:
         - temperature: float with uniform(10, 40)
         - humidity: float with uniform(10, 40)
-        - airQuality: float with uniform(0, 1)
+        - airQuality: float with linear(0, 1, 0.1)
 end
 
 Entity

@@ -4,10 +4,14 @@ import time
 import random
 
 from commlib.transports.mqtt import ConnectionParameters
-from rich import print
+from rich import print, console, pretty
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
 from commlib.node import Node
+
+pretty.install()
+console = console.Console()
+
 
 class AirconditionMsg(PubSubMessage):
         power: bool = False

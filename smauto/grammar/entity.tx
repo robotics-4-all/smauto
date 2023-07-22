@@ -53,12 +53,16 @@ DictAttribute:
         '}'
 ;
 
-AttrValueGen: UniformGen | ConstantGen;
+AttrValueGen: UniformGen | ConstantGen | LinearGen;
 
 UniformGen:
-    'uniform' '(' from=NUMBER (',' to=NUMBER)? ')'
+    'uniform' '(' from=NUMBER ',' to=NUMBER ')'
 ;
 
 ConstantGen:
     'constant' '(' value=NUMBER ')'
+;
+
+LinearGen:
+    'linear' '(' from=NUMBER ',' to=NUMBER ',' step=NUMBER ')'
 ;

@@ -1,7 +1,8 @@
 from textx import textx_isinstance, get_metamodel
 import time
-from rich import print, pretty, inspect
+from rich import print, pretty, inspect, console
 pretty.install()
+console = console.Console()
 
 
 # List of primitive types that can be directly printed

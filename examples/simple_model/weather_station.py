@@ -4,10 +4,14 @@ import time
 import random
 
 from commlib.transports.mqtt import ConnectionParameters
-from rich import print
+from rich import print, console, pretty
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
 from commlib.node import Node
+
+pretty.install()
+console = console.Console()
+
 
 class Weather_stationMsg(PubSubMessage):
         temperature: float = 0.0
@@ -46,9 +50,17 @@ class Weather_stationNode(Node):
 
     def gen_data(self):
         msg = Weather_stationMsg()
-        msg.temperature = random.uniform(20, 40)
-        msg.humidity = random.uniform(10, 60)
-        msg.airQuality = random.uniform(0, 1)
+        msg.temperature = random.uniform(10, 40)
+        msg.humidity = random.uniform(10, 40)
+        if not hasattr(self, "_airQuality"):
+            val = 0
+        else:
+            val = self._airQuality + 0.1
+        self._airQuality = val
+        if val > 1:
+            val = 0
+        self._airQuality = val
+        msg.airQuality = val
         return msg
 
 

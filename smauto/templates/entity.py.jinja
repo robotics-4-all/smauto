@@ -5,11 +5,15 @@ import random
 
 {% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
 from commlib.transports.mqtt import ConnectionParameters
-from rich import print
+from rich import print, console, pretty
 {% endif %}
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
 from commlib.node import Node
+
+pretty.install()
+console = console.Console()
+
 
 class {{ entity.name.capitalize() }}Msg(PubSubMessage):
     {% for a in entity.attributes %}
@@ -72,9 +76,23 @@ class {{ entity.name.capitalize() }}Node(Node):
 
     def gen_data(self):
         msg = {{ entity.name.capitalize() }}Msg()
-        msg.temperature = random.uniform(20, 40)
-        msg.humidity = random.uniform(10, 60)
-        msg.airQuality = random.uniform(0, 1)
+        {% for attr in entity.attributes %}
+        {% if attr.generator.__class__.__name__ == 'UniformGen' %}
+        msg.{{ attr.name }} = random.uniform({{ attr.generator.from }}, {{ attr.generator.to }})
+        {% elif attr.generator.__class__.__name__ == 'ConstantGen' %}
+        msg.{{ attr.name }} = attr.generator.value
+        {% elif attr.generator.__class__.__name__ == 'LinearGen' %}
+        if not hasattr(self, "_{{ attr.name }}"):
+            val = {{ attr.generator.from }}
+        else:
+            val = self._{{ attr.name }} + {{ attr.generator.step }}
+        self._{{ attr.name }} = val
+        if val > {{ attr.generator.to }}:
+            val = {{ attr.generator.from }}
+        self._{{ attr.name }} = val
+        msg.{{ attr.name }} = val
+        {% endif %}
+        {% endfor %}
         return msg
 
     {% endif %}
