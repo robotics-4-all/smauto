@@ -17,9 +17,9 @@ Entity
     topic: "porch.weather_station"
     broker: home_mqtt_broker
     attributes:
-        - temperature: float
-        - humidity: float
-        - airQuality: float
+        - temperature: float with uniform(10, 40)
+        - humidity: float with uniform(10, 40)
+        - airQuality: float with uniform(0, 1)
 end
 
 Entity
@@ -34,6 +34,15 @@ Entity
         - mode: str
 end
 
+Entity
+    name: window
+    type: actuator
+    topic: "bedroom.window"
+    broker: home_mqtt_broker
+    attributes:
+        - state: bool
+end
+
 
 Automation
     name: start_aircondition
@@ -45,6 +54,7 @@ Automation
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
         - aircondition.power:  true
+        - window.state:  false
 end
 
 Automation

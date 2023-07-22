@@ -120,16 +120,18 @@ class Attribute:
 
 
 class IntAttribute(Attribute):
-    def __init__(self, parent, name):
+    def __init__(self, parent, name, generator):
         super().__init__(parent, name)
+        self.generator = generator
         self.type = 'int'
         if self.value is None:
             self.value = 0
 
 
 class FloatAttribute(Attribute):
-    def __init__(self, parent, name):
+    def __init__(self, parent, name, generator):
         super().__init__(parent, name)
+        self.generator = generator
         self.type = 'float'
         if self.value is None:
             self.value = 0.0

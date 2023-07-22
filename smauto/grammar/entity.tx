@@ -28,11 +28,11 @@ NumericAttribute:
 ;
 
 IntAttribute:
-    '-' name=ID ':' 'int'
+    '-' name=ID ':' 'int' ('with' generator=AttrValueGen)?
 ;
 
 FloatAttribute:
-    '-' name=ID ':' 'float'
+    '-' name=ID ':' 'float' ('with' generator=AttrValueGen)?
 ;
 
 StringAttribute:
@@ -51,4 +51,14 @@ DictAttribute:
     '-' name=ID ':' '{'
         items*=Attribute
         '}'
+;
+
+AttrValueGen: UniformGen | ConstantGen;
+
+UniformGen:
+    'uniform' '(' from=NUMBER (',' to=NUMBER)? ')'
+;
+
+ConstantGen:
+    'constant' '(' value=NUMBER ')'
 ;
