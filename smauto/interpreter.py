@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 import traceback
-from rich import print, pretty, inspect
+from rich import print, pretty
 from concurrent.futures import ThreadPoolExecutor
-from colorama import Fore, Style
 from smauto.language import build_model
 
 pretty.install()

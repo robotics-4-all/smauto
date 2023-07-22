@@ -33,7 +33,7 @@ if __name__ == '__main__':
     msg.humidity = 34
     pub.publish(msg)
     time.sleep(3)
-    msg.temperature = 25
+    msg.temperature = 22
     msg.humidity = 10
     pub.publish(msg)
     time.sleep(1)

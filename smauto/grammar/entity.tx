@@ -5,12 +5,18 @@ Entity:
     'Entity'
         (
         'name:' name=ID
+        'type:' etype=EntityType
         'topic:' topic=STRING
         'broker:' broker=[Broker]
         'attributes:'
                 attributes*=Attribute
         )#
     'end'
+;
+
+EntityType:
+    'sensor' |
+    'actuator'
 ;
 
 Attribute:

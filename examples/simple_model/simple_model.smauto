@@ -13,6 +13,7 @@ end
 
 Entity
     name: weather_station
+    type: sensor
     topic: "porch.weather_station"
     broker: home_mqtt_broker
     attributes:
@@ -21,9 +22,9 @@ Entity
         - airQuality: float
 end
 
-
 Entity
     name: aircondition
+    type: actuator
     topic: "bedroom.aircondition"
     broker: home_mqtt_broker
     attributes:
@@ -37,7 +38,7 @@ end
 Automation
     name: start_aircondition
     condition:
-        (weather_station.temperature > 32) AND (weather_station.humidity > 30)
+        (weather_station.temperature > 30) AND (weather_station.humidity > 30)
     enabled: true
     continuous: true
     actions:
@@ -49,8 +50,7 @@ end
 Automation
     name: stop_aircondition
     condition:
-            (weather_station.temperature < 30) AND
-            (weather_station.humidity < 20)
+        (weather_station.temperature < 25) AND (weather_station.humidity < 20)
     enabled: true
     continuous: true
     actions:

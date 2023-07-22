@@ -38,7 +38,7 @@ class Entity:
 
     """
 
-    def __init__(self, parent, name, topic, broker, attributes):
+    def __init__(self, parent, name, etype, topic, broker, attributes):
         """
         Creates and returns an Entity object
         :param name: Entity name. e.g: 'temperature_sensor'
@@ -50,19 +50,15 @@ class Entity:
         """
         # TextX parent attribute. Required to use Entity as a custom class during metamodel instantiation
         self.parent = parent
-
         # Entity name
         self.name = name
-
+        self.etype = etype
         # MQTT topic for Entity
         self.topic = topic
-
         # Entity state
         self.state = {}
-
         # Set Entity's MQTT Broker
         self.broker = broker
-
         # Entity's Attributes
         self.attributes = attributes
 
@@ -100,7 +96,6 @@ class Entity:
         """
         # Update state
         self.state = new_state
-
         # Update attributes based on state
         self.update_attributes(self.attributes_dict, new_state)
 
@@ -127,6 +122,7 @@ class Attribute:
 class IntAttribute(Attribute):
     def __init__(self, parent, name):
         super().__init__(parent, name)
+        self.type = 'int'
         if self.value is None:
             self.value = 0
 
@@ -134,6 +130,7 @@ class IntAttribute(Attribute):
 class FloatAttribute(Attribute):
     def __init__(self, parent, name):
         super().__init__(parent, name)
+        self.type = 'float'
         if self.value is None:
             self.value = 0.0
 
@@ -141,6 +138,7 @@ class FloatAttribute(Attribute):
 class StringAttribute(Attribute):
     def __init__(self, parent, name):
         super().__init__(parent, name)
+        self.type = 'str'
         if self.value is None:
             self.value = ""
 
@@ -148,6 +146,7 @@ class StringAttribute(Attribute):
 class BoolAttribute(Attribute):
     def __init__(self, parent, name):
         super().__init__(parent, name)
+        self.type = 'bool'
         if self.value is None:
             self.value = False
 
@@ -155,6 +154,7 @@ class BoolAttribute(Attribute):
 class ListAttribute(Attribute):
     def __init__(self, parent, name):
         super().__init__(parent, name)
+        self.type = 'list'
         if self.value is None:
             self.value = []
 
@@ -163,6 +163,7 @@ class DictAttribute(Attribute):
     def __init__(self, parent, name, items):
         # Create dictionary structure from items
         value = {item.name: item for item in items}
+        self.type = "dict"
         super().__init__(parent, name, value=value)
         self.items = items
         if self.items is None:

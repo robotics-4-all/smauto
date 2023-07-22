@@ -1,8 +1,10 @@
 import click
+from rich import print
 
 from smauto.interpreter import execute_model_from_path
 from smauto.generator import generate_automation_graph_from_file
 from smauto.language import build_model
+from smauto.transformations import model_to_vnodes
 
 
 @click.group()
@@ -35,6 +37,21 @@ def interpret(ctx, model_path):
 @click.argument('model_path')
 def graph(ctx, model_path):
     generate_automation_graph_from_file(model_path)
+
+
+@cli.command('generate',
+             help='Entities to Code - Generate executable virtual entities')
+@click.pass_context
+@click.argument('model_path')
+def generate(ctx, model_path):
+    vnodes = model_to_vnodes(model_path)
+    # return
+    for vn in vnodes:
+        filepath = f'{vn[0].name}.py'
+        with open(filepath, 'w') as fp:
+            fp.write(vn[1])
+        print(f'[*] Compiled virtual Entity: [bold]{filepath}')
+
 
 
 def main():
