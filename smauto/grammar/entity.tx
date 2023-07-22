@@ -28,11 +28,11 @@ NumericAttribute:
 ;
 
 IntAttribute:
-    '-' name=ID ':' 'int' ('with' generator=AttrValueGen)?
+    '-' name=ID ':' 'int' ('->' generator=AttrValueGen)?
 ;
 
 FloatAttribute:
-    '-' name=ID ':' 'float' ('with' generator=AttrValueGen)?
+    '-' name=ID ':' 'float' ('->' generator=AttrValueGen)?
 ;
 
 StringAttribute:

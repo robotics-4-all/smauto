@@ -17,9 +17,9 @@ Entity
     topic: "porch.weather_station"
     broker: home_mqtt_broker
     attributes:
-        - temperature: float with uniform(10, 40)
-        - humidity: float with uniform(10, 40)
-        - airQuality: float with linear(0, 1, 0.1)
+        - temperature: float -> uniform(10, 40)
+        - humidity: float -> uniform(10, 40)
+        - airQuality: float -> linear(0, 1, 0.1)
 end
 
 Entity
