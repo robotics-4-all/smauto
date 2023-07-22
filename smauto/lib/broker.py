@@ -1,6 +1,5 @@
-from commlib.transports.mqtt import ConnectionParameters as MQTT_ConnectionParameters, Credentials as MQTT_Credentials
-from commlib.transports.amqp import ConnectionParameters as AMQP_ConnectionParameters, Credentials as AMQP_Credentials
-from commlib.transports.redis import ConnectionParameters as Redis_ConnectionParameters, Credentials as Redis_Credentials
+from commlib.transports.amqp import ConnectionParameters as AMQP_ConnectionParameters
+from commlib.transports.redis import ConnectionParameters as Redis_ConnectionParameters
 
 # An index of all current MQTT Brokers {'broker_name': broker_object}. Gets populated by Broker's __init()__.
 broker_index = {}
@@ -49,17 +48,19 @@ class Broker:
         self.host = host
         self.port = port
         self.credentials = credentials
-        
+
 
 class MQTTBroker(Broker):
-    
     def __init__(self, parent, name, host, port, credentials):
-        
         super(MQTTBroker, self).__init__(parent, name, host, port, credentials)
-
-        # Create commlib-py Credentials and ConnectionParameters objects for MQTT
-        self.credentials = MQTT_Credentials(self.credentials.username, self.credentials.password)
-        self.conn_params = MQTT_ConnectionParameters(host=self.host, port=self.port, creds=self.credentials)
+        # lazy import
+        from commlib.transports.mqtt import ConnectionParameters
+        self.conn_params = ConnectionParameters(
+            host=self.host,
+            port=self.port,
+            username=self.credentials.username,
+            password=self.credentials.password,
+        )
 
 
 class AMQPBroker(Broker):

@@ -98,7 +98,6 @@ class Entity:
         :param new_state: Dictionary containing the Entity's state
         :return:
         """
-
         # Update state
         self.state = new_state
 

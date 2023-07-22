@@ -97,12 +97,15 @@ class Automation:
         """
         Creates and returns an Automation object
         :param name: Automation name. e.g: 'open_lights'
-        :param enabled: Whether the automation should be evaluated or not. e.g: True->Enabled, False->Disabled
-        :param condition: A condition object evaluated to determine if the Automation's actions should be executed
-        :param actions: List of Action objects to be executed upon successful condition evaluation
-        :param continuous: Boolean variable indicating if the Automation should remain enabled after actions are run
+        :param enabled: Whether the automation should be evaluated
+            or not. e.g: True->Enabled, False->Disabled
+        :param condition: A condition object evaluated to determine if
+            the Automation's actions should be executed
+        :param actions: List of Action objects to be executed upon successful
+            condition evaluation
+        :param continuous: Boolean variable indicating if the Automation
+            should remain enabled after actions are run
         """
-        # TextX parent attribute. Required to use Automation as a custom class during metamodel instantiation
         self.parent = parent
         # Automation name
         self.name = name
@@ -121,8 +124,11 @@ class Automation:
     # Evaluate the Automation's conditions and run the actions
     def evaluate(self):
         """
-            Evaluates the Automation's conditions if enabled is True and returns the result and the activation message.
-        :return: (Boolean showing the evaluation's success, A string message regarding evaluation's status)
+            Evaluates the Automation's conditions if enabled is
+            True and returns the result and the activation message.
+
+        :return: (Boolean showing the evaluation's success,
+            A string message regarding evaluation's status)
         """
         # Check if condition has been build using build_expression
         if self.enabled:
@@ -220,6 +226,8 @@ class Automation:
                 dep.automation.name for dep in self.dependsOn
                 if dep.automation.state == AutomationState.RUNNING
             ]
+            if len(wait_for) == 0:
+                self.state = AutomationState.RUNNING
             print(
                 f'[bold magenta]\[{self.name}] Waiting for dependend '
                 f'automations to finish:[/bold magenta] {wait_for}'
