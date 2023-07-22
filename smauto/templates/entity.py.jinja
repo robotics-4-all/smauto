@@ -86,7 +86,6 @@ class {{ entity.name.capitalize() }}Node(Node):
             val = {{ attr.generator.from }}
         else:
             val = self._{{ attr.name }} + {{ attr.generator.step }}
-        self._{{ attr.name }} = val
         if val > {{ attr.generator.to }}:
             val = {{ attr.generator.from }}
         self._{{ attr.name }} = val

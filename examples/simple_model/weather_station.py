@@ -56,7 +56,6 @@ class Weather_stationNode(Node):
             val = 0
         else:
             val = self._airQuality + 0.1
-        self._airQuality = val
         if val > 1:
             val = 0
         self._airQuality = val
