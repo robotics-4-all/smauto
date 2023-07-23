@@ -24,7 +24,7 @@ cd smauto-dsl
 pip install .
 ```
 
-## SmartAutomation (smauto) Metamodel
+## SmAuto Language
 
 The Metamodel of SmAuto DSL can be found [here](assets/images/smauto.png).
 
@@ -34,8 +34,10 @@ The main concepts of the language are:
 - Broker
 - Entity
 - Automation
+- Condition
+- Action
 
-A SmartAutomation model is composed of `one-or-more` brokers, `*` entities and
+An SmAuto model is composed of `one-or-more` brokers, `*` entities and
 `*` automations.
 
 Each one of the main concepts define an internal metamodel. Below are the metamodel
@@ -48,35 +50,37 @@ diagrams of each of the Broker, Entity and Automation concepts.
 ![AutomationMetamodel](assets/images/automation.png)
 
 
-## Write SmartAutomation Models
+## Write SmAuto Models
 
-A SmartAutomation Model contains information about the various devices in
+An SmAuto Model contains information about the various devices in
 the smart environment (e.g: lights, thermostats, smart fridges etc.),
 the way they communicate and all the automated tasks you want them to perform.
 
-The core concepts of smauto metamodel are the Entities, the Brokers and the Automations.
+The core concepts of SmAuto metamodel are the Entities, the Brokers and the Automations.
 
 Bellow is a simple example  model in which the air conditioner is turned on according to the
 temperature and humidity measurements:
 
-```yaml
-mqtt:
+```
+Broker<MQTT>
     name: home_broker
     host: "localhost"
     port: 1883
     credentials:
         username: "george"
         password: "georgesPassword"
+end
 
-entity:
+Entity
     name: weather_station
     topic: "porch.weather_station"
     broker: home_broker
     attributes:
         - temperature: float
         - humidity: int
+end
           
-entity:
+Entity
     name: aircondition
     topic: "bedroom.aircondition"
     broker: home_broker
@@ -84,17 +88,22 @@ entity:
         - temperature: float
         - mode: string
         - on: bool
+end
   
-automation:
+Automation
     name: start_aircondition
-    condition: ((weather_station.temperature > 32) AND (weather_station.humidity > 30)) AND (aircondition.on NOT true)
+    condition: 
+        (
+            (weather_station.temperature > 32) AND 
+            (weather_station.humidity > 30)
+        ) AND (aircondition.on NOT true)
     enabled: true
     continuous: false
     actions:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
         - aircondition.on:  true
-
+end
 ```
 
 For more in-depth description of this example head to the `examples/simple_model`
@@ -112,7 +121,7 @@ messages the Entity sends via the Broker.
 You can configure an Entity  using the following syntax:
 
 ```yaml
-entity:
+Entity
     name: robot_cleaner
     topic: "bedroom.robot_cleaner"
     broker: upstairs_broker
@@ -125,6 +134,7 @@ entity:
             - x: int,
             - y: int
         }
+end
 ```
 
 
@@ -147,17 +157,18 @@ its own Topic which is basically a mailbox for sending and receiving messages.
 SmartAutomation DSL supports Brokers which support the MQTT, AMQP and Redis
 protocols. You can define a Broker using the syntax in the following example:
 
-```yaml
-mqtt:
+```
+Broker<MQTT>
     name: upstairs_broker
     host: "localhost"
     port: 1883
     credentials:
         username: "my_username"
         password: "my_password"
+end
 ```
 
-- type: The first line can be mqtt, amqp or redis according to the Broker type
+- type: The first line can be `MQTT`, `AMQP` or `Redis` according to the Broker type
 - host: Host IP address or hostname for the Broker
 - port: Broker Port number
 - vhost: Vhost parameter. Only for AMQP brokers
@@ -175,16 +186,21 @@ Actions are performed by sending messages to Entities.
 
 You can define an Automation using the syntax in the following example:
 
-```yaml
-automation:
+```
+Automation
     name: start_aircondition
-    condition: ((thermometer.temperature > 32) AND (humidity.humidity > 30)) AND (aircondition.on NOT true)
+    condition: 
+        (
+            (thermometer.temperature > 32) AND 
+            (humidity.humidity > 30)
+        ) AND (aircondition.on NOT true)
     enabled: true
     continuous: false
     actions:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
         - aircondition.on:  true
+end
 ```
 
 - name: The name for the Automation. Should start with a letter, can contain only letters, numbers and underscores.
@@ -192,6 +208,9 @@ automation:
 - enabled: Whether the Automation should be run or not.
 - continuous: Whether the Automation should automatically remain enabled once its actions have been executed.
 - actions: The actions that should be run once the condition is met. See Writing Actions for more information.
+- dependsOn: Other automations which depends on. The automation will not start
+    and will be hold at the IDLE state until termination of the automations
+    listed here as dependencies.
 
 
 ### Conditions
@@ -206,7 +225,8 @@ entity_name.attribute_name
 
 #### Condition Formatting:
 
-You can combine two conditions into a more complex one using logical operators. A Condition looks like this:
+You can combine two conditions into a more complex one using logical operators.
+The general format of the Condition is:
 
 `(condition_1) LOGICAL_OP (condition_2)`
 
@@ -261,7 +281,7 @@ Actions must be separated by a comma and a change of line (newline).
 ```yaml
 - aircondition.temperature: 25,
 - aircondition.mode: "cool",
-- aircondition.on: true
+- aircondition.power: true
 ```
 
 
