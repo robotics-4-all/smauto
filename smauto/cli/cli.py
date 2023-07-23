@@ -40,7 +40,8 @@ def interpret(ctx, model_path):
     execute_model_from_path(model_path)
 
 
-@cli.command(help='Graph generator - Generate automation visualization graphs')
+@cli.command('graph',
+             help='Graph generator - Generate automation visualization graphs')
 @click.pass_context
 @click.argument('model_path')
 def graph(ctx, model_path):
@@ -60,6 +61,14 @@ def generate(ctx, model_path):
             fp.write(vn[1])
             make_executable(filepath)
         print(f'[*] Compiled virtual Entity: [bold]{filepath}')
+
+
+@cli.command('server',
+             help='Run the REST Api Server')
+@click.pass_context
+def api_server(ctx):
+    from smauto.api.api import api
+    api.run()
 
 
 def main():
