@@ -138,14 +138,14 @@ end
 ```
 
 
-- name: The name for the Entity. Should start with a letter, can contain only
+- **name**: The name for the Entity. Should start with a letter, can contain only
 letters, numbers and underscores.
-- topic: The Topic in the Broker used by the Entity to send and receive
+- **topic**: The Topic in the Broker used by the Entity to send and receive
 messages. Note that / should be substituted with .
 (e.g: bedroom/aircondition -> bedroom.aircondition).
-- broker: The name property of a previously defined Broker which the
+- **broker**: The name property of a previously defined Broker which the
 Entity uses to communicate.
-- attributes: Attributes have a name and a type. As can be seen in the above
+- **attributes**: Attributes have a name and a type. As can be seen in the above
 example, HA-Auto supports int, float, string, bool, list and dictionary types.
 Note that nested dictionaries are also supported.
 
@@ -168,15 +168,15 @@ Broker<MQTT>
 end
 ```
 
-- type: The first line can be `MQTT`, `AMQP` or `Redis` according to the Broker type
-- host: Host IP address or hostname for the Broker
-- port: Broker Port number
-- vhost: Vhost parameter. Only for AMQP brokers
-- exchange: (Optional) Exchange parameter. Only for AMQP brokers.
-- credentials:
-    - username: Username used for authentication
-    - password: Password used for authentication
-- db: (Optional) Database number parameter. Only for Redis brokers.
+- **type**: The first line can be `MQTT`, `AMQP` or `Redis` according to the Broker type
+- **host**: Host IP address or hostname for the Broker
+- **port**: Broker Port number
+- **vhost**: Vhost parameter. Only for AMQP brokers
+- **exchange**: (Optional) Exchange parameter. Only for AMQP brokers.
+- **credentials**:
+    - **username**: Username used for authentication
+    - **password**: Password used for authentication
+- **db**: (Optional) Database number parameter. Only for Redis brokers.
 
 
 ## Automations
@@ -203,12 +203,12 @@ Automation
 end
 ```
 
-- name: The name for the Automation. Should start with a letter, can contain only letters, numbers and underscores.
-- condition: The condition used to determine if actions should be run. See Writing Conditions for more information.
-- enabled: Whether the Automation should be run or not.
-- continuous: Whether the Automation should automatically remain enabled once its actions have been executed.
-- actions: The actions that should be run once the condition is met. See Writing Actions for more information.
-- dependsOn: Other automations which depends on. The automation will not start
+- **name**: The name for the Automation. Should start with a letter, can contain only letters, numbers and underscores.
+- **condition**: The condition used to determine if actions should be run. See Writing Conditions for more information.
+- **enabled**: Whether the Automation should be run or not.
+- **continuous**: Whether the Automation should automatically remain enabled once its actions have been executed.
+- **actions**: The actions that should be run once the condition is met. See Writing Actions for more information.
+- **dependsOn**: Other automations which depends on. The automation will not start
     and will be hold at the IDLE state until termination of the automations
     listed here as dependencies.
 
