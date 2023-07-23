@@ -12,7 +12,6 @@ from commlib.node import Node
 pretty.install()
 console = console.Console()
 
-
 class WindowMsg(PubSubMessage):
         state: bool = False
 

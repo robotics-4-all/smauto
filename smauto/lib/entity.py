@@ -52,6 +52,7 @@ class Entity:
         self.parent = parent
         # Entity name
         self.name = name
+        self.camel_name = self.to_camel_case(name)
         self.etype = etype
         # MQTT topic for Entity
         self.topic = topic
@@ -61,14 +62,19 @@ class Entity:
         self.broker = broker
         # Entity's Attributes
         self.attributes = attributes
-
         # Attributes Dictionary
         self.attributes_dict = {attribute.name: attribute for attribute in self.attributes}
 
-        # Inspect Attributes and if an attribute is a DictAttribute, create its items dictionary for easy updating
+        # Inspect Attributes and if an attribute is a DictAttribute,
+        # create its items dictionary for easy updating
         for attr_name, attribute in self.attributes_dict.items():
             if type(attribute) is DictAttribute:
-                attribute.items_dict = {item.name: item for item in attribute.items}
+                attribute.items_dict = {
+                    item.name: item for item in attribute.items
+                }
+
+    def to_camel_case(self, snake_str):
+        return "".join(x.capitalize() for x in snake_str.lower().split("_"))
 
     def start(self):
         # Create and start communications subscriber on Entity's topic

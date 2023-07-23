@@ -12,14 +12,13 @@ from commlib.node import Node
 pretty.install()
 console = console.Console()
 
-
-class Weather_stationMsg(PubSubMessage):
+class WeatherStationMsg(PubSubMessage):
         temperature: float = 0.0
         humidity: float = 0.0
         airQuality: float = 0.0
 
 
-class Weather_stationNode(Node):
+class WeatherStationNode(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = 1
         self.topic = 'porch.weather_station'
@@ -35,7 +34,7 @@ class Weather_stationNode(Node):
             *args, **kwargs
         )
         self.pub = self.create_publisher(
-            msg_type=Weather_stationMsg,
+            msg_type=WeatherStationMsg,
             topic=self.topic
         )
 
@@ -49,7 +48,7 @@ class Weather_stationNode(Node):
             rate.sleep()
 
     def gen_data(self):
-        msg = Weather_stationMsg()
+        msg = WeatherStationMsg()
         msg.temperature = random.uniform(10, 40)
         msg.humidity = random.uniform(10, 40)
         if not hasattr(self, "_airQuality"):
@@ -64,5 +63,5 @@ class Weather_stationNode(Node):
 
 
 if __name__ == '__main__':
-    node = Weather_stationNode()
+    node = WeatherStationNode()
     node.start()

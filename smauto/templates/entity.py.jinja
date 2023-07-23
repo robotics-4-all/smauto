@@ -14,8 +14,7 @@ from commlib.node import Node
 pretty.install()
 console = console.Console()
 
-
-class {{ entity.name.capitalize() }}Msg(PubSubMessage):
+class {{ entity.camel_name }}Msg(PubSubMessage):
     {% for a in entity.attributes %}
     {% if a.type == "str" %}
         {{ a.name }}: {{ a.type }} = '{{ a.value }}'
@@ -25,7 +24,7 @@ class {{ entity.name.capitalize() }}Msg(PubSubMessage):
     {% endfor %}
 
 
-class {{ entity.name.capitalize() }}Node(Node):
+class {{ entity.camel_name }}Node(Node):
     def __init__(self, *args, **kwargs):
     {% if entity.etype == 'actuator' %}
         self.tick_hz = 1
@@ -46,7 +45,7 @@ class {{ entity.name.capitalize() }}Node(Node):
         )
     {% if entity.etype == 'actuator' %}
         self.sub = self.create_subscriber(
-            msg_type={{ entity.name.capitalize() }}Msg,
+            msg_type={{ entity.camel_name }}Msg,
             topic=self.topic,
             on_message=self._on_message
         )
@@ -61,7 +60,7 @@ class {{ entity.name.capitalize() }}Node(Node):
         print(f'[*] State change command received: {msg}')
     {% elif entity.etype == 'sensor' %}
         self.pub = self.create_publisher(
-            msg_type={{ entity.name.capitalize() }}Msg,
+            msg_type={{ entity.camel_name }}Msg,
             topic=self.topic
         )
 
@@ -75,7 +74,7 @@ class {{ entity.name.capitalize() }}Node(Node):
             rate.sleep()
 
     def gen_data(self):
-        msg = {{ entity.name.capitalize() }}Msg()
+        msg = {{ entity.camel_name }}Msg()
         {% for attr in entity.attributes %}
         {% if attr.generator.__class__.__name__ == 'UniformGen' %}
         msg.{{ attr.name }} = random.uniform({{ attr.generator.from }}, {{ attr.generator.to }})
@@ -97,5 +96,5 @@ class {{ entity.name.capitalize() }}Node(Node):
     {% endif %}
 
 if __name__ == '__main__':
-    node = {{ entity.name.capitalize() }}Node()
+    node = {{ entity.camel_name }}Node()
     node.start()

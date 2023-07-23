@@ -12,7 +12,6 @@ from commlib.node import Node
 pretty.install()
 console = console.Console()
 
-
 class AirconditionMsg(PubSubMessage):
         power: bool = False
         temperature: float = 0.0

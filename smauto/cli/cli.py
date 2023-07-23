@@ -20,7 +20,7 @@ def cli(ctx):
     ctx.ensure_object(dict)
 
 
-@cli.command(help='Validator')
+@cli.command('validate', help='Model Validation')
 @click.pass_context
 @click.argument('model_path')
 def validate(ctx, model_path):
@@ -32,7 +32,8 @@ def validate(ctx, model_path):
         print(str(e))
 
 
-@cli.command(help='Interpreter - Dynamically execute models')
+@cli.command('interpret',
+             help='Interpreter - Dynamically execute models')
 @click.pass_context
 @click.argument('model_path')
 def interpret(ctx, model_path):
@@ -59,7 +60,6 @@ def generate(ctx, model_path):
             fp.write(vn[1])
             make_executable(filepath)
         print(f'[*] Compiled virtual Entity: [bold]{filepath}')
-
 
 
 def main():
