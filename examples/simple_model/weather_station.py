@@ -43,7 +43,7 @@ class WeatherStationNode(Node):
         rate = Rate(self.pub_freq)
         while True:
             msg = self.gen_data()
-            print(f'[Entity - weather_station] Sending data: {msg}')
+            print(f'[bold]\[weather_station][/bold] Sending data: {msg}')
             self.pub.publish(msg)
             rate.sleep()
 

@@ -69,7 +69,7 @@ class {{ entity.camel_name }}Node(Node):
         rate = Rate(self.pub_freq)
         while True:
             msg = self.gen_data()
-            print(f'[Entity - {{ entity.name }}] Sending data: {msg}')
+            print(f'[bold]\[{{ entity.name }}][/bold] Sending data: {msg}')
             self.pub.publish(msg)
             rate.sleep()
 
