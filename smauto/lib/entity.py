@@ -1,3 +1,4 @@
+from collections import deque
 from commlib.endpoints import endpoint_factory, EndpointType, TransportType
 
 from .broker import MQTTBroker, AMQPBroker, RedisBroker
@@ -64,6 +65,7 @@ class Entity:
         self.attributes = attributes
         # Attributes Dictionary
         self.attributes_dict = {attribute.name: attribute for attribute in self.attributes}
+        self.attributes_buff = {attribute.name: None for attribute in self.attributes}
 
         # Inspect Attributes and if an attribute is a DictAttribute,
         # create its items dictionary for easy updating
@@ -72,6 +74,17 @@ class Entity:
                 attribute.items_dict = {
                     item.name: item for item in attribute.items
                 }
+
+    def get_buffer(self, attr_name):
+        if len(self.attributes_buff[attr_name]) != \
+            self.attributes_buff[attr_name].maxlen:
+            return [0] * self.attributes_buff[attr_name].maxlen
+        else:
+            return self.attributes_buff[attr_name]
+
+    def init_attr_buffer(self, attr_name, size):
+        self.attributes_buff[attr_name] = deque(maxlen=size)
+        # self.attributes_buff[attr_name].extend([0] * size)
 
     def to_camel_case(self, snake_str):
         return "".join(x.capitalize() for x in snake_str.lower().split("_"))
@@ -104,10 +117,27 @@ class Entity:
         self.state = new_state
         # Update attributes based on state
         self.update_attributes(self.attributes_dict, new_state)
+        self.update_buffers(self.attributes_buff, new_state)
 
-    # Recursive function used by update_state() mainly to updated dictionaries/objects and normal Attributes
+    @staticmethod
+    def update_buffers(root, state_dict):
+        """
+        Recursive function used by update_state() mainly to updated
+            dictionaries/objects and normal Attributes.
+        """
+        # Update attributes
+        for attribute, value in state_dict.items():
+
+            # If value is a dictionary, also update the Dict's subattributes/items
+            if root[attribute] is not None:
+                root[attribute].append(value)
+
     @staticmethod
     def update_attributes(root, state_dict):
+        """
+        Recursive function used by update_state() mainly to updated
+            dictionaries/objects and normal Attributes.
+        """
         # Update attributes
         for attribute, value in state_dict.items():
 

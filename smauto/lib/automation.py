@@ -1,8 +1,9 @@
 from textx import textx_isinstance, get_metamodel
 import time
-from rich import print, pretty, inspect, console
+from rich import print, pretty
+import statistics
+
 pretty.install()
-console = console.Console()
 
 
 # List of primitive types that can be directly printed
@@ -53,11 +54,26 @@ def transform_operand(node):
         node,
         get_metamodel(node).namespaces['automation']['AugmentedNumericAttr']
         ):
-        val = f"model.entities_dict['{node.attribute.parent.name}']." + \
-                f"attributes_dict['{node.attribute.name}'].value"
+        if node.__class__.__name__ == 'StdAttr':
+            node.attribute.parent.init_attr_buffer(node.attribute.name,
+                                                   node.size)
+            val = f"entities['{node.attribute.parent.name}']." + \
+                    f"get_buffer('{node.attribute.name}')"
+                    # f"attributes_buff['{node.attribute.name}']"
+            val = f"std({val})"
+        elif node.__class__.__name__ == 'MeanAttr':
+            node.attribute.parent.init_attr_buffer(node.attribute.name,
+                                                   node.size)
+            val = f"entities['{node.attribute.parent.name}']." + \
+                    f"get_buffer('{node.attribute.name}')"
+                    # f"attributes_buff['{node.attribute.name}']"
+            val = f"mean({val})"
+        else:
+            val = f"entities['{node.attribute.parent.name}']." + \
+                    f"attributes_dict['{node.attribute.name}'].value"
         return val
     else:
-        val = f"model.entities_dict['{node.parent.name}']." + \
+        val = f"entities['{node.parent.name}']." + \
                 f"attributes_dict['{node.name}'].value"
         return val
 
@@ -135,9 +151,21 @@ class Automation:
         if self.enabled:
             if hasattr(self.condition, 'cond_lambda'):
                 # Evaluate condition providing the textX model as global context for evaluation
-                if eval(self.condition.cond_lambda, {'model': self.parent}):
-                    return True, f"{self.name}: triggered."
-                else:
+                try:
+                    if eval(
+                        self.condition.cond_lambda,
+                        {
+                            'entities': self.parent.entities_dict
+                        },
+                        {
+                            'std': statistics.stdev,
+                            'mean': statistics.mean,
+                        }
+                    ):
+                        return True, f"{self.name}: triggered."
+                    else:
+                        return False, f"{self.name}: not triggered."
+                except Exception as e:
                     return False, f"{self.name}: not triggered."
             else:
                 return False, f"{self.name}: condition not built. Please build using build_expression."
@@ -238,12 +266,13 @@ class Automation:
             try:
                 triggered, _ = self.evaluate()
             except Exception as e:
-                print(e)
+                print(f'[ERROR] {e}')
                 return
             # Check if action is triggered
             if triggered:
                 print(f"[bold yellow][*] Automation <{self.name}> "
                       f"Triggered![/bold yellow]")
+                print(f"[bold blue][*] Condition met: {self.condition.cond_lambda}")
                 # If automation triggered run its actions
                 self.trigger()
                 self.state = AutomationState.EXITED_SUCCESS
