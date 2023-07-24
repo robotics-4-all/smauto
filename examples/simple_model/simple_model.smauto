@@ -1,39 +1,123 @@
-name: SimpleHomeAutomation
-version: "0.1.0"
-description: "Simple home automation model."
+Metadata
+    name: SimpleHomeAutomation
+    version: "0.1.0"
+    description: "Simple home automation model."
+    author: "klpanagi"
+    email: "klpanagi@gmail.com"
+end
 
-mqtt:
-    name: home_broker
+Broker<MQTT>
+    name: home_mqtt_broker
     host: "localhost"
     port: 1883
     credentials:
-        username: "george"
-        password: "georgesPassword"
+        username: ""
+        password: ""
+end
 
-entity:
+Entity
     name: weather_station
+    type: sensor
     topic: "porch.weather_station"
-    broker: home_broker
+    broker: home_mqtt_broker
     attributes:
-        - temperature: float
-        - humidity: int
+        - temperature: float -> uniform(10, 40)
+        - humidity: float -> uniform(10, 40)
+        - airQuality: float -> linear(0, 1, 0.1)
+end
 
-entity:
+Entity
     name: aircondition
+    type: actuator
     topic: "bedroom.aircondition"
-    broker: home_broker
+    broker: home_mqtt_broker
     attributes:
+        - power: bool
         - temperature: float
-        - mode: string
-        - on: bool
+        - swing: bool
+        - mode: str
+end
 
-automation:
+Entity
+    name: window
+    type: actuator
+    topic: "bedroom.window"
+    broker: home_mqtt_broker
+    attributes:
+        - state: bool
+end
+
+
+Automation
     name: start_aircondition
-    condition: ((weather_station.temperature > 32) AND (weather_station.humidity > 30)) AND (aircondition.on NOT true)
+    condition:
+        (weather_station.temperature > 30) AND (weather_station.humidity > 30)
+    enabled: true
+    continuous: true
+    actions:
+        - aircondition.temperature:  25.0
+        - aircondition.mode:  "cool"
+        - aircondition.power:  true
+        - window.state:  false
+end
+
+Automation
+    name: stop_aircondition
+    condition:
+        (weather_station.temperature < 25) AND (weather_station.humidity < 20)
+    enabled: true
+    continuous: true
+    actions:
+        - aircondition.power:  false
+    dependsOn:
+        - start_aircondition
+end
+
+/*
+Automation
+    name: start_aircondition
+    condition:
+        (
+            (std(weather_station.temperature, 10) > 32) AND
+            (mean(weather_station.humidity, 10) > 30)
+        ) AND
+        (aircondition.on NOT true)
+    enabled: true
+    continuous: true
+    actions:
+        - aircondition.temperature:  25.0
+        - aircondition.mode:  "cool"
+        - aircondition.power:  true
+end
+
+Automation
+    name: start_aircondition
+    condition:
+        (
+            (weather_station.temperature > 32) AND
+            (weather_station.humidity > 30)
+        ) AND
+        (aircondition.power NOT true)
+    enabled: true
+    continuous: true
+    actions:
+        - aircondition.temperature:  25.0
+        - aircondition.mode:  "cool"
+        - aircondition.power:  true
+end
+
+
+Automation
+    name: start_aircondition_2
+    condition:
+        mul(weather_station.humidity,
+            weather_station.temperature,
+            weather_station.airQuality) > 30
     enabled: true
     continuous: true
     actions:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
         - aircondition.on:  true
-
+end
+*/

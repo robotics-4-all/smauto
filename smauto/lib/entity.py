@@ -38,7 +38,7 @@ class Entity:
 
     """
 
-    def __init__(self, parent, name, topic, broker, attributes):
+    def __init__(self, parent, name, etype, topic, broker, attributes):
         """
         Creates and returns an Entity object
         :param name: Entity name. e.g: 'temperature_sensor'
@@ -50,33 +50,37 @@ class Entity:
         """
         # TextX parent attribute. Required to use Entity as a custom class during metamodel instantiation
         self.parent = parent
-
         # Entity name
         self.name = name
-
+        self.camel_name = self.to_camel_case(name)
+        self.etype = etype
         # MQTT topic for Entity
         self.topic = topic
-
         # Entity state
         self.state = {}
-
         # Set Entity's MQTT Broker
         self.broker = broker
-
         # Entity's Attributes
         self.attributes = attributes
-
         # Attributes Dictionary
         self.attributes_dict = {attribute.name: attribute for attribute in self.attributes}
 
-        # Inspect Attributes and if an attribute is a DictAttribute, create its items dictionary for easy updating
+        # Inspect Attributes and if an attribute is a DictAttribute,
+        # create its items dictionary for easy updating
         for attr_name, attribute in self.attributes_dict.items():
             if type(attribute) is DictAttribute:
-                attribute.items_dict = {item.name: item for item in attribute.items}
+                attribute.items_dict = {
+                    item.name: item for item in attribute.items
+                }
 
+    def to_camel_case(self, snake_str):
+        return "".join(x.capitalize() for x in snake_str.lower().split("_"))
+
+    def start(self):
         # Create and start communications subscriber on Entity's topic
-        self.subscriber = endpoint_factory(EndpointType.Subscriber, broker_tt[type(self.broker)])(
-            topic=topic,
+        self.subscriber = endpoint_factory(
+            EndpointType.Subscriber, broker_tt[type(self.broker)])(
+            topic=self.topic,
             conn_params=self.broker.conn_params,
             on_message=self.update_state
         )
@@ -84,10 +88,8 @@ class Entity:
 
         # Create communications publisher on Entity's topic
         self.publisher = endpoint_factory(EndpointType.Publisher, broker_tt[type(self.broker)])(
-            topic=topic,
+            topic=self.topic,
             conn_params=self.broker.conn_params,
-            # TODO: Remove debug flag
-            debug=True
         )
 
     # Callback function for updating Entity state and triggering automations evaluation
@@ -98,10 +100,8 @@ class Entity:
         :param new_state: Dictionary containing the Entity's state
         :return:
         """
-
         # Update state
         self.state = new_state
-
         # Update attributes based on state
         self.update_attributes(self.attributes_dict, new_state)
 
@@ -126,15 +126,19 @@ class Attribute:
 
 
 class IntAttribute(Attribute):
-    def __init__(self, parent, name):
+    def __init__(self, parent, name, generator):
         super().__init__(parent, name)
+        self.generator = generator
+        self.type = 'int'
         if self.value is None:
             self.value = 0
 
 
 class FloatAttribute(Attribute):
-    def __init__(self, parent, name):
+    def __init__(self, parent, name, generator):
         super().__init__(parent, name)
+        self.generator = generator
+        self.type = 'float'
         if self.value is None:
             self.value = 0.0
 
@@ -142,6 +146,7 @@ class FloatAttribute(Attribute):
 class StringAttribute(Attribute):
     def __init__(self, parent, name):
         super().__init__(parent, name)
+        self.type = 'str'
         if self.value is None:
             self.value = ""
 
@@ -149,6 +154,7 @@ class StringAttribute(Attribute):
 class BoolAttribute(Attribute):
     def __init__(self, parent, name):
         super().__init__(parent, name)
+        self.type = 'bool'
         if self.value is None:
             self.value = False
 
@@ -156,6 +162,7 @@ class BoolAttribute(Attribute):
 class ListAttribute(Attribute):
     def __init__(self, parent, name):
         super().__init__(parent, name)
+        self.type = 'list'
         if self.value is None:
             self.value = []
 
@@ -164,6 +171,7 @@ class DictAttribute(Attribute):
     def __init__(self, parent, name, items):
         # Create dictionary structure from items
         value = {item.name: item for item in items}
+        self.type = "dict"
         super().__init__(parent, name, value=value)
         self.items = items
         if self.items is None:

@@ -1,10 +1,15 @@
 from textx import textx_isinstance, get_metamodel
+import time
+from rich import print, pretty, inspect, console
+pretty.install()
+console = console.Console()
+
 
 # List of primitive types that can be directly printed
-primitives = (int, float, str, bool)
+PRIMITIVES = (int, float, str, bool)
 
 # Lambdas used to build expression strings based on their corresponding operators
-operators = {
+OPERATORS = {
     # String operators
     '~': lambda left, right: f"({left} in {right})",
     '!~': lambda left, right: f"({left} not in {right})",
@@ -30,9 +35,9 @@ operators = {
 
 # Returns printed version of operand if operand is a primitive.
 # Else if attribute returns code pointing to the Attribute.
-def print_operand(node):
+def transform_operand(node):
     # If node is a primitive type return as is (if string, add quotation marks)
-    if type(node) in primitives:
+    if type(node) in PRIMITIVES:
         if type(node) is str:
             return f"'{node}'"
         else:
@@ -44,8 +49,24 @@ def print_operand(node):
     elif type(node) == Dict:
         return node
     # Node is an Attribute, print its full name including Entity
+    elif textx_isinstance(
+        node,
+        get_metamodel(node).namespaces['automation']['AugmentedNumericAttr']
+        ):
+        val = f"model.entities_dict['{node.attribute.parent.name}']." + \
+                f"attributes_dict['{node.attribute.name}'].value"
+        return val
     else:
-        return f"model.entities_dict['{node.parent.name}'].attributes_dict['{node.name}'].value"
+        val = f"model.entities_dict['{node.parent.name}']." + \
+                f"attributes_dict['{node.name}'].value"
+        return val
+
+
+class AutomationState:
+    IDLE = 0
+    RUNNING = 1
+    EXITED_SUCCESS = 2
+    EXITED_FAILURE = 3
 
 
 # A class representing an Automation
@@ -72,16 +93,20 @@ class Automation:
             update_state() function in the Entities listed in condition_entities upon them updating their states.
     """
 
-    def __init__(self, parent, name, condition, actions, enabled, continuous):
+    def __init__(self, parent, name, condition,
+                 actions, enabled, continuous, dependsOn):
         """
         Creates and returns an Automation object
         :param name: Automation name. e.g: 'open_lights'
-        :param enabled: Whether the automation should be evaluated or not. e.g: True->Enabled, False->Disabled
-        :param condition: A condition object evaluated to determine if the Automation's actions should be executed
-        :param actions: List of Action objects to be executed upon successful condition evaluation
-        :param continuous: Boolean variable indicating if the Automation should remain enabled after actions are run
+        :param enabled: Whether the automation should be evaluated
+            or not. e.g: True->Enabled, False->Disabled
+        :param condition: A condition object evaluated to determine if
+            the Automation's actions should be executed
+        :param actions: List of Action objects to be executed upon successful
+            condition evaluation
+        :param continuous: Boolean variable indicating if the Automation
+            should remain enabled after actions are run
         """
-        # TextX parent attribute. Required to use Automation as a custom class during metamodel instantiation
         self.parent = parent
         # Automation name
         self.name = name
@@ -94,12 +119,17 @@ class Automation:
         self.continuous = continuous
         # Action function
         self.actions = actions
+        self.dependsOn = dependsOn
+        self.state = AutomationState.IDLE
 
     # Evaluate the Automation's conditions and run the actions
     def evaluate(self):
         """
-            Evaluates the Automation's conditions if enabled is True and returns the result and the activation message.
-        :return: (Boolean showing the evaluation's success, A string message regarding evaluation's status)
+            Evaluates the Automation's conditions if enabled is
+            True and returns the result and the activation message.
+
+        :return: (Boolean showing the evaluation's success,
+            A string message regarding evaluation's status)
         """
         # Check if condition has been build using build_expression
         if self.enabled:
@@ -151,24 +181,73 @@ class Automation:
         metamodel = get_metamodel(self.parent)
 
         # If we are in a ConditionGroup node, recursively visit the left and right sides
-        if textx_isinstance(cond_node, metamodel.namespaces['automation']['ConditionGroup']):
+        if textx_isinstance(
+            cond_node, metamodel.namespaces['automation']['ConditionGroup']):
 
             # Visit left node
             self.process_node_condition(cond_node.r1)
             # Visit right node
             self.process_node_condition(cond_node.r2)
             # Build lambda
-            cond_node.cond_lambda = (operators[cond_node.operator])(cond_node.r1.cond_lambda, cond_node.r2.cond_lambda)
+            cond_node.cond_lambda = (OPERATORS[cond_node.operator])(cond_node.r1.cond_lambda, cond_node.r2.cond_lambda)
 
         # If we are in a primitive condition node, form conditions using operands
         else:
-            operand1 = print_operand(cond_node.operand1)
-            operand2 = print_operand(cond_node.operand2)
-            cond_node.cond_lambda = (operators[cond_node.operator])(operand1, operand2)
+            operand1 = transform_operand(cond_node.operand1)
+            operand2 = transform_operand(cond_node.operand2)
+            cond_node.cond_lambda = (OPERATORS[cond_node.operator])(operand1,
+                                                                    operand2)
 
-    # Builds Automation Condition into Python expression string so that it can later be evaluated using eval()
     def build_condition(self):
+        """Builds Automation Condition into Python expression string
+            so that it can later be evaluated using eval()
+        """
         self.process_node_condition(self.condition)
+
+
+    def print(self):
+        dependsOn = f'\n'.join(
+            [f"      - {dep.automation.name}" for dep in self.dependsOn])
+        print(
+            f"[*] Automation <{self.name}>\n"
+            f"    Condition: {self.condition.cond_lambda}\n"
+            f"    DependsOn:\n"
+            f"      {dependsOn}"
+        )
+
+    def start(self):
+        self.build_condition()
+        self.print()
+        if len(self.dependsOn) == 0:
+            self.state = AutomationState.RUNNING
+        # Wait for dependend automations to finish
+        while self.state == AutomationState.IDLE:
+            time.sleep(1)
+            wait_for = [
+                dep.automation.name for dep in self.dependsOn
+                if dep.automation.state == AutomationState.RUNNING
+            ]
+            if len(wait_for) == 0:
+                self.state = AutomationState.RUNNING
+            print(
+                f'[bold magenta]\[{self.name}] Waiting for dependend '
+                f'automations to finish:[/bold magenta] {wait_for}'
+            )
+        print(f"[bold yellow][*] Running Automation: {self.name}[/bold yellow]")
+        while self.state == AutomationState.RUNNING:
+            try:
+                triggered, _ = self.evaluate()
+            except Exception as e:
+                print(e)
+                return
+            # Check if action is triggered
+            if triggered:
+                print(f"[bold yellow][*] Automation <{self.name}> "
+                      f"Triggered![/bold yellow]")
+                # If automation triggered run its actions
+                self.trigger()
+                self.state = AutomationState.EXITED_SUCCESS
+            time.sleep(1)
 
 
 # List class for List type
@@ -177,16 +256,19 @@ class List:
         Attributes
     ----------
         items: list
-            Python list of items included in the List. Can be primitives or other List items
+            Python list of items included in the List.
+            Can be primitives or other List items
         parent: obj
             Reference to the parent element in the parsed textX hierarchy
 
     Methods
     -------
         __repr__():
-            Used to print out a string of the List with subList items also being printed out as strings
+            Used to print out a string of the List with subList
+            items also being printed out as strings
         print_item():
-            Static method used by __repr__() and called recursively to return a python list of sub-items.
+            Static method used by __repr__() and called recursively to
+            return a python list of sub-items.
     """
 
     def __init__(self, parent, items):
@@ -201,9 +283,11 @@ class List:
     @staticmethod
     def print_item(item):
         """
-        Static method used by __repr__() and called recursively to return a python list of sub-items.
+        Static method used by __repr__() and called recursively
+            to return a python list of sub-items.
         :param item: List or primitive item to open up
-        :return: Python list of primitives or python lists (previously sub-List items)
+        :return: Python list of primitives or python lists
+            (previously sub-List items)
         """
         # If item is a list return list of items printed out including sublists
         if type(item) == List:

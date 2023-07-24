@@ -2,14 +2,21 @@ import broker
 
 //TODO: Model mqtt topics?
 Entity:
-    'entity:'
+    'Entity'
         (
         'name:' name=ID
+        'type:' etype=EntityType
         'topic:' topic=STRING
         'broker:' broker=[Broker]
         'attributes:'
                 attributes*=Attribute
         )#
+    'end'
+;
+
+EntityType:
+    'sensor' |
+    'actuator'
 ;
 
 Attribute:
@@ -21,15 +28,15 @@ NumericAttribute:
 ;
 
 IntAttribute:
-    '-' name=ID ':' 'int'
+    '-' name=ID ':' 'int' ('->' generator=AttrValueGen)?
 ;
 
 FloatAttribute:
-    '-' name=ID ':' 'float'
+    '-' name=ID ':' 'float' ('->' generator=AttrValueGen)?
 ;
 
 StringAttribute:
-    '-' name=ID ':' 'string'
+    '-' name=ID ':' 'str'
 ;
 
 BoolAttribute:
@@ -44,4 +51,18 @@ DictAttribute:
     '-' name=ID ':' '{'
         items*=Attribute
         '}'
+;
+
+AttrValueGen: UniformGen | ConstantGen | LinearGen;
+
+UniformGen:
+    'uniform' '(' from=NUMBER ',' to=NUMBER ')'
+;
+
+ConstantGen:
+    'constant' '(' value=NUMBER ')'
+;
+
+LinearGen:
+    'linear' '(' from=NUMBER ',' to=NUMBER ',' step=NUMBER ')'
 ;

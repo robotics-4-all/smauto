@@ -36,13 +36,15 @@ CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 
 def get_metamodel():
     metamodel = metamodel_from_file(
-        CURRENT_FPATH.joinpath('lang/smauto.tx'),
-        classes=[Entity, Attribute, IntAttribute, FloatAttribute,
-                 StringAttribute, BoolAttribute, ListAttribute,
-                 DictAttribute, Broker, MQTTBroker, AMQPBroker,
-                 RedisBroker, BrokerAuthPlain, Automation, Action,
-                 IntAction, FloatAction, StringAction, BoolAction,
-                 List, Dict]
+        CURRENT_FPATH.joinpath('grammar/smauto.tx'),
+        classes=[
+            Entity, Attribute, IntAttribute, FloatAttribute,
+            StringAttribute, BoolAttribute, ListAttribute,
+            DictAttribute, Broker, MQTTBroker, AMQPBroker,
+            RedisBroker, BrokerAuthPlain, Automation, Action,
+            IntAction, FloatAction, StringAction, BoolAction,
+            List, Dict
+        ]
     )
     return metamodel
 
@@ -54,6 +56,6 @@ def build_model(model_path):
 
 
 @language('smauto', '*.smauto')
-def language():
-    "SmartAutomation (smauto) language"
+def smauto_language():
+    "SmartAutomation (SmAuto) language"
     return get_metamodel()
