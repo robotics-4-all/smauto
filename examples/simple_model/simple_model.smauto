@@ -1,6 +1,10 @@
-name: SimpleHomeAutomation
-version: "0.1.0"
-description: "Simple home automation model."
+Metadata
+    name: SimpleHomeAutomation
+    version: "0.1.0"
+    description: "Simple home automation model."
+    author: "klpanagi"
+    email: "klpanagi@gmail.com"
+end
 
 Broker<MQTT>
     name: home_mqtt_broker

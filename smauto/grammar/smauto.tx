@@ -2,13 +2,23 @@ import automation
 import broker
 import entity
 
-SmartAutoModel:
-    'name:' name=ID
-    'version:' version=STRING
-    ('description:' description=STRING)?
+SmAutoModel:
+    (metadata=Metadata)?
     brokers+=Broker
     entities*=Entity
     automations*=Automation
+;
+
+Metadata:
+    'Metadata'
+    (
+    ('name:' name=ID)?
+    ('version:' version=STRING)
+    ('author:' author=STRING)?
+    ('email:' email=STRING)?
+    ('description:' description=STRING)?
+    )#
+    'end'
 ;
 
 // Comments
