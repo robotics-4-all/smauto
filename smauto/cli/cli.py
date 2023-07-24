@@ -1,12 +1,13 @@
 import click
 import os
-from rich import print
+from rich import print, pretty
 
 from smauto.interpreter import execute_model_from_path
 from smauto.generator import generate_automation_graph_from_file
 from smauto.language import build_model
 from smauto.transformations import model_to_vnodes
 
+pretty.install()
 
 def make_executable(path):
     mode = os.stat(path).st_mode
@@ -60,7 +61,7 @@ def generate(ctx, model_path):
         with open(filepath, 'w') as fp:
             fp.write(vn[1])
             make_executable(filepath)
-        print(f'[*] Compiled virtual Entity: [bold]{filepath}')
+        print(f'[CLI] Compiled virtual Entity: [bold]{filepath}')
 
 
 @cli.command('server',
@@ -68,7 +69,9 @@ def generate(ctx, model_path):
 @click.pass_context
 def api_server(ctx):
     from smauto.api.api import api
-    api.run()
+    print('[CLI] DEPRECATED!!!')
+    print('[CLI] Run the api using uvicorn!')
+    print('[CLI] uvicorn smauto.api:api --host 0.0.0.0 --port 8080')
 
 
 def main():
