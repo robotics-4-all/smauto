@@ -51,7 +51,8 @@ end
 Automation
     name: start_aircondition
     condition:
-        (weather_station.temperature > 30) AND (weather_station.humidity > 30)
+        (weather_station.temperature > 30) AND
+        (weather_station.humidity > 30)
     enabled: true
     continuous: true
     actions:
@@ -64,7 +65,8 @@ end
 Automation
     name: stop_aircondition
     condition:
-        (weather_station.temperature < 25) AND (weather_station.humidity < 20)
+        (weather_station.temperature < 25) AND
+        (weather_station.humidity < 20)
     enabled: true
     continuous: true
     actions:
@@ -73,51 +75,15 @@ Automation
         - start_aircondition
 end
 
-/*
-Automation
-    name: start_aircondition
-    condition:
-        (
-            (std(weather_station.temperature, 10) > 32) AND
-            (mean(weather_station.humidity, 10) > 30)
-        ) AND
-        (aircondition.on NOT true)
-    enabled: true
-    continuous: true
-    actions:
-        - aircondition.temperature:  25.0
-        - aircondition.mode:  "cool"
-        - aircondition.power:  true
-end
-
-Automation
-    name: start_aircondition
-    condition:
-        (
-            (weather_station.temperature > 32) AND
-            (weather_station.humidity > 30)
-        ) AND
-        (aircondition.power NOT true)
-    enabled: true
-    continuous: true
-    actions:
-        - aircondition.temperature:  25.0
-        - aircondition.mode:  "cool"
-        - aircondition.power:  true
-end
-
-
 Automation
     name: start_aircondition_2
     condition:
-        mul(weather_station.humidity,
-            weather_station.temperature,
-            weather_station.airQuality) > 30
+        (mean(weather_station.temperature, 10) < 30) AND
+        (mean(weather_station.temperature, 10) > 0)
     enabled: true
     continuous: true
     actions:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
-        - aircondition.on:  true
+        - aircondition.power:  true
 end
-*/
