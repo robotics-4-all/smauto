@@ -67,12 +67,10 @@ class ValueGeneratorProperties:
     class Constant:
       value: float
 
-
     @dataclass
     class Linear:
       start: float
       increase: float # per second
-
 
     @dataclass
     class Gaussian:
@@ -80,16 +78,22 @@ class ValueGeneratorProperties:
       max_value: float
       sigma: float # this is time (seconds)
 
+    @dataclass
+    class Uniform:
+      min: float
+      max: float # this is time (seconds)
+
 
 class ValueGeneratorType(Enum):
     Constant = 1
     Linear = 2
     Gaussian = 3
-    Step = 4
-    Saw = 5
-    Sinus = 6
-    Logarithmic = 7
-    Exponential = 8
+    Uniform = 4
+    Step = 5
+    Saw = 6
+    Sinus = 7
+    Logarithmic = 8
+    Exponential = 9
 # ----------------------------------------
 
 
@@ -199,6 +203,15 @@ class {{ entity.camel_name }}Node(Node):
         )
 
     def start(self):
+        components = []
+        {% for attr in entity.attributes %}
+        {% if attr.generator.__class__.__name__ == 'UniformFun' %}
+        {{ attr.name }}_properties = ValueGeneratorProperties.Uniform(
+            min={{ attr.generator.min }},
+            max={{ attr.generator.max }},
+        )
+        {% endif %}
+        {% endfor %}
         self.run()
         rate = Rate(self.pub_freq)
         while True:
