@@ -56,6 +56,8 @@ class Noise:
             return random.uniform(self.properties.min, self.properties.max)
         elif self.type == NoiseType.Gaussian:
             return random.gauss(self.properties.mu, self.properties.sigma)
+        elif self.type == NoiseType.Zero:
+            return 0
 # ----------------------------------------
 
 # Value generator definitions
@@ -70,12 +72,11 @@ class ValueGeneratorProperties:
     @dataclass
     class Linear:
       start: float
-      increase: float # per second
+      step: float # per second
 
     @dataclass
     class Gaussian:
-      value: float
-      max_value: float
+      mu: float
       sigma: float # this is time (seconds)
 
     @dataclass
@@ -106,50 +107,42 @@ class ValueComponent:
 
 
 class ValueGenerator:
-    def __init__(self, namespace, name, hz, components, connection):
-        self.namespace = namespace
-        self.name = name
+    def __init__(self, topic, hz, components, commlib_node):
+        self.topic = topic
         self.hz = hz
         self.components = components
+        self.commlib_node = commlib_node
 
-        self.commlib_node = Node(
-            connection_params=connection,
-            debug=True
-        )
-        topic = f"{self.namespace}/{self.name}" if self.namespace != None else f"{self.name}"
         self.publisher = self.commlib_node.create_publisher(topic=topic)
 
-    def generate(self, minutes = 1):
+    def start(self, minutes=None):
         start = time.time()
         internal_start = start
         value = None
-        while time.time() - start < minutes * 60.0:
+        while True:
             msg = {}
             for c in self.components:
                 if c.type == ValueGeneratorType.Constant:
                     value = c.properties.value + c.noise.generate()
                 elif c.type == ValueGeneratorType.Linear:
-                    value = c.properties.start + (time.time() - start) * c.properties.increase
+                    value = c.properties.start + (time.time() - start) * c.properties.step
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Gaussian:
-                    if time.time() - internal_start > 8 * c.properties.sigma:
-                        internal_start = time.time()
-                    value = c.properties.value
-                    _norm_exp = -np.power(
-                        time.time() - internal_start - 4 * c.properties.sigma, 2.
-                    ) / (2 * np.power(c.properties.sigma, 2.))
-                    value += np.exp(_norm_exp) * (c.properties.max_value - c.properties.value)
+                    value = random.gauss(c.properties.mu, c.properties.sigma)
+                    value += c.noise.generate()
+                elif c.type == ValueGeneratorType.Uniform:
+                    value = random.uniform(c.properties.min, c.properties.max)
                     value += c.noise.generate()
                 msg[c.name] = value
 
             self.publisher.publish(
-                {
-                    'timestamp': time.time(),
-                    'data': msg
-                }
+                msg
             )
             print(f"Publishing {msg}")
             time.sleep(1.0 / self.hz)
+            if minutes is not None:
+                if time.time() - start < minutes * 60.0:
+                    break
 
 
 class {{ entity.camel_name }}Msg(PubSubMessage):
@@ -202,7 +195,7 @@ class {{ entity.camel_name }}Node(Node):
             topic=self.topic
         )
 
-    def start(self):
+    def init_gen_components(self):
         components = []
         {% for attr in entity.attributes %}
         {% if attr.generator.__class__.__name__ == 'UniformFun' %}
@@ -210,8 +203,69 @@ class {{ entity.camel_name }}Node(Node):
             min={{ attr.generator.min }},
             max={{ attr.generator.max }},
         )
+        _gen_type = ValueGeneratorType.Uniform
+        {% elif attr.generator.__class__.__name__ == 'GaussianFun' %}
+        {{ attr.name }}_properties = ValueGeneratorProperties.Gaussian(
+            mu={{ attr.generator.mu }},
+            sigma={{ attr.generator.sigma }},
+        )
+        _gen_type = ValueGeneratorType.Gaussian
+        {% elif attr.generator.__class__.__name__ == 'ConstantFun' %}
+        {{ attr.name }}_properties = ValueGeneratorProperties.Constant(
+            value={{ attr.generator.value }}
+        )
+        _gen_type = ValueGeneratorType.Constant
+        {% elif attr.generator.__class__.__name__ == 'LinearFun' %}
+        {{ attr.name }}_properties = ValueGeneratorProperties.Linear(
+            start={{ attr.generator.start }},
+            step={{ attr.generator.step }}
+        )
+        _gen_type = ValueGeneratorType.Linear
+        {% else %}
+        {{ attr.name }}_properties = ValueGeneratorProperties.Constant(
+            0
+        )
+        _gen_type = ValueGeneratorType.Constant
         {% endif %}
+        {% if attr.noise.__class__.__name__ == 'UniformFun' %}
+        {{ attr.name }}_noise = Noise(
+            _type=NoiseType.Uniform,
+            properties=NoiseUniform({{ attr.noise.min }}, {{ attr.noise.max }})
+        )
+        {% elif attr.noise.__class__.__name__ == 'GaussianFun' %}
+        {{ attr.name }}_noise = Noise(
+            _type=NoiseType.Gaussian,
+            properties=NoiseGaussian({{ attr.noise.mu }}, {{ attr.noise.sigma }})
+        )
+        {% else %}
+        {{ attr.name }}_noise = Noise(
+            _type=NoiseType.Zero,
+            properties=NoiseZero()
+        )
+        {% endif %}
+        {{ attr.name }}_component = ValueComponent(
+            _type=_gen_type,
+            name="{{ attr.name }}",
+            properties = {{ attr.name }}_properties,
+            noise={{ attr.name }}_noise
+        )
+        components.append({{ attr.name }}_component)
         {% endfor %}
+        generator = ValueGenerator(
+            self.topic,
+            self.pub_freq,
+            components,
+            self
+        )
+        return generator
+
+
+    def start(self):
+        generator = self.init_gen_components()
+        generator.start()
+
+"""
+    def start(self):
         self.run()
         rate = Rate(self.pub_freq)
         while True:
@@ -245,6 +299,8 @@ class {{ entity.camel_name }}Node(Node):
         return msg
 
     {% endif %}
+"""
+
 
 if __name__ == '__main__':
     node = {{ entity.camel_name }}Node()

@@ -22,8 +22,8 @@ Entity
     broker: home_mqtt_broker
     attributes:
         - temperature: float -> uniform(10, 40) with noise gaussian(1,1)
-        - humidity: float -> gaussian(10, 40) with noise uniform(1,1)
-        - airQuality: float
+        - humidity: float -> linear(1, 0.2) with noise uniform (0, 1)
+        - airQuality: float -> constant(0.5)
 end
 
 Entity
