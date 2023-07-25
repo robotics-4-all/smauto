@@ -23,7 +23,7 @@ Entity
     attributes:
         - temperature: float -> uniform(10, 40) with noise gaussian(1,1)
         - humidity: float -> gaussian(10, 40) with noise uniform(1,1)
-        - airQuality: float -> linear(0, 1, 0.1)
+        - airQuality: float
 end
 
 Entity
