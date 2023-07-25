@@ -28,11 +28,11 @@ NumericAttribute:
 ;
 
 IntAttribute:
-    '-' name=ID ':' 'int' ('->' generator=AttrValueGen)?
+    '-' name=ID ':' 'int' ('->' generator=AttrValueGen ('with noise' noise=Noise)?)?
 ;
 
 FloatAttribute:
-    '-' name=ID ':' 'float' ('->' generator=AttrValueGen)?
+    '-' name=ID ':' 'float' ('->' generator=AttrValueGen ('with noise' noise=Noise)?)?
 ;
 
 StringAttribute:
@@ -53,16 +53,23 @@ DictAttribute:
         '}'
 ;
 
-AttrValueGen: UniformGen | ConstantGen | LinearGen;
+AttrValueGen: UniformFun | ConstantFun | LinearFun | GaussianFun;
 
-UniformGen:
-    'uniform' '(' from=NUMBER ',' to=NUMBER ')'
+Noise: UniformFun | ConstantFun | LinearFun | GaussianFun;
+
+UniformFun:
+    'uniform' '(' min=NUMBER ',' max=NUMBER ')'
 ;
 
-ConstantGen:
+ConstantFun:
     'constant' '(' value=NUMBER ')'
 ;
 
-LinearGen:
+LinearFun:
     'linear' '(' from=NUMBER ',' to=NUMBER ',' step=NUMBER ')'
 ;
+
+GaussianFun:
+    'gaussian' '(' mu=NUMBER ',' sigma=NUMBER ')'
+;
+
