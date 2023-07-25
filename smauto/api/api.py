@@ -12,7 +12,7 @@ from smauto.generator import (
     pu_to_png_transformation
 )
 
-from fastapi import FastAPI, File, UploadFile, status
+from fastapi import FastAPI, File, UploadFile, status, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -82,6 +82,7 @@ async def validate_file(file: UploadFile = File(...)):
         print(e)
         resp['status'] = 404
         resp['message'] = str(e)
+        raise HTTPException(status_code=400, detail=f"Validation error: {e}")
     return resp
 
 
@@ -110,6 +111,7 @@ async def validate_b64(text: str = ''):
         print(e)
         resp['status'] = 404
         resp['message'] = str(e)
+        raise HTTPException(status_code=400, detail=f"Validation error: {e}")
     return resp
 
 
