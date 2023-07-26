@@ -104,7 +104,7 @@ Automation:
 Automation:
     name: set_alarm_on_gas
     condition:
-        std(kitchen_gas_sensor.gas, 10) > 0.3
+        std(kitchen_gas_sensor.gas, 10) > 0.1
     enabled: true
     continuous: true
     actions:
