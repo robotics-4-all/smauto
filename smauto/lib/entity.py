@@ -39,7 +39,7 @@ class Entity:
 
     """
 
-    def __init__(self, parent, name, etype, topic, broker, attributes):
+    def __init__(self, parent, name, etype, freq, topic, broker, attributes):
         """
         Creates and returns an Entity object
         :param name: Entity name. e.g: 'temperature_sensor'
@@ -55,6 +55,7 @@ class Entity:
         self.name = name
         self.camel_name = self.to_camel_case(name)
         self.etype = etype
+        self.freq = freq if freq not in (None, 0) else 1
         # MQTT topic for Entity
         self.topic = topic
         # Entity state
@@ -156,18 +157,20 @@ class Attribute:
 
 
 class IntAttribute(Attribute):
-    def __init__(self, parent, name, generator):
+    def __init__(self, parent, name, generator, noise):
         super().__init__(parent, name)
         self.generator = generator
+        self.noise = noise
         self.type = 'int'
         if self.value is None:
             self.value = 0
 
 
 class FloatAttribute(Attribute):
-    def __init__(self, parent, name, generator):
+    def __init__(self, parent, name, generator, noise):
         super().__init__(parent, name)
         self.generator = generator
+        self.noise = noise
         self.type = 'float'
         if self.value is None:
             self.value = 0.0

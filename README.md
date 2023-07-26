@@ -15,6 +15,8 @@ validation and interpretation of smauto models.
 
 ## Installation
 
+### Source Installation
+
 This project is delivered as a python package. To install, simply clone this
 repository and install using pip.
 
@@ -24,10 +26,29 @@ cd smauto-dsl
 pip install .
 ```
 
+### Docker image
+
+SmAuto can be build into a standalone docker image and provides a REST API
+for remotely performing model validation, interpretation and automated
+generation of virtual entities.
+
+To build the image execute from this directory:
+
+```
+docker build -t smauto .
+```
+
+then run the container with:
+
+```
+docker run -it --rm --name mysmauto -p 8080:8080 smauto
+```
+
+By default the image exposes port 8080 for the REST API.
+
 ## SmAuto Language
 
 The Metamodel of SmAuto DSL can be found [here](assets/images/smauto.png).
-
 
 The main concepts of the language are:
 
@@ -54,9 +75,9 @@ diagrams of each of the Broker, Entity and Automation concepts.
 
 An SmAuto Model contains information about the various devices in
 the smart environment (e.g: lights, thermostats, smart fridges etc.),
-the way they communicate and all the automated tasks you want them to perform.
+the way they communicate and the automation tasks.
 
-The core concepts of SmAuto metamodel are the Entities, the Brokers and the Automations.
+The core concepts of SmAuto metamodel are the `Entity`, the `Broker` and the `Automations`.
 
 Bellow is a simple example  model in which the air conditioner is turned on according to the
 temperature and humidity measurements:
@@ -149,6 +170,9 @@ Entity uses to communicate.
 example, HA-Auto supports int, float, string, bool, list and dictionary types.
 Note that nested dictionaries are also supported.
 
+Notice that each Entity has it's own reference to a Broker, thus the metamodel
+allows for communicating with Entities which are connected to different message
+brokers. This allows for definining automation for multi-broker architectures.
 
 ## Brokers
 
@@ -204,7 +228,7 @@ end
 ```
 
 - **name**: The name for the Automation. Should start with a letter, can contain only letters, numbers and underscores.
-- **condition**: The condition used to determine if actions should be run. See Writing Conditions for more information.
+- **condition**: The condition used to determine if actions should be run. See **Writing Conditions** for more information.
 - **enabled**: Whether the Automation should be run or not.
 - **continuous**: Whether the Automation should automatically remain enabled once its actions have been executed.
 - **actions**: The actions that should be run once the condition is met. See Writing Actions for more information.
@@ -217,10 +241,41 @@ end
 
 Conditions are very similar to conditions in imperative programming languages
 such as Python, Java, C++ or JavaScript. You can use Entity Attributes in a
-condition just like a variable by inserting it in the condition as such:
+condition just like a variable by referencing it in the Condition as such:
 
 ```
 entity_name.attribute_name
+```
+
+Below is an example of a Condition that references several attributes of
+more-than-one Entities.
+
+```
+Entity
+    name: corridor_temperature
+    type: sensor
+    topic: "corridor.temperature"
+    broker: home_mqtt_broker
+    attributes:
+        - temperature: float
+end
+
+Entity
+    name: kitchen_temperature
+    type: sensor
+    topic: "kitchen.temperature"
+    broker: home_mqtt_broker
+    attributes:
+        - temperature: float
+end
+
+Automation
+    name: start_aircondition
+    condition:
+        (corridor.temperature > 30) AND
+        (corridor.humidity > 30)
+    ...
+end
 ```
 
 #### Condition Formatting:
@@ -248,6 +303,9 @@ conditions. This means that you can compare a List to a full other List, but
 cannot compare individual list items. Similarly, you can compare a full
 dictionary to another but cannot use individual dictionary items in conditions.
 
+Nested in-language reference to Dict and List items will be supported in a future release
+of the language.
+
 #### Operators
 
 - String Operators: `~`, `!~`, `==`, `!=`
@@ -255,7 +313,7 @@ dictionary to another but cannot use individual dictionary items in conditions.
 - Boolean / Logical Operators: `AND`, `OR`, `NOT`, `XOR`, `NOR`, `XNOR`, `NAND`
 - List and Dictionary Operators: `==`, `!=`
 
-#### Example Conditions
+#### Writing Conditions
 
 Bellow you will find some example conditions.
 

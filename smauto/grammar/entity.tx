@@ -7,6 +7,7 @@ Entity:
         'name:' name=ID
         'type:' etype=EntityType
         'topic:' topic=STRING
+        ('freq:' freq=NUMBER)?
         'broker:' broker=[Broker]
         'attributes:'
                 attributes*=Attribute
@@ -28,11 +29,11 @@ NumericAttribute:
 ;
 
 IntAttribute:
-    '-' name=ID ':' 'int' ('->' generator=AttrValueGen)?
+    '-' name=ID ':' 'int' ('->' generator=AttrValueGen ('with noise' noise=Noise)?)?
 ;
 
 FloatAttribute:
-    '-' name=ID ':' 'float' ('->' generator=AttrValueGen)?
+    '-' name=ID ':' 'float' ('->' generator=AttrValueGen ('with noise' noise=Noise)?)?
 ;
 
 StringAttribute:
@@ -53,16 +54,27 @@ DictAttribute:
         '}'
 ;
 
-AttrValueGen: UniformGen | ConstantGen | LinearGen;
+AttrValueGen: ConstantFun | LinearFun | GaussianFun;
 
-UniformGen:
-    'uniform' '(' from=NUMBER ',' to=NUMBER ')'
+Noise: UniformNoise | GaussianNoise;
+
+GaussianFun:
+    'gaussian' '(' value=NUMBER ',' maxValue=NUMBER ',' sigma=NUMBER ')'
 ;
 
-ConstantGen:
+ConstantFun:
     'constant' '(' value=NUMBER ')'
 ;
 
-LinearGen:
-    'linear' '(' from=NUMBER ',' to=NUMBER ',' step=NUMBER ')'
+LinearFun:
+    'linear' '(' start=NUMBER ',' step=NUMBER ')'
 ;
+
+UniformNoise:
+    'uniform' '(' min=NUMBER ',' max=NUMBER ')'
+;
+
+GaussianNoise:
+    'gaussian' '(' mu=NUMBER ',' sigma=NUMBER ')'
+;
+

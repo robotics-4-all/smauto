@@ -8,22 +8,33 @@ end
 
 Broker<MQTT>
     name: home_mqtt_broker
-    host: "localhost"
-    port: 1883
+    host: "83.212.106.23"
+    port: 1893
     credentials:
-        username: ""
-        password: ""
+        username: "porolog"
+        password: "fiware"
 end
 
 Entity
     name: weather_station
     type: sensor
-    topic: "porch.weather_station"
+    freq: 5
+    topic: "smauto.bme"
     broker: home_mqtt_broker
     attributes:
-        - temperature: float -> uniform(10, 40)
-        - humidity: float -> uniform(10, 40)
-        - airQuality: float -> linear(0, 1, 0.1)
+        - temperature: float -> gaussian(10, 20, 5) with noise gaussian(1,1)
+        - humidity: float -> linear(1, 0.2) with noise uniform (0, 1)
+        - pressure: float -> constant(0.5)
+end
+
+Entity
+    name: temperature_sensor
+    type: sensor
+    freq: 20
+    topic: "smauto.temperature"
+    broker: home_mqtt_broker
+    attributes:
+        - temperature: float -> gaussian(10, 20, 2) with noise gaussian(0, 1)
 end
 
 Entity
