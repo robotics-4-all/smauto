@@ -7,14 +7,10 @@ import shutil
 import tarfile
 
 from smauto.language import build_model
-from smauto.generator import (
-    generate_automation_graph,
-    pu_to_png_transformation
-)
-
 from fastapi import FastAPI, File, UploadFile, status, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from smauto.transformations import model_to_vnodes
 
 api = FastAPI()
 
@@ -147,6 +143,50 @@ async def validate_b64(text: str = ''):
 #     return resp
 #
 #
+@api.post("/generate/ventities")
+async def generate(model_file: UploadFile = File(...)):
+    print(f'Generate for request: file=<{model_file.filename}>,' + \
+          f' descriptor=<{model_file.file}>')
+    resp = {
+        'status': 200,
+        'message': ''
+    }
+    fd = model_file.file
+    u_id = uuid.uuid4().hex[0:8]
+    model_path = os.path.join(
+        TMP_DIR,
+        f'model-{u_id}.smauto'
+    )
+    tarball_path = os.path.join(
+        TMP_DIR,
+        f'graph-{u_id}.tar.gz'
+    )
+    gen_path = os.path.join(
+        TMP_DIR,
+        f'gen-{u_id}'
+    )
+    if not os.path.exists(gen_path):
+        os.mkdir(gen_path)
+    with open(model_path, 'w') as f:
+        f.write(fd.read().decode('utf8'))
+    try:
+        vnodes = model_to_vnodes(model_path)
+        for vn in vnodes:
+            filepath = f'{vn[0].name}.py'
+            with open(filepath, 'w') as fp:
+                fp.write(vn[1])
+                make_executable(filepath)
+        make_tarball(tarball_path, gen_path)
+        shutil.rmtree(gen_path)
+        print(f'Sending tarball {tarball_path}')
+        return FileResponse(tarball_path,
+                            filename=os.path.basename(tarball_path),
+                            media_type='application/x-tar')
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=400,
+                            detail=f"VEntity generation error: {e}")
+
 # @api.post("/graph")
 # async def generate(model_file: UploadFile = File(...)):
 #     print(f'Generate for request: file=<{model_file.filename}>,' + \
@@ -208,3 +248,8 @@ def make_tarball(fout, source_dir):
     with tarfile.open(fout, "w:gz") as tar:
         tar.add(source_dir, arcname=os.path.basename(source_dir))
 
+
+def make_executable(path):
+    mode = os.stat(path).st_mode
+    mode |= (mode & 0o444) >> 2    # copy R bits to X
+    os.chmod(path, mode)
