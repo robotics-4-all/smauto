@@ -79,8 +79,6 @@ diagrams of each of the Broker, Entity and Automation concepts.
 
 ![EntityMetamodel](assets/images/entity.png)
 
-![AutomationMetamodel](assets/images/automation.png)
-
 
 An SmAuto Model contains information about the various devices in
 the smart environment (e.g: lights, thermostats, smart fridges etc.),
