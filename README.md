@@ -84,8 +84,6 @@ An SmAuto Model contains information about the various devices in
 the smart environment (e.g: lights, thermostats, smart fridges etc.),
 the way they communicate and the automation tasks.
 
-The core concepts of SmAuto metamodel are the `Entity`, the `Broker` and the `Automations`.
-
 Bellow is a simple example  model in which the air conditioner is turned on according to the
 temperature and humidity measurements:
 
@@ -139,12 +137,15 @@ For more in-depth description of this example head to the `examples/simple_model
 ### Entities
 
 Entities are your connected smart devices that send and receive information
-using a message broker. Entities have the following properties:
+using a message broker. Entities have the following required properties:
 
-`a Name, a Broker, a Topic and a set of Attributes.`
+- A unique name
+- A broker to connect to
+- A topic to send/receive messages
+- A set of attributes
 
-Attributes are what define the structure and the type of information in the
-messages the Entity sends via the Broker.
+**Attributes** are what define the structure and the type of information in the
+messages the Entity sends to the communication broker.
 
 You can configure an Entity  using the following syntax:
 
@@ -181,7 +182,7 @@ Notice that each Entity has it's own reference to a Broker, thus the metamodel
 allows for communicating with Entities which are connected to different message
 brokers. This allows for definining automation for multi-broker architectures.
 
-#### Virtual Entities and the buildin value generators
+#### Attribute value generation for virtual Entities
 
 SmAuto provides a code generator which can be utilized to transform Entities models
 into executable source code in Python.
@@ -224,7 +225,7 @@ it's own value and noise generators, using a simple grammar as evident below:
 **Supported Noise Generators:**
 
 - **Uniform**: `uniform(min, max)`.
-- **Gaussian**: `gaussian(value, maxValue, sigma)`.
+- **Gaussian**: `gaussian(mean, sigma)`.
 
 Value generation and Noise are optional in the language and are features used
 by the Virtual Entity generator to transform Entity models into executable code.
