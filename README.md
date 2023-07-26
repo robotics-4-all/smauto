@@ -150,16 +150,17 @@ You can configure an Entity  using the following syntax:
 ```yaml
 Entity
     name: robot_cleaner
+    type: robot
     topic: "bedroom.robot_cleaner"
     broker: upstairs_broker
     attributes:
-        - battery: float,
-        - cleaning_mode: string,
-        - on: bool,
-        - destinations: list,
-        - location: {
-            - x: int,
-            - y: int
+        - battery: float
+        - cleaning_mode: string
+        - on: bool = 1
+        - destinations: list
+        - location: dict = {
+            x: int,
+            y: int
         }
 end
 ```
@@ -180,6 +181,8 @@ Notice that each Entity has it's own reference to a Broker, thus the metamodel
 allows for communicating with Entities which are connected to different message
 brokers. This allows for definining automation for multi-broker architectures.
 
+Finally 
+
 #### Attribute value generation for virtual Entities
 
 SmAuto provides a code generator which can be utilized to transform Entities models
@@ -189,8 +192,7 @@ which send and receive data based on their models. Thus it can be used to
 generate while virtual smart environments and directly dig into defining and
 testing automations.
 
-For this purpose, the language supports (Optional) definition of a `Value Generator` and a `Noise` to 
-be applied on each attribute of an Entity separately.
+For this purpose, the language supports (Optional) definition of a `Value Generator` and a `Noise` to be applied on each attribute of an Entity of type **sensor** separately.
 
 ```
 Entity
@@ -328,7 +330,11 @@ Automation
     condition:
         (corridor.temperature > 30) AND
         (kitchen.temperature > 30)
-    ...
+    actions:
+        - aircondition.temperature:  25.0
+        - aircondition.mode:  "cool"
+        - aircondition.power:  true
+        - window.state:  1
 end
 ```
 
@@ -400,7 +406,6 @@ follows the following format:
 ```
 
 Where object can be a string, number, boolean (true/false), list or dictionary.
-Actions must be separated by a comma and a change of line (newline).
 
 ```yaml
 - aircondition.temperature: 25
@@ -414,16 +419,17 @@ The language includes constraints applied to models after initialization.
 These constraints refer to domain-specific logical rules.
 
 ```
-Value and Noise Generators can only be applied to Entities of typpe "sensor".
+Value and Noise Generators can only be applied to Entities of type "sensor" or 
+"robot".
 
 ```
 
 ```
-Actions can only refer Attributes of "actuator" Entities.
+Actions can only refer Attributes of "actuator" and "robot" Entities.
 ```
 
 ```
-Only "actuator" Attributes can have default values.
+Only "actuator" and "robot" Attributes can have default values.
 ```
 
 ## Model Interpreter / Executable Automation models

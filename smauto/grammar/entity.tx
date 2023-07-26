@@ -49,7 +49,7 @@ ListAttribute:
 ;
 
 DictAttribute:
-    name=ID ':' 'dict' ('=' '{' items*=Attribute '}')?
+    name=ID ':' 'dict' ('=' '{' items*=Attribute[','] '}')?
 ;
 
 

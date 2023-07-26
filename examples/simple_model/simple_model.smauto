@@ -56,6 +56,10 @@ Entity
     broker: home_mqtt_broker
     attributes:
         - state: int = 1
+	- skata: dict = {
+	    x: int = 1,
+	    y: int = 1
+	}
 end
 
 
