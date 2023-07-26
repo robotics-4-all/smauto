@@ -1,14 +1,14 @@
 Metadata
-    name: SimpleHomeAutomation
+    name: HackathonExampleA
     version: "0.1.0"
-    description: "Simple home automation model."
+    description: "Model of example 1 of the 2023 ISSEL hackathon"
     author: "klpanagi"
     email: "klpanagi@gmail.com"
 end
 
 Broker<MQTT>
-    name: home_mqtt_broker
-    host: "83.212.106.23"
+    name: issel_cloud_platform
+    host: "83.212.106.23"   // ISSEL Fiware Platform
     port: 1893
     credentials:
         username: "porolog"
@@ -16,15 +16,13 @@ Broker<MQTT>
 end
 
 Entity
-    name: weather_station
-    type: sensor
-    freq: 5
-    topic: "smauto.bme"
-    broker: home_mqtt_broker
+    name: bedroom_humidifier
+    type: actuator
+    topic: "bedroom.humidifier"
+    broker: issel_cloud_platform
     attributes:
-        - temperature: float -> gaussian(10, 20, 5) with noise gaussian(1,1)
-        - humidity: float -> linear(1, 0.2) with noise uniform (0, 1)
-        - pressure: float -> constant(0.5)
+        - power: bool
+        - timer: int    // minutes to stay open
 end
 
 Entity
@@ -32,16 +30,16 @@ Entity
     type: sensor
     freq: 20
     topic: "smauto.temperature"
-    broker: home_mqtt_broker
+    broker: issel_cloud_platform
     attributes:
         - temperature: float -> gaussian(10, 20, 2) with noise gaussian(0, 1)
 end
 
 Entity
-    name: aircondition
+    name: bedroom_aircondition
     type: actuator
     topic: "bedroom.aircondition"
-    broker: home_mqtt_broker
+    broker: issel_cloud_platform
     attributes:
         - power: bool
         - temperature: float
@@ -55,7 +53,7 @@ Entity
     topic: "bedroom.window"
     broker: home_mqtt_broker
     attributes:
-        - state: int = 1
+        - state: bool
 end
 
 
@@ -70,7 +68,7 @@ Automation
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
         - aircondition.power:  true
-        - window.state:  1
+        - window.state:  false
 end
 
 Automation

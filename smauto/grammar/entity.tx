@@ -10,7 +10,7 @@ Entity:
         ('freq:' freq=NUMBER)?
         'broker:' broker=[Broker]
         'attributes:'
-                attributes*=Attribute
+            '-' attributes*=Attribute['-']
         )#
     'end'
 ;
@@ -29,30 +29,29 @@ NumericAttribute:
 ;
 
 IntAttribute:
-    '-' name=ID ':' 'int' ('->' generator=AttrValueGen ('with noise' noise=Noise)?)?
+    name=ID ':' 'int' ('=' default=INT)? ('->' generator=AttrValueGen ('with noise' noise=Noise)?)?
 ;
 
 FloatAttribute:
-    '-' name=ID ':' 'float' ('->' generator=AttrValueGen ('with noise' noise=Noise)?)?
+    name=ID ':' 'float' ('=' default=FLOAT)? ('->' generator=AttrValueGen ('with noise' noise=Noise)?)?
 ;
 
 StringAttribute:
-    '-' name=ID ':' 'str'
+    name=ID ':' 'str' ('=' default=STRING)?
 ;
 
 BoolAttribute:
-    '-' name=ID ':' 'bool'
+    name=ID ':' 'bool' ('=' default=BOOL)?
 ;
 
 ListAttribute:
-    '-' name=ID ':' 'list'
+    name=ID ':' 'list' ('=' '[' default*=OBJECT[','] ']')?
 ;
 
 DictAttribute:
-    '-' name=ID ':' '{'
-        items*=Attribute
-        '}'
+    name=ID ':' 'dict' ('=' '{' items*=Attribute '}')?
 ;
+
 
 AttrValueGen: ConstantFun | LinearFun | GaussianFun;
 
