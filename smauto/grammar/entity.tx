@@ -7,6 +7,7 @@ Entity:
         'name:' name=ID
         'type:' etype=EntityType
         'topic:' topic=STRING
+        ('freq:' freq=NUMBER)?
         'broker:' broker=[Broker]
         'attributes:'
                 attributes*=Attribute
@@ -53,12 +54,12 @@ DictAttribute:
         '}'
 ;
 
-AttrValueGen: UniformFun | ConstantFun | LinearFun | GaussianFun;
+AttrValueGen: ConstantFun | LinearFun | GaussianFun;
 
-Noise: UniformFun | ConstantFun | LinearFun | GaussianFun;
+Noise: UniformNoise | GaussianNoise;
 
-UniformFun:
-    'uniform' '(' min=NUMBER ',' max=NUMBER ')'
+GaussianFun:
+    'gaussian' '(' value=NUMBER ',' maxValue=NUMBER ',' sigma=NUMBER ')'
 ;
 
 ConstantFun:
@@ -69,7 +70,11 @@ LinearFun:
     'linear' '(' start=NUMBER ',' step=NUMBER ')'
 ;
 
-GaussianFun:
+UniformNoise:
+    'uniform' '(' min=NUMBER ',' max=NUMBER ')'
+;
+
+GaussianNoise:
     'gaussian' '(' mu=NUMBER ',' sigma=NUMBER ')'
 ;
 

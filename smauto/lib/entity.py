@@ -39,7 +39,7 @@ class Entity:
 
     """
 
-    def __init__(self, parent, name, etype, topic, broker, attributes):
+    def __init__(self, parent, name, etype, freq, topic, broker, attributes):
         """
         Creates and returns an Entity object
         :param name: Entity name. e.g: 'temperature_sensor'
@@ -55,6 +55,7 @@ class Entity:
         self.name = name
         self.camel_name = self.to_camel_case(name)
         self.etype = etype
+        self.freq = freq if freq not in (None, 0) else 1
         # MQTT topic for Entity
         self.topic = topic
         # Entity state

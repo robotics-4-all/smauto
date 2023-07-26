@@ -76,20 +76,15 @@ class ValueGeneratorProperties:
 
     @dataclass
     class Gaussian:
-      mu: float
-      sigma: float # this is time (seconds)
-
-    @dataclass
-    class Uniform:
-      min: float
-      max: float # this is time (seconds)
+        value: float
+        max_value: float
+        sigma: float # this is time (seconds)
 
 
 class ValueGeneratorType(Enum):
     Constant = 1
     Linear = 2
     Gaussian = 3
-    Uniform = 4
     Step = 5
     Saw = 6
     Sinus = 7
@@ -128,10 +123,11 @@ class ValueGenerator:
                     value = c.properties.start + (time.time() - start) * c.properties.step
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Gaussian:
-                    value = random.gauss(c.properties.mu, c.properties.sigma)
-                    value += c.noise.generate()
-                elif c.type == ValueGeneratorType.Uniform:
-                    value = random.uniform(c.properties.min, c.properties.max)
+                    if time.time() - internal_start > 8 * c.properties.sigma:
+                        internal_start = time.time()
+                    value = c.properties.value
+                    _norm_exp = -np.power(time.time() - internal_start - 4 * c.properties.sigma, 2.) / (2 * np.power(c.properties.sigma, 2.))
+                    value += np.exp(_norm_exp) * (c.properties.max_value - c.properties.value)
                     value += c.noise.generate()
                 msg[c.name] = value
 
@@ -160,14 +156,14 @@ class {{ entity.camel_name }}Node(Node):
     {% if entity.etype == 'actuator' %}
         self.tick_hz = 1
     {% elif entity.etype == 'sensor' %}
-        self.pub_freq = 1
+        self.pub_freq = {{ entity.freq }}
     {% endif %}
         self.topic = '{{ entity.topic }}'
         conn_params = ConnectionParameters(
             host='{{ entity.broker.host }}',
             port={{ entity.broker.port }},
-            username='{{ entity.broker.username }}',
-            password='{{ entity.broker.password }}',
+            username='{{ entity.broker.credentials.username }}',
+            password='{{ entity.broker.credentials.password }}',
         )
         super().__init__(
             node_name='entities.{{ entity.name.lower() }}',
@@ -198,15 +194,10 @@ class {{ entity.camel_name }}Node(Node):
     def init_gen_components(self):
         components = []
         {% for attr in entity.attributes %}
-        {% if attr.generator.__class__.__name__ == 'UniformFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Uniform(
-            min={{ attr.generator.min }},
-            max={{ attr.generator.max }},
-        )
-        _gen_type = ValueGeneratorType.Uniform
-        {% elif attr.generator.__class__.__name__ == 'GaussianFun' %}
+        {% if attr.generator.__class__.__name__ == 'GaussianFun' %}
         {{ attr.name }}_properties = ValueGeneratorProperties.Gaussian(
-            mu={{ attr.generator.mu }},
+            value={{ attr.generator.value }},
+            max_value={{ attr.generator.maxValue }},
             sigma={{ attr.generator.sigma }},
         )
         _gen_type = ValueGeneratorType.Gaussian
@@ -227,12 +218,12 @@ class {{ entity.camel_name }}Node(Node):
         )
         _gen_type = ValueGeneratorType.Constant
         {% endif %}
-        {% if attr.noise.__class__.__name__ == 'UniformFun' %}
+        {% if attr.noise.__class__.__name__ == 'UniformNoise' %}
         {{ attr.name }}_noise = Noise(
             _type=NoiseType.Uniform,
             properties=NoiseUniform({{ attr.noise.min }}, {{ attr.noise.max }})
         )
-        {% elif attr.noise.__class__.__name__ == 'GaussianFun' %}
+        {% elif attr.noise.__class__.__name__ == 'GaussianNoise' %}
         {{ attr.name }}_noise = Noise(
             _type=NoiseType.Gaussian,
             properties=NoiseGaussian({{ attr.noise.mu }}, {{ attr.noise.sigma }})
