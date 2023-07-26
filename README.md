@@ -118,11 +118,9 @@ end
   
 Automation
     name: start_aircondition
-    condition: 
-        (
-            (weather_station.temperature > 32) AND 
-            (weather_station.humidity > 30)
-        ) AND (aircondition.on NOT true)
+    condition:
+        (weather_station.temperature > 32) AND 
+        (aircondition.on NOT true)
     enabled: true
     continuous: false
     actions:
@@ -368,6 +366,18 @@ of the language.
 - Numeric Operators: `>`, `<`, `==`, `!=`
 - Boolean / Logical Operators: `AND`, `OR`, `NOT`, `XOR`, `NOR`, `XNOR`, `NAND`
 - List and Dictionary Operators: `==`, `!=`
+
+#### Build-in attribute processing functions
+
+The language provides buildi-in functions which can be applied to attribute references
+when defining a Condition.
+
+```yml
+condition:
+    (mean(weather_station.temperature, 10) > 28) AND
+    (std(weather_station.temperature, 10) > 1)
+
+```
 
 #### Writing Conditions
 
