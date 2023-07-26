@@ -1,9 +1,16 @@
+# SmAuto DSL
+
+![SmartHomeImage](assets/images/smauto_logo.png)
+
 ## Description
+Smart environments are becoming quite popular in the home setting consisting of a broad range of connected devices. While offering a novel set of possibilities, this also contributes to the complexity of the environment, posing new challenges to allowing the full potential of a sensorized home to be made available to users.
+
 SmAuto is a Domain Specific Language (DSL) that enables users to program complex 
 automation scenarios, for connected IoT devices in smart environments,
 that go beyond simple tasks. 
 
 ![SmartHomeImage](assets/images/smart_home.png)
+
 
 The DSL is developed using Python and TextX and follows the model interpretation
 and executable models paradigms. It includes a meta-model and a grammar, that is
