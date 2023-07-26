@@ -396,16 +396,34 @@ air conditioners, lights or speakers. Each action takes a single line and
 follows the following format:
 
 ```yaml
-- entity_name.attribute_name: type
+- entity_name.attribute_name: value
 ```
 
 Where object can be a string, number, boolean (true/false), list or dictionary.
 Actions must be separated by a comma and a change of line (newline).
 
 ```yaml
-- aircondition.temperature: 25,
-- aircondition.mode: "cool",
+- aircondition.temperature: 25
+- aircondition.mode: "cool"
 - aircondition.power: true
+```
+
+## Constraints
+
+The language includes constraints applied to models after initialization.
+These constraints refer to domain-specific logical rules.
+
+```
+Value and Noise Generators can only be applied to Entities of typpe "sensor".
+
+```
+
+```
+Actions can only refer Attributes of "actuator" Entities.
+```
+
+```
+Only "actuator" Attributes can have default values.
 ```
 
 ## Model Interpreter / Executable Automation models
