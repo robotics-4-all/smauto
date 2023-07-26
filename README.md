@@ -441,18 +441,23 @@ Actions can only refer Attributes of "actuator" and "robot" Entities.
 Only "actuator" and "robot" Attributes can have default values.
 ```
 
-## Model Interpreter / Executable Automation models
+## Dynamic Model Execution
 
-TODO
+
+SmAuto implements a language interpreter, to parse and validate the model against the meta-model and the logical rules, and to execute the input model. The interpreter dynamically constructs the classes (in Python) in-memory and executes the automation tasks described by the input model, using the Python interpreter. For this purpose, a command-line interface is provided to work with validation and dynamic execution of models, as long as for generating a visual graph for each automation (image file). Of course, for the graph generation and model execution processes, the validation process is initially executed and are terminated in case of syntactic and logical errors in the input model.
 
 ## Generate Virtual Entities
 
-TODO
+The executor process takes as input the model, after success validation, and initially constructs the classes in-memory. The next step is to augment the model classes with platform-specific code, that includes the following core functionalities:
+
+- Augment the Entity class, to connect entities to the message broker and create relevant interfaces (publisher or subscriber), depending on it's type (Sense or Act). The Entity class monitors the state of the smart object by subscribing to the relevant topic and creates a local mirror of it's state. In case of actuator entities (Entity Act), it also constructs a publisher to send commands when actions are triggered by the automation. This augmentation implements the communication layer.
+- Transform the condition of each automation, expressed in SmAuto, into Python source code, that actually implements a lambda function. The injected lambda function is called at each "tick" of the executor.
+- Augment the Automation class and include platform-specific code that implements the execution logic. Each Automation has an internal state machine that defines four (4) states and the transitions as it appears in Figure \ref{XX}.
+\end{itemize}
 
 ## Generate Graphs of Automations
 
-A generator is provided which takes a model as input and generates an image
-of the automation graph, showing conditions and actions.
+The CLI provides a command for generating visualization graphs of input models. Generated graphs are used for the evaluation of conditions and actions of the defined automation, before performing model execution. The automated creation of graph images is performed in two steps; initially, a M2M transformation is performed on the input SmAuto model and the output is a PlantUML model in textual format. Afterwards, an M2T transformation takes place to transform the PlantUML model into the final image (see Figure \ref{fig:automation_graph}). The M2M transforms conditions into a graph, where the left-most leaf nodes include entity attributes and values, while the right-most leaf nodes represent the properties of actions, which are the entity to perform the action on and it's state (attribute values). Finally, intermediate nodes in the graph represent the operators of the condition.
 
 Below is the graph of the automation defined in [simple_model example](https://github.com/robotics-4-all/smauto-dsl/tree/main/examples/simple_model)
 
