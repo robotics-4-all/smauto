@@ -441,6 +441,10 @@ Actions can only refer Attributes of "actuator" and "robot" Entities.
 Only "actuator" and "robot" Attributes can have default values.
 ```
 
+```
+The freq property can only be set only for sensor and robot Entities.
+```
+
 ## Dynamic Model Execution
 
 

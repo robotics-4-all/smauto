@@ -1,41 +1,54 @@
-Metadata
+Metadata:
     name: HackathonExampleA
     version: "0.1.0"
     description: "Model of example 1 of the 2023 ISSEL hackathon"
     author: "klpanagi"
     email: "klpanagi@gmail.com"
-end
 
-Broker<MQTT>
+MQTT:
     name: issel_cloud_platform
     host: "83.212.106.23"   // ISSEL Fiware Platform
     port: 1893
     credentials:
         username: "porolog"
         password: "fiware"
-end
 
-Entity
+Entity:
     name: bedroom_humidifier
     type: actuator
     topic: "bedroom.humidifier"
     broker: issel_cloud_platform
     attributes:
         - power: bool
-        - timer: int    // minutes to stay open
-end
+        - timer: int
 
-Entity
-    name: temperature_sensor
+Entity:
+    name: bedroom_humidity_sensor
     type: sensor
-    freq: 20
-    topic: "smauto.temperature"
+    topic: "bedroom.humidity"
+    broker: issel_cloud_platform
+    attributes:
+        - humidity: float -> gaussian(10, 20, 2) with noise gaussian(0, 1)
+
+Entity:
+    name: bedroom_temperature_sensor
+    type: sensor
+    freq: 10
+    topic: "bedroom.temperature"
     broker: issel_cloud_platform
     attributes:
         - temperature: float -> gaussian(10, 20, 2) with noise gaussian(0, 1)
-end
 
-Entity
+Entity:
+    name: kitchen_gas_sensor
+    type: sensor
+    freq: 10
+    topic: "kitchen.gas"
+    broker: issel_cloud_platform
+    attributes:
+        - gas: float -> gaussian(10, 20, 2) with noise gaussian(0, 1)
+
+Entity:
     name: bedroom_aircondition
     type: actuator
     topic: "bedroom.aircondition"
@@ -45,54 +58,54 @@ Entity
         - temperature: float
         - swing: bool
         - mode: str
-end
 
-Entity
-    name: window
+Entity:
+    name: alarm
     type: actuator
-    topic: "bedroom.window"
-    broker: home_mqtt_broker
+    topic: "alarm"
+    broker: issel_cloud_platform
     attributes:
-        - state: bool
-end
+        - state: int = 0
 
+Automation:
+    name: start_humidifier
+    condition:
+        bedroom_humidity_sensor.humidity > 0.6
+    enabled: true
+    continuous: true
+    actions:
+        - bedroom_humidifier.power: true
+        - bedroom_humidifier.timer: -1
 
-Automation
+Automation:
+    name: stop_humidifier
+    condition:
+        bedroom_humidity_sensor.humidity < 0.3
+    enabled: true
+    continuous: true
+    actions:
+        - bedroom_humidifier.power: false
+
+Automation:
     name: start_aircondition
     condition:
-        (weather_station.temperature > 30) AND
-        (weather_station.humidity > 30)
+        (bedroom_temperature_sensor.temperature > 28) AND
+	(
+        (bedroom_humidity_sensor.humidity > 0.3) AND
+        (bedroom_humidity_sensor.humidity < 0.6)
+	)
     enabled: true
     continuous: true
     actions:
-        - aircondition.temperature:  25.0
-        - aircondition.mode:  "cool"
-        - aircondition.power:  true
-        - window.state:  false
-end
+        - bedroom_aircondition.temperature:  25.0
+        - bedroom_aircondition.mode:  "cool"
+        - bedroom_aircondition.power:  true
 
-Automation
-    name: stop_aircondition
+Automation:
+    name: set_alarm_on_gas
     condition:
-        (weather_station.temperature < 25) AND
-        (weather_station.humidity < 20)
+        std(kitchen_gas_sensor.gas, 10) > 0.3
     enabled: true
     continuous: true
     actions:
-        - aircondition.power:  false
-    dependsOn:
-        - start_aircondition
-end
-
-Automation
-    name: start_aircondition_2
-    condition:
-        (mean(weather_station.temperature, 10) < 30) AND
-        (mean(weather_station.temperature, 10) > 0)
-    enabled: true
-    continuous: true
-    actions:
-        - aircondition.temperature:  25.0
-        - aircondition.mode:  "cool"
-        - aircondition.power:  true
-end
+        - alarm.state:  1

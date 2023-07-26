@@ -10,15 +10,14 @@ SmAutoModel:
 ;
 
 Metadata:
-    'Metadata'
-    (
+'Metadata:'
+(
     ('name:' name=ID)
     ('version:' version=STRING)
     ('author:' author=STRING)?
     ('email:' email=STRING)?
     ('description:' description=STRING)?
-    )#
-    'end'
+)#
 ;
 
 // Comments

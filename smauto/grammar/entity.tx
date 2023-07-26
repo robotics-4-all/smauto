@@ -2,17 +2,15 @@ import broker
 
 //TODO: Model mqtt topics?
 Entity:
-    'Entity'
+    'Entity:'
         (
-        'name:' name=ID
-        'type:' etype=EntityType
-        'topic:' topic=STRING
-        ('freq:' freq=NUMBER)?
-        'broker:' broker=[Broker]
-        'attributes:'
-            '-' attributes*=Attribute['-']
-        )#
-    'end'
+			('name:' name=ID)?
+			('type:' etype=EntityType)
+			('topic:' topic=STRING)
+			('freq:' freq=NUMBER)?
+			('broker:' broker=[Broker])
+			('attributes:' '-' attributes*=Attribute['-'])
+		)#
 ;
 
 EntityType:
