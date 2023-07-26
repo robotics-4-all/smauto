@@ -1,17 +1,28 @@
 ## Description
-SmartAutomation (smauto) is a Domain Specific Language (DSL) that enables users to program complex 
-automation scenarios, for connected IoT devices, that go beyond simple automation rules. 
-The language is built using Python and TextX and follows the model interpretation paradigm.
+SmAuto is a Domain Specific Language (DSL) that enables users to program complex 
+automation scenarios, for connected IoT devices in smart environments,
+that go beyond simple tasks. 
 
-This repository includes the language definition among with the interpreter.
+The DSL is developed using Python and TextX and follows the model interpretation
+and executable models paradigms. It includes a meta-model and a grammar, that is
+specialized for smart environments, while it also provides the following features:
 
-Furthermore, below you can find useful side-projects, such as a command-line
-interface and a server implementation, which exposes a REST API for remote
-validation and interpretation of smauto models.
-
-- [smauto-server](https://github.com/robotics-4-all/smauto-server)
-- [smauto-cli](https://github.com/robotics-4-all/smauto-cli)
-
+- **Command-line Interface**. Used to call the validator, the interpreter and the 
+code generator explicitely.
+- **REST Api**. The DSL implements a REST Api, that can be utilized to remotely call
+the validator, the interpreter and the code generator on demand. ALso usefull for
+integrating the language in bigger projects and cloud-based platforms.
+- **Dynamically compile and execute models**. Model classes are constructed at runtime
+and are enhanced with platform-specific code that implements the logic. This process is
+executed by the language interpreter.
+- **Generate Virtual Entities**. A code generator is provided that transforms
+Entity model definitions into executable code with enhanced value generation with
+optional noise functions applied on. This can be very usefull to automatically
+generate the source code of virtual entities which simulate the behaviour of physical
+sensors.
+- **Generate Visualization graphs of Automations**. A generator is provided 
+which takes a model as input and generates an image
+of the automation graph.
 
 ## Installation
 
@@ -46,7 +57,7 @@ docker run -it --rm --name mysmauto -p 8080:8080 smauto
 
 By default the image exposes port 8080 for the REST API.
 
-## SmAuto Language
+## SmAuto Overview
 
 The Metamodel of SmAuto DSL can be found [here](assets/images/smauto.png).
 
@@ -70,8 +81,6 @@ diagrams of each of the Broker, Entity and Automation concepts.
 
 ![AutomationMetamodel](assets/images/automation.png)
 
-
-## Write SmAuto Models
 
 An SmAuto Model contains information about the various devices in
 the smart environment (e.g: lights, thermostats, smart fridges etc.),
@@ -129,7 +138,7 @@ end
 
 For more in-depth description of this example head to the `examples/simple_model`
 
-## Entities
+### Entities
 
 Entities are your connected smart devices that send and receive information
 using a message broker. Entities have the following properties:
@@ -174,7 +183,7 @@ Notice that each Entity has it's own reference to a Broker, thus the metamodel
 allows for communicating with Entities which are connected to different message
 brokers. This allows for definining automation for multi-broker architectures.
 
-### Virtual Entities and the buildin value generators
+#### Virtual Entities and the buildin value generators
 
 SmAuto provides a code generator which can be utilized to transform Entities models
 into executable source code in Python.
@@ -207,10 +216,22 @@ it's own value and noise generators, using a simple grammar as evident below:
 -> <ValueGenerator> with noise <NoiseGenerator>
 ```
 
+**Supported Value Generators:**
+
+- **Constant**: `constant(value)`.
+- **Linear**: `linear(min, step)`.
+- **Gaussian**: `gaussian(value, maxValue, sigma)`.
+
+
+**Supported Noise Generators:**
+
+- **Uniform**: `uniform(min, max)`.
+- **Gaussian**: `gaussian(value, maxValue, sigma)`.
+
 Value generation and Noise are optional in the language and are features used
 by the Virtual Entity generator to transform Entity models into executable code.
 
-## Brokers
+### Brokers
 
 The Broker acts as the communication layer for messages where each device has
 its own Topic which is basically a mailbox for sending and receiving messages.
@@ -239,7 +260,7 @@ end
 - **db**: (Optional) Database number parameter. Only for Redis brokers.
 
 
-## Automations
+### Automations
 
 Automations allow the execution of a set of actions when a condition is met.
 Actions are performed by sending messages to Entities.
