@@ -174,6 +174,42 @@ Notice that each Entity has it's own reference to a Broker, thus the metamodel
 allows for communicating with Entities which are connected to different message
 brokers. This allows for definining automation for multi-broker architectures.
 
+### Virtual Entities and the buildin value generators
+
+SmAuto provides a code generator which can be utilized to transform Entities models
+into executable source code in Python.
+This feature of the language enables end-to-end generation of the objects (sensors, actuators, robots)
+which send and receive data based on their models. Thus it can be used to 
+generate while virtual smart environments and directly dig into defining and
+testing automations.
+
+For this purpose, the language supports (Optional) definition of a `Value Generator` and a `Noise` to 
+be applied on each attribute of an Entity separately.
+
+```
+Entity
+    name: weather_station
+    type: sensor
+    freq: 5
+    topic: "smauto.bme"
+    broker: home_mqtt_broker
+    attributes:
+        - temperature: float -> gaussian(10, 20, 5) with noise gaussian(1,1)
+        - humidity: float -> linear(1, 0.2) with noise uniform (0, 1)
+        - pressure: float -> constant(0.5)
+end
+```
+
+The above example utilizes this feature of the language. Each attribute can define
+it's own value and noise generators, using a simple grammar as evident below:
+
+```
+-> <ValueGenerator> with noise <NoiseGenerator>
+```
+
+Value generation and Noise are optional in the language and are features used
+by the Virtual Entity generator to transform Entity models into executable code.
+
 ## Brokers
 
 The Broker acts as the communication layer for messages where each device has
@@ -273,7 +309,7 @@ Automation
     name: start_aircondition
     condition:
         (corridor.temperature > 30) AND
-        (corridor.humidity > 30)
+        (kitchen.temperature > 30)
     ...
 end
 ```
@@ -342,6 +378,13 @@ Actions must be separated by a comma and a change of line (newline).
 - aircondition.power: true
 ```
 
+## Model Interpreter / Executable Automation models
+
+TODO
+
+## Generate Virtual Entities
+
+TODO
 
 ## Generate Graphs of Automations
 
