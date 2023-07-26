@@ -446,6 +446,12 @@ Only "actuator" and "robot" Attributes can have default values.
 
 SmAuto implements a language interpreter, to parse and validate the model against the meta-model and the logical rules, and to execute the input model. The interpreter dynamically constructs the classes (in Python) in-memory and executes the automation tasks described by the input model, using the Python interpreter. For this purpose, a command-line interface is provided to work with validation and dynamic execution of models, as long as for generating a visual graph for each automation (image file). Of course, for the graph generation and model execution processes, the validation process is initially executed and are terminated in case of syntactic and logical errors in the input model.
 
+To execute the automations defined within an SmAuto (.smauto) model use the CLI.
+
+```bash
+smauto interpret simple_model.smauto
+```
+
 ## Generate Virtual Entities
 
 The executor process takes as input the model, after success validation, and initially constructs the classes in-memory. The next step is to augment the model classes with platform-specific code, that includes the following core functionalities:
@@ -455,6 +461,12 @@ The executor process takes as input the model, after success validation, and ini
 - Augment the Automation class and include platform-specific code that implements the execution logic. Each Automation has an internal state machine that defines four (4) states and the transitions as it appears in Figure \ref{XX}.
 \end{itemize}
 
+To generate the virtual versions of entities defined within an smauto model, use the CLI.
+
+```bash
+smauto generate simple_model.smauto
+```
+
 ## Generate Graphs of Automations
 
 The CLI provides a command for generating visualization graphs of input models. Generated graphs are used for the evaluation of conditions and actions of the defined automation, before performing model execution. The automated creation of graph images is performed in two steps; initially, a M2M transformation is performed on the input SmAuto model and the output is a PlantUML model in textual format. Afterwards, an M2T transformation takes place to transform the PlantUML model into the final image (see Figure \ref{fig:automation_graph}). The M2M transforms conditions into a graph, where the left-most leaf nodes include entity attributes and values, while the right-most leaf nodes represent the properties of actions, which are the entity to perform the action on and it's state (attribute values). Finally, intermediate nodes in the graph represent the operators of the condition.
@@ -463,8 +475,7 @@ Below is the graph of the automation defined in [simple_model example](https://g
 
 ![automation_start_aircondition](https://user-images.githubusercontent.com/4770702/211201286-def896ce-6ec1-4121-b705-33a3f9b0a20b.png)
 
-To generate the graph of automations defined within an smauto model, use the
-[smauto-cli](https://github.com/robotics-4-all/smauto-cli) package.
+To generate the graph of automations defined within an smauto model, use the CLI.
 
 ```bash
 smauto graph simple_model.smauto
