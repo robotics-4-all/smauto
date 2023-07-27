@@ -81,7 +81,7 @@ Automation:
 Automation:
     name: stop_humidifier
     condition:
-        inrange(bedroom_humidity_sensor.humidity, 0.3, 0.6)
+        bedroom_humidity_sensor.humidity < 0.3
     enabled: false
     actions:
         - bedroom_humidifier.power: false
@@ -92,10 +92,10 @@ Automation:
     name: start_aircondition
     condition:
         (bedroom_temperature_sensor.temperature > 28) AND
-	(
+	    (
         (bedroom_humidity_sensor.humidity > 0.3) AND
         (bedroom_humidity_sensor.humidity < 0.6)
-	)
+	    )
     enabled: true
     actions:
         - bedroom_aircondition.temperature:  25.0

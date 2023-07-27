@@ -111,9 +111,8 @@ class Automation:
             update_state() function in the Entities listed in condition_entities upon them updating their states.
     """
 
-    def __init__(self, parent, name, condition,
-                 actions, enabled, continuous, dependsOn,
-                 starts):
+    def __init__(self, parent, name, condition, actions,
+                 enabled, continuous, checkOnce, after, starts, stops):
         """
         Creates and returns an Automation object
         :param name: Automation name. e.g: 'open_lights'
@@ -126,6 +125,9 @@ class Automation:
         :param continuous: Boolean variable indicating if the Automation
             should remain enabled after actions are run
         """
+        enabled = True if enabled is None else enabled
+        continuous = True if continuous is None else continuous
+        checkOnce = False if checkOnce is None else checkOnce
         self.parent = parent
         # Automation name
         self.name = name
@@ -133,18 +135,14 @@ class Automation:
         self.condition = condition
         # Boolean variable indicating if the Automation is enabled and should be evaluated
         self.enabled = enabled
-        # Boolean variable indicating if the Automation should remain enabled after execution and not require manual
-        # reactivation
         self.continuous = continuous
-        if self.continuous not in (True, False):
-            self.continuous = True
+        self.checkOnce = checkOnce
         # Action function
         self.actions = actions
-        self.dependsOn = dependsOn
+        self.after = after
         self.starts = starts
-
+        self.stops = stops
         self.time_between_activations = 5
-
         self.state = AutomationState.IDLE
 
     # Evaluate the Automation's conditions and run the actions
@@ -243,13 +241,13 @@ class Automation:
 
 
     def print(self):
-        dependsOn = f'\n'.join(
-            [f"      - {dep.automation.name}" for dep in self.dependsOn])
+        after = f'\n'.join(
+            [f"      - {dep.name}" for dep in self.after])
         print(
             f"[*] Automation <{self.name}>\n"
             f"    Condition: {self.condition.cond_lambda}\n"
-            f"    DependsOn:\n"
-            f"      {dependsOn}"
+            f"    After:\n"
+            f"      {after}"
         )
 
     def start(self):
@@ -258,13 +256,13 @@ class Automation:
         self.print()
         print(f"[bold yellow][*] Executing Automation: {self.name}[/bold yellow]")
         while True:
-            if len(self.dependsOn) == 0:
+            if len(self.after) == 0:
                 self.state = AutomationState.RUNNING
-        # Wait for dependend automations to finish
+            # Wait for dependend automations to finish
             while self.state == AutomationState.IDLE:
                 wait_for = [
-                    dep.automation.name for dep in self.dependsOn
-                    if dep.automation.state == AutomationState.RUNNING
+                    dep.name for dep in self.after
+                    if dep.state == AutomationState.RUNNING
                 ]
                 if len(wait_for) == 0:
                     self.state = AutomationState.RUNNING
@@ -276,20 +274,25 @@ class Automation:
             while self.state == AutomationState.RUNNING:
                 try:
                     triggered, msg = self.evaluate()
+                    # Check if action is triggered
+                    if triggered:
+                        print(f"[bold yellow][*] Automation <{self.name}> "
+                              f"Triggered![/bold yellow]")
+                        print(f"[bold blue][*] Condition met: {self.condition.cond_lambda}")
+                        # If automation triggered run its actions
+                        self.trigger()
+                        self.state = AutomationState.EXITED_SUCCESS
+                        for automation in self.starts:
+                            automation.enable()
+                        for automation in self.stops:
+                            automation.disable()
+                    if self.checkOnce:
+                        self.disable()
+                        self.state = AutomationState.EXITED_SUCCESS
+                    time.sleep(1)
                 except Exception as e:
                     print(f'[ERROR] {e}')
                     return
-                # Check if action is triggered
-                if triggered:
-                    print(f"[bold yellow][*] Automation <{self.name}> "
-                          f"Triggered![/bold yellow]")
-                    print(f"[bold blue][*] Condition met: {self.condition.cond_lambda}")
-                    # If automation triggered run its actions
-                    self.trigger()
-                    self.state = AutomationState.EXITED_SUCCESS
-                    for automation in self.starts:
-                        automation.enable()
-                time.sleep(1)
             # time.sleep(self.time_between_activations)
             self.state = AutomationState.IDLE
 

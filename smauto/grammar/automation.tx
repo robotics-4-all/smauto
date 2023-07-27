@@ -6,11 +6,13 @@ Automation:
         (
         ('name:' name=ID)
         ('condition:' condition=Condition)
-        ('actions:' actions*=Action)
+        ('actions:' actions*=Action)?
         ('enabled:' enabled=BOOL)?
         ('continuous:' continuous=BOOL)?
-        ('dependsOn:' '-' dependsOn*=AutomationDependency['-'])?
+        ('checkOnce:' checkOnce=BOOL)?
+        ('after:' '-' after*=[Automation|FQN|automations]['-'])?
         ('starts:' '-' starts*=[Automation|FQN|automations]['-'])?
+        ('stops:' '-' stops*=[Automation|FQN|automations]['-'])?
         )#
 ;
 
@@ -37,8 +39,8 @@ PrimitiveCondition:
 AdvancedCondition: InRangeCondition | MathExpression;
 
 InRangeCondition:
-    'inrange' '(' attribute=[NumericAttribute|FQN|entities.attributes]  ','
-        min=NUMBER ',' max=NUMBER ')'
+    attribute=[NumericAttribute|FQN|entities.attributes]  'in range'
+        '[' min=NUMBER ',' max=NUMBER ']'
 ;
 
 MathExpression:
