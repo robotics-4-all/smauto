@@ -111,38 +111,38 @@ async def validate_b64(text: str = ''):
     return resp
 
 
-# @api.post("/interpret")
-# async def interpret(model_file: UploadFile = File(...),
-#                     container: str = 'subprocess',
-#                     wait: bool = False):
-#     print(f'Interpret Request: file=<{model_file.filename}>,' + \
-#           f' descriptor=<{model_file.file}>')
-#     resp = {
-#         'status': 200,
-#         'message': ''
-#     }
-#     fd = model_file.file
-#     u_id = uuid.uuid4().hex[0:8]
-#     model_path = os.path.join(
-#         TMP_DIR,
-#         f'model-{u_id}.auto'
-#     )
-#
-#     with open(model_path, 'w') as f:
-#         f.write(fd.read().decode('utf8'))
-#     try:
-#         if container == 'subprocess':
-#             pid = run_interpreter(model_path)
-#             if wait:
-#                 pid.wait()
-#         else:
-#             raise ValueError()
-#     except Exception as e:
-#         print(e)
-#         resp['status'] = 404
-#     return resp
-#
-#
+@api.post("/interpret")
+async def interpret(model_file: UploadFile = File(...),
+                    container: str = 'subprocess',
+                    wait: bool = False):
+    print(f'Interpret Request: file=<{model_file.filename}>,' + \
+          f' descriptor=<{model_file.file}>')
+    resp = {
+        'status': 200,
+        'message': ''
+    }
+    fd = model_file.file
+    u_id = uuid.uuid4().hex[0:8]
+    model_path = os.path.join(
+        TMP_DIR,
+        f'model-{u_id}.auto'
+    )
+
+    with open(model_path, 'w') as f:
+        f.write(fd.read().decode('utf8'))
+    try:
+        if container == 'subprocess':
+            pid = run_interpreter(model_path)
+            if wait:
+                pid.wait()
+        else:
+            raise ValueError()
+    except Exception as e:
+        print(e)
+        resp['status'] = 404
+    return resp
+
+
 @api.post("/generate/ventities")
 async def generate(model_file: UploadFile = File(...)):
     print(f'Generate for request: file=<{model_file.filename}>,' + \
@@ -155,7 +155,7 @@ async def generate(model_file: UploadFile = File(...)):
     u_id = uuid.uuid4().hex[0:8]
     model_path = os.path.join(
         TMP_DIR,
-        f'model-{u_id}.smauto'
+        f'model-{u_id}.auto'
     )
     tarball_path = os.path.join(
         TMP_DIR,
