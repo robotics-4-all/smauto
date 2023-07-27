@@ -19,6 +19,7 @@ AutomationDependency:
 ;
 
 // === Conditions ===
+// Condition: AdvancedCondition | PrimitiveCondition | ConditionGroup ;
 Condition: ConditionGroup | PrimitiveCondition | AdvancedCondition;
 
 ConditionGroup:
@@ -33,12 +34,26 @@ PrimitiveCondition:
     DictCondition
 ;
 
-AdvancedCondition: InRangeCondition;
+AdvancedCondition: InRangeCondition | MathExpression;
 
 InRangeCondition:
     'inrange' '(' attribute=[NumericAttribute|FQN|entities.attributes]  ','
         min=NUMBER ',' max=NUMBER ')'
 ;
+
+MathExpression:
+	'math' '(' op=MathTerm (op=PlusOrMinus op=MathTerm)* ')'
+;
+
+PlusOrMinus: '+' | '-';
+MulOrDiv: '*' | '/' ;
+
+MathTerm: op=MathFactor (op=MulOrDiv op=MathFactor)*;
+
+MathFactor: (sign=PlusOrMinus)?  op=MathOperand;
+
+MathOperand: op=NUMBER | op=[NumericAttribute|FQN|entities.attributes] |
+	('(' op=MathExpression ')');
 
 // String Conditions
 StringCondition:
