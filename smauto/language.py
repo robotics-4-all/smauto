@@ -44,7 +44,8 @@ def get_metamodel():
             RedisBroker, BrokerAuthPlain, Automation, Action,
             IntAction, FloatAction, StringAction, BoolAction,
             List, Dict
-        ]
+        ],
+        auto_init_attributes=False
     )
     return metamodel
 

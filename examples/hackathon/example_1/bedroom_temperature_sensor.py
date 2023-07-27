@@ -165,15 +165,14 @@ class BedroomTemperatureSensorNode(Node):
 
     def init_gen_components(self):
         components = []
-        temperature_properties = ValueGeneratorProperties.Gaussian(
-            value=10,
-            max_value=20,
-            sigma=2,
+        temperature_properties = ValueGeneratorProperties.Linear(
+            start=20,
+            step=1
         )
-        _gen_type = ValueGeneratorType.Gaussian
+        _gen_type = ValueGeneratorType.Linear
         temperature_noise = Noise(
             _type=NoiseType.Gaussian,
-            properties=NoiseGaussian(0, 1)
+            properties=NoiseGaussian(0, 0.05)
         )
         temperature_component = ValueComponent(
             _type=_gen_type,
@@ -207,7 +206,14 @@ class BedroomTemperatureSensorNode(Node):
 
     def gen_data(self):
         msg = BedroomTemperatureSensorMsg()
-        msg.temperature = random.gauss(, 2)
+        if not hasattr(self, "_temperature"):
+            val = 
+        else:
+            val = self._temperature + 1
+        if val > :
+            val = 
+        self._temperature = val
+        msg.temperature = val
         return msg
 
 """

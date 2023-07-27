@@ -96,26 +96,24 @@ the way they communicate and the automation tasks.
 Bellow is a simple example  model in which the air conditioner is turned on according to the
 temperature and humidity measurements:
 
-```
-Broker<MQTT>
+```yaml
+MQTT:
     name: home_broker
     host: "localhost"
     port: 1883
     credentials:
         username: "george"
         password: "georgesPassword"
-end
 
-Entity
+Entity:
     name: weather_station
     topic: "porch.weather_station"
     broker: home_broker
     attributes:
         - temperature: float
         - humidity: int
-end
           
-Entity
+Entity:
     name: aircondition
     topic: "bedroom.aircondition"
     broker: home_broker
@@ -123,9 +121,8 @@ Entity
         - temperature: float
         - mode: string
         - on: bool
-end
   
-Automation
+Automation:
     name: start_aircondition
     condition:
         (weather_station.temperature > 32) AND 
@@ -136,7 +133,6 @@ Automation
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
         - aircondition.on:  true
-end
 ```
 
 For more in-depth description of this example head to the `examples/simple_model`
@@ -157,7 +153,7 @@ messages the Entity sends to the communication broker.
 You can configure an Entity  using the following syntax:
 
 ```yaml
-Entity
+Entity:
     name: robot_cleaner
     type: robot
     topic: "bedroom.robot_cleaner"
@@ -171,7 +167,6 @@ Entity
             x: int,
             y: int
         }
-end
 ```
 
 
@@ -203,8 +198,8 @@ testing automations.
 
 For this purpose, the language supports (Optional) definition of a `Value Generator` and a `Noise` to be applied on each attribute of an Entity of type **sensor** separately.
 
-```
-Entity
+```yaml
+Entity:
     name: weather_station
     type: sensor
     freq: 5
@@ -214,7 +209,6 @@ Entity
         - temperature: float -> gaussian(10, 20, 5) with noise gaussian(1,1)
         - humidity: float -> linear(1, 0.2) with noise uniform (0, 1)
         - pressure: float -> constant(0.5)
-end
 ```
 
 The above example utilizes this feature of the language. Each attribute can define
@@ -246,15 +240,14 @@ its own Topic which is basically a mailbox for sending and receiving messages.
 SmartAutomation DSL supports Brokers which support the MQTT, AMQP and Redis
 protocols. You can define a Broker using the syntax in the following example:
 
-```
-Broker<MQTT>
+```yaml
+MQTT:
     name: upstairs_broker
     host: "localhost"
     port: 1883
     credentials:
         username: "my_username"
         password: "my_password"
-end
 ```
 
 - **type**: The first line can be `MQTT`, `AMQP` or `Redis` according to the Broker type
@@ -275,8 +268,8 @@ Actions are performed by sending messages to Entities.
 
 You can define an Automation using the syntax in the following example:
 
-```
-Automation
+```yaml
+Automation:
     name: start_aircondition
     condition: 
         (
@@ -289,7 +282,6 @@ Automation
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
         - aircondition.on:  true
-end
 
 Automation:
     name: start_humidifier
@@ -317,11 +309,16 @@ Automation:
 - **condition**: The condition used to determine if actions should be run. See **Writing Conditions** for more information.
 - **enabled**: Whether the Automation should be run or not.
 - **continuous**: Whether the Automation should automatically remain enabled once its actions have been executed.
+- **checkOnce**: The condition of the automation will run **ONLY ONCE** and
+  exit.
 - **actions**: The actions that should be run once the condition is met. See Writing Actions for more information.
-- **dependsOn**: Other automations which depends on. The automation will not start
+- **after**: The automation will not start
     and will be hold at the IDLE state until termination of the automations
     listed here as dependencies.
-- **starts**: Starts other automation of termination.
+- **starts**: Starts other automation after termination of the current
+  automation.
+- **stops**: stops other automation after termination of the current
+  automation.
 
 
 ### Conditions
@@ -338,26 +335,26 @@ entity_name.attribute_name
 Below is an example of a Condition that references several attributes of
 more-than-one Entities.
 
-```
-Entity
+```yaml
+Entity:
     name: corridor_temperature
     type: sensor
     topic: "corridor.temperature"
     broker: home_mqtt_broker
+    freq: 10
     attributes:
         - temperature: float
-end
 
-Entity
+Entity:
     name: kitchen_temperature
     type: sensor
     topic: "kitchen.temperature"
     broker: home_mqtt_broker
+    freq: 10
     attributes:
         - temperature: float
-end
 
-Automation
+Automation:
     name: start_aircondition
     condition:
         (corridor.temperature > 30) AND
@@ -367,7 +364,6 @@ Automation
         - aircondition.mode:  "cool"
         - aircondition.power:  true
         - window.state:  1
-end
 ```
 
 #### Condition Formatting:

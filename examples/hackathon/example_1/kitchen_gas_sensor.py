@@ -165,12 +165,11 @@ class KitchenGasSensorNode(Node):
 
     def init_gen_components(self):
         components = []
-        gas_properties = ValueGeneratorProperties.Gaussian(
-            value=0,
-            max_value=1,
-            sigma=2,
+        gas_properties = ValueGeneratorProperties.Linear(
+            start=0,
+            step=0.1
         )
-        _gen_type = ValueGeneratorType.Gaussian
+        _gen_type = ValueGeneratorType.Linear
         gas_noise = Noise(
             _type=NoiseType.Gaussian,
             properties=NoiseGaussian(0, 0.1)
@@ -207,7 +206,14 @@ class KitchenGasSensorNode(Node):
 
     def gen_data(self):
         msg = KitchenGasSensorMsg()
-        msg.gas = random.gauss(, 2)
+        if not hasattr(self, "_gas"):
+            val = 
+        else:
+            val = self._gas + 0.1
+        if val > :
+            val = 
+        self._gas = val
+        msg.gas = val
         return msg
 
 """

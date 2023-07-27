@@ -7,7 +7,7 @@ Metadata:
 
 MQTT:
     name: issel_cloud_platform
-    host: "83.212.106.23"   // ISSEL Fiware Platform
+    host: "83.212.106.23"  # Fiware Platform
     port: 1893
     credentials:
         username: "porolog"
@@ -37,7 +37,7 @@ Entity:
     topic: "bedroom.temperature"
     broker: issel_cloud_platform
     attributes:
-        - temperature: float -> gaussian(10, 20, 2) with noise gaussian(0, 1)
+        - temperature: float -> linear(20, 1) with noise gaussian(0, 0.05)
 
 Entity:
     name: kitchen_gas_sensor
@@ -46,7 +46,7 @@ Entity:
     topic: "kitchen.gas"
     broker: issel_cloud_platform
     attributes:
-        - gas: float -> gaussian(0, 1, 2) with noise gaussian(0, 0.1)
+        - gas: float -> linear(0, 0.1) with noise gaussian(0, 0.1)
 
 Entity:
     name: bedroom_aircondition
@@ -71,7 +71,7 @@ Automation:
     name: start_humidifier
     condition:
         bedroom_humidity_sensor.humidity > 0.6
-    enabled: true
+    continuous: false
     actions:
         - bedroom_humidifier.power: true
         - bedroom_humidifier.timer: -1
@@ -83,6 +83,7 @@ Automation:
     condition:
         bedroom_humidity_sensor.humidity < 0.3
     enabled: false
+    continuous: false
     actions:
         - bedroom_humidifier.power: false
     starts:
@@ -92,11 +93,8 @@ Automation:
     name: start_aircondition
     condition:
         (bedroom_temperature_sensor.temperature > 28) AND
-	(
-        (bedroom_humidity_sensor.humidity > 0.3) AND
-        (bedroom_humidity_sensor.humidity < 0.6)
-	)
-    enabled: true
+        (bedroom_humidity_sensor.humidity in range [0.3, 0.6])
+    continuous: false
     actions:
         - bedroom_aircondition.temperature:  25.0
         - bedroom_aircondition.mode:  "cool"
@@ -106,7 +104,5 @@ Automation:
     name: set_alarm_on_gas
     condition:
         std(kitchen_gas_sensor.gas, 10) > 0.1
-    enabled: true
-    continuous: true
     actions:
         - alarm.state:  1
