@@ -7,7 +7,7 @@ Metadata:
 
 MQTT:
     name: issel_cloud_platform
-    host: "83.212.106.23"   // ISSEL Fiware Platform
+    host: "83.212.106.23"  # Fiware Platform
     port: 1893
     credentials:
         username: "porolog"
