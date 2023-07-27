@@ -97,7 +97,6 @@ Automation:
         (bedroom_humidity_sensor.humidity < 0.6)
 	)
     enabled: true
-    continuous: true
     actions:
         - bedroom_aircondition.temperature:  25.0
         - bedroom_aircondition.mode:  "cool"

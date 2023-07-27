@@ -2,6 +2,8 @@ from textx import textx_isinstance, get_metamodel
 import time
 from rich import print, pretty
 import statistics
+from concurrent.futures import ThreadPoolExecutor
+
 
 pretty.install()
 
@@ -134,6 +136,8 @@ class Automation:
         # Boolean variable indicating if the Automation should remain enabled after execution and not require manual
         # reactivation
         self.continuous = continuous
+        if self.continuous not in (True, False):
+            self.continuous = True
         # Action function
         self.actions = actions
         self.dependsOn = dependsOn
@@ -269,13 +273,11 @@ class Automation:
                     f'automations to finish:[/bold magenta] {wait_for}'
                 )
             print(f"[bold yellow][*] Running Automation: {self.name}[/bold yellow]")
-            print(self.state)
             while self.state == AutomationState.RUNNING:
                 try:
                     triggered, msg = self.evaluate()
-                    if self.name == "start_humidifier":
-                        print(triggered)
-                        print(msg)
+                    if self.name == 'stop_humidifier':
+                        print(triggered, msg)
                 except Exception as e:
                     print(f'[ERROR] {e}')
                     return
@@ -288,14 +290,17 @@ class Automation:
                     self.trigger()
                     self.state = AutomationState.EXITED_SUCCESS
                     for automation in self.starts:
-                        automation.enabled = True
-                        automation.start()
+                        automation.enable()
                 time.sleep(1)
-            if not self.continuous:
-                break
             # time.sleep(self.time_between_activations)
             self.state = AutomationState.IDLE
 
+    def enable(self):
+        self.enabled = True
+        print(f"[bold yellow][*] Enabled Automation: {self.name}[/bold yellow]")
+
+    def disable(self):
+        self.enabled = False
 
 # List class for List type
 class List:
