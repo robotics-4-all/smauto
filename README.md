@@ -309,11 +309,16 @@ Automation:
 - **condition**: The condition used to determine if actions should be run. See **Writing Conditions** for more information.
 - **enabled**: Whether the Automation should be run or not.
 - **continuous**: Whether the Automation should automatically remain enabled once its actions have been executed.
+- **checkOnce**: The condition of the automation will run **ONLY ONCE** and
+  exit.
 - **actions**: The actions that should be run once the condition is met. See Writing Actions for more information.
-- **dependsOn**: Other automations which depends on. The automation will not start
+- **after**: The automation will not start
     and will be hold at the IDLE state until termination of the automations
     listed here as dependencies.
-- **starts**: Starts other automation of termination.
+- **starts**: Starts other automation after termination of the current
+  automation.
+- **stops**: stops other automation after termination of the current
+  automation.
 
 
 ### Conditions
