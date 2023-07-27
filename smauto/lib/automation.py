@@ -25,6 +25,8 @@ OPERATORS = {
     '>': lambda left, right: f"({left} > {right})",
     '<': lambda left, right: f"({left} < {right})",
 
+    'InRange': lambda attr, min, max: f"({attr} > {min} and {attr} < {max})",
+
     # Boolean operators
     'AND': lambda left, right: f"({left} and {right})",
     'OR': lambda left, right: f"({left} or {right})",
@@ -32,7 +34,8 @@ OPERATORS = {
     'XOR': lambda left, right: f"({left} ^ {right})",
     'NOR': lambda left, right: f"(not ({left} or {right}))",
     'XNOR': lambda left, right: f"(({left} or {right}) and (not {left} or not {right}))",
-    'NAND': lambda left, right: f"(not ({left} and {right}))"
+    'NAND': lambda left, right: f"(not ({left} and {right}))",
+
 }
 
 
@@ -224,9 +227,17 @@ class Automation:
             # Visit right node
             self.process_node_condition(cond_node.r2)
             # Build lambda
-            cond_node.cond_lambda = (OPERATORS[cond_node.operator])(cond_node.r1.cond_lambda, cond_node.r2.cond_lambda)
+            cond_node.cond_lambda = (OPERATORS[cond_node.operator])(
+                cond_node.r1.cond_lambda, cond_node.r2.cond_lambda)
 
         # If we are in a primitive condition node, form conditions using operands
+        elif textx_isinstance(
+            cond_node, metamodel.namespaces['automation']['InRangeCondition']):
+            operand1 = transform_operand(cond_node.attribute)
+            cond_lambda = (OPERATORS['InRange'])(operand1,
+                                                 cond_node.min,
+                                                 cond_node.max)
+            cond_node.cond_lambda = cond_lambda
         else:
             operand1 = transform_operand(cond_node.operand1)
             operand2 = transform_operand(cond_node.operand2)
