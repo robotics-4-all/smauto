@@ -256,6 +256,7 @@ class Automation:
         self.state = AutomationState.IDLE
         self.build_condition()
         self.print()
+        print(f"[bold yellow][*] Executing Automation: {self.name}[/bold yellow]")
         while True:
             if len(self.dependsOn) == 0:
                 self.state = AutomationState.RUNNING
@@ -272,7 +273,6 @@ class Automation:
                     f'[bold magenta]\[{self.name}] Waiting for dependend '
                     f'automations to finish:[/bold magenta] {wait_for}'
                 )
-            print(f"[bold yellow][*] Running Automation: {self.name}[/bold yellow]")
             while self.state == AutomationState.RUNNING:
                 try:
                     triggered, msg = self.evaluate()
