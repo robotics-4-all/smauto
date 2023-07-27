@@ -290,6 +290,27 @@ Automation
         - aircondition.mode:  "cool"
         - aircondition.on:  true
 end
+
+Automation:
+    name: start_humidifier
+    condition:
+        bedroom_humidity_sensor.humidity > 0.6
+    enabled: true
+    actions:
+        - bedroom_humidifier.power: true
+        - bedroom_humidifier.timer: -1
+    starts:
+        - stop_humidifier
+
+Automation:
+    name: stop_humidifier
+    condition:
+        bedroom_humidity_sensor.humidity < 0.3
+    enabled: false
+    actions:
+        - bedroom_humidifier.power: false
+    starts:
+        - start_humidifier
 ```
 
 - **name**: The name for the Automation. Should start with a letter, can contain only letters, numbers and underscores.
@@ -300,13 +321,15 @@ end
 - **dependsOn**: Other automations which depends on. The automation will not start
     and will be hold at the IDLE state until termination of the automations
     listed here as dependencies.
+- **starts**: Starts other automation of termination.
 
 
 ### Conditions
 
 Conditions are very similar to conditions in imperative programming languages
 such as Python, Java, C++ or JavaScript. You can use Entity Attributes in a
-condition just like a variable by referencing it in the Condition as such:
+condition just like a variable by referencing it in the Condition using 
+it's Fully-Qualified Name (FQN) in dot (.) notation.
 
 ```
 entity_name.attribute_name
