@@ -262,7 +262,6 @@ class Automation:
                 self.state = AutomationState.RUNNING
         # Wait for dependend automations to finish
             while self.state == AutomationState.IDLE:
-                time.sleep(1)
                 wait_for = [
                     dep.automation.name for dep in self.dependsOn
                     if dep.automation.state == AutomationState.RUNNING
@@ -273,11 +272,10 @@ class Automation:
                     f'[bold magenta]\[{self.name}] Waiting for dependend '
                     f'automations to finish:[/bold magenta] {wait_for}'
                 )
+                time.sleep(1)
             while self.state == AutomationState.RUNNING:
                 try:
                     triggered, msg = self.evaluate()
-                    if self.name == 'stop_humidifier':
-                        print(triggered, msg)
                 except Exception as e:
                     print(f'[ERROR] {e}')
                     return
