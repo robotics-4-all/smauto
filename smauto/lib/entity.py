@@ -157,8 +157,8 @@ class Attribute:
 
 
 class IntAttribute(Attribute):
-    def __init__(self, parent, name, generator, noise):
-        super().__init__(parent, name)
+    def __init__(self, parent, name, default, generator, noise):
+        super().__init__(parent, name, default)
         self.generator = generator
         self.noise = noise
         self.type = 'int'
@@ -167,8 +167,8 @@ class IntAttribute(Attribute):
 
 
 class FloatAttribute(Attribute):
-    def __init__(self, parent, name, generator, noise):
-        super().__init__(parent, name)
+    def __init__(self, parent, name, default, generator, noise):
+        super().__init__(parent, name, default)
         self.generator = generator
         self.noise = noise
         self.type = 'float'
@@ -177,24 +177,24 @@ class FloatAttribute(Attribute):
 
 
 class StringAttribute(Attribute):
-    def __init__(self, parent, name):
-        super().__init__(parent, name)
+    def __init__(self, parent, name, default):
+        super().__init__(parent, name, default)
         self.type = 'str'
         if self.value is None:
             self.value = ""
 
 
 class BoolAttribute(Attribute):
-    def __init__(self, parent, name):
-        super().__init__(parent, name)
+    def __init__(self, parent, name, default):
+        super().__init__(parent, name, default)
         self.type = 'bool'
         if self.value is None:
             self.value = False
 
 
 class ListAttribute(Attribute):
-    def __init__(self, parent, name):
-        super().__init__(parent, name)
+    def __init__(self, parent, name, default):
+        super().__init__(parent, name, default)
         self.type = 'list'
         if self.value is None:
             self.value = []

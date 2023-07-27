@@ -55,7 +55,7 @@ def build_model(model_path):
     return model
 
 
-@language('smauto', '*.smauto')
+@language('smauto', '*.auto')
 def smauto_language():
     "SmartAutomation (SmAuto) language"
     return get_metamodel()

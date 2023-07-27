@@ -2,7 +2,7 @@
 
 import traceback
 from rich import print, pretty
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ALL_COMPLETED, as_completed
 from smauto.language import build_model
 
 pretty.install()
@@ -44,9 +44,10 @@ def execute_model_from_path(model_path: str, max_workers: int = 10):
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         works = []
         for automation in automations:
+            automation.executor = ThreadPoolExecutor()
             work = executor.submit(
-                automation.start,
-                # ()
+                automation.start
             ).add_done_callback(automation_worker_clb)
             works.append(work)
+        done, not_done = wait(works)
     print('[bold magenta][*] All automations completed!![/bold magenta]')

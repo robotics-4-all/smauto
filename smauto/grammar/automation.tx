@@ -2,7 +2,7 @@ import entity
 
 // === Overall Automation ===
 Automation:
-    'Automation'
+    'Automation:'
         (
         ('name:' name=ID)
         ('condition:' condition=Condition)
@@ -10,8 +10,8 @@ Automation:
         ('enabled:' enabled=BOOL)?
         ('continuous:' continuous=BOOL)?
         ('dependsOn:' '-' dependsOn*=AutomationDependency['-'])?
+        ('starts:' '-' starts*=[Automation|FQN|automations]['-'])?
         )#
-    'end'
 ;
 
 AutomationDependency:
@@ -19,7 +19,7 @@ AutomationDependency:
 ;
 
 // === Conditions ===
-Condition: ConditionGroup | PrimitiveCondition;
+Condition: ConditionGroup | PrimitiveCondition | AdvancedCondition;
 
 ConditionGroup:
     '(' r1=Condition ')' operator=BooleanOperatorType '(' r2=Condition ')'
@@ -31,6 +31,13 @@ PrimitiveCondition:
     BoolCondition       |
     ListCondition       |
     DictCondition
+;
+
+AdvancedCondition: InRangeCondition;
+
+InRangeCondition:
+    'inrange' '(' attribute=[NumericAttribute|FQN|entities.attributes]  ','
+        min=NUMBER ',' max=NUMBER ')'
 ;
 
 // String Conditions
@@ -57,7 +64,12 @@ StringDouble:
 ;
 
 // Numeric Conditions
-AugmentedNumericAttr: StdAttr | MeanAttr | MultiplyAttr | NoneFilterAttr;
+AugmentedNumericAttr:
+    StdAttr         |
+    MeanAttr        |
+    MultiplyAttr    |
+    NoneFilterAttr
+;
 
 StdAttr:
     'std' '(' attribute=[NumericAttribute|FQN|entities.attributes] ',' size=INT ')'

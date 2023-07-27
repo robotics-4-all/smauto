@@ -55,7 +55,11 @@ Entity
     topic: "bedroom.window"
     broker: home_mqtt_broker
     attributes:
-        - state: bool
+        - state: int = 1
+	- skata: dict = {
+	    x: int = 1,
+	    y: int = 1
+	}
 end
 
 
@@ -70,7 +74,7 @@ Automation
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
         - aircondition.power:  true
-        - window.state:  false
+        - window.state:  1
 end
 
 Automation

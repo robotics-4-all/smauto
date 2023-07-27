@@ -2,6 +2,8 @@ from textx import textx_isinstance, get_metamodel
 import time
 from rich import print, pretty
 import statistics
+from concurrent.futures import ThreadPoolExecutor
+
 
 pretty.install()
 
@@ -110,7 +112,8 @@ class Automation:
     """
 
     def __init__(self, parent, name, condition,
-                 actions, enabled, continuous, dependsOn):
+                 actions, enabled, continuous, dependsOn,
+                 starts):
         """
         Creates and returns an Automation object
         :param name: Automation name. e.g: 'open_lights'
@@ -133,9 +136,15 @@ class Automation:
         # Boolean variable indicating if the Automation should remain enabled after execution and not require manual
         # reactivation
         self.continuous = continuous
+        if self.continuous not in (True, False):
+            self.continuous = True
         # Action function
         self.actions = actions
         self.dependsOn = dependsOn
+        self.starts = starts
+
+        self.time_between_activations = 5
+
         self.state = AutomationState.IDLE
 
     # Evaluate the Automation's conditions and run the actions
@@ -244,40 +253,52 @@ class Automation:
         )
 
     def start(self):
+        self.state = AutomationState.IDLE
         self.build_condition()
         self.print()
-        if len(self.dependsOn) == 0:
-            self.state = AutomationState.RUNNING
-        # Wait for dependend automations to finish
-        while self.state == AutomationState.IDLE:
-            time.sleep(1)
-            wait_for = [
-                dep.automation.name for dep in self.dependsOn
-                if dep.automation.state == AutomationState.RUNNING
-            ]
-            if len(wait_for) == 0:
+        print(f"[bold yellow][*] Executing Automation: {self.name}[/bold yellow]")
+        while True:
+            if len(self.dependsOn) == 0:
                 self.state = AutomationState.RUNNING
-            print(
-                f'[bold magenta]\[{self.name}] Waiting for dependend '
-                f'automations to finish:[/bold magenta] {wait_for}'
-            )
-        print(f"[bold yellow][*] Running Automation: {self.name}[/bold yellow]")
-        while self.state == AutomationState.RUNNING:
-            try:
-                triggered, _ = self.evaluate()
-            except Exception as e:
-                print(f'[ERROR] {e}')
-                return
-            # Check if action is triggered
-            if triggered:
-                print(f"[bold yellow][*] Automation <{self.name}> "
-                      f"Triggered![/bold yellow]")
-                print(f"[bold blue][*] Condition met: {self.condition.cond_lambda}")
-                # If automation triggered run its actions
-                self.trigger()
-                self.state = AutomationState.EXITED_SUCCESS
-            time.sleep(1)
+        # Wait for dependend automations to finish
+            while self.state == AutomationState.IDLE:
+                wait_for = [
+                    dep.automation.name for dep in self.dependsOn
+                    if dep.automation.state == AutomationState.RUNNING
+                ]
+                if len(wait_for) == 0:
+                    self.state = AutomationState.RUNNING
+                print(
+                    f'[bold magenta]\[{self.name}] Waiting for dependend '
+                    f'automations to finish:[/bold magenta] {wait_for}'
+                )
+                time.sleep(1)
+            while self.state == AutomationState.RUNNING:
+                try:
+                    triggered, msg = self.evaluate()
+                except Exception as e:
+                    print(f'[ERROR] {e}')
+                    return
+                # Check if action is triggered
+                if triggered:
+                    print(f"[bold yellow][*] Automation <{self.name}> "
+                          f"Triggered![/bold yellow]")
+                    print(f"[bold blue][*] Condition met: {self.condition.cond_lambda}")
+                    # If automation triggered run its actions
+                    self.trigger()
+                    self.state = AutomationState.EXITED_SUCCESS
+                    for automation in self.starts:
+                        automation.enable()
+                time.sleep(1)
+            # time.sleep(self.time_between_activations)
+            self.state = AutomationState.IDLE
 
+    def enable(self):
+        self.enabled = True
+        print(f"[bold yellow][*] Enabled Automation: {self.name}[/bold yellow]")
+
+    def disable(self):
+        self.enabled = False
 
 # List class for List type
 class List:
