@@ -254,43 +254,7 @@ class {{ entity.camel_name }}Node(Node):
     def start(self):
         generator = self.init_gen_components()
         generator.start()
-
-"""
-    def start(self):
-        self.run()
-        rate = Rate(self.pub_freq)
-        while True:
-            msg = self.gen_data()
-            print(f'[bold]\[{{ entity.name }}][/bold] Sending data: {msg}')
-            self.pub.publish(msg)
-            rate.sleep()
-
-    def gen_data(self):
-        msg = {{ entity.camel_name }}Msg()
-        {% for attr in entity.attributes %}
-        {% if attr.generator.__class__.__name__ == 'UniformFun' %}
-        msg.{{ attr.name }} = random.uniform({{ attr.generator.min }}, {{ attr.generator.max }})
-        {% elif attr.generator.__class__.__name__ == 'GaussianFun' %}
-        msg.{{ attr.name }} = random.gauss({{ attr.generator.mu }}, {{ attr.generator.sigma }})
-        {% elif attr.generator.__class__.__name__ == 'ConstantFun' %}
-        msg.{{ attr.name }} = attr.generator.value
-        {% elif attr.generator.__class__.__name__ == 'LinearFun' %}
-        if not hasattr(self, "_{{ attr.name }}"):
-            val = {{ attr.generator.from }}
-        else:
-            val = self._{{ attr.name }} + {{ attr.generator.step }}
-        if val > {{ attr.generator.to }}:
-            val = {{ attr.generator.from }}
-        self._{{ attr.name }} = val
-        msg.{{ attr.name }} = val
-        {% else %}
-        msg.{{ attr.name }} = random.random()
-        {% endif %}
-        {% endfor %}
-        return msg
-
     {% endif %}
-"""
 
 
 if __name__ == '__main__':
