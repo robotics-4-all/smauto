@@ -1,0 +1,27 @@
+Metadata:
+    name: HackathonMissionA
+    version: "0.1.0"
+    description: "Model of mission 1 of the 2023 ISSEL hackathon"
+    author: "klpanagi"
+    email: "klpanagi@gmail.com"
+
+MQTT:
+    name: issel_cloud_platform
+    host: "83.212.106.23"  # Fiware Platform
+    port: 1893
+    credentials:
+        username: "porolog"
+        password: "fiware"
+
+Entity:
+    name: time
+    type: sensor
+    freq: 10
+    topic: "kitchen.gas"
+    broker: issel_cloud_platform
+    attributes:
+        - daytime: str
+        - datetime: str
+        - daytimeHours: int
+        - daytimeMinutes: int
+        - daytimeSeconds: int

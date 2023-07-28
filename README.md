@@ -161,7 +161,7 @@ Entity:
     attributes:
         - battery: float
         - cleaning_mode: string
-        - on: bool = 1
+        - on: bool
         - destinations: list
         - location: dict = {
             x: int,
@@ -185,7 +185,14 @@ Notice that each Entity has it's own reference to a Broker, thus the metamodel
 allows for communicating with Entities which are connected to different message
 brokers. This allows for definining automation for multi-broker architectures.
 
-Finally 
+Supported data types for Attributes:
+
+- int: Integer numerical values
+- float: Floating point numerical values
+- bool: Boolean (true/false) values
+- str: String values
+- list: List / Array
+- dict: Dictionary
 
 #### Attribute value generation for virtual Entities
 

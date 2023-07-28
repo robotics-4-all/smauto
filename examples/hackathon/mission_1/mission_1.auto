@@ -1,0 +1,107 @@
+Metadata:
+    name: HackathonMissionA
+    version: "0.1.0"
+    description: "Model of mission 1 of the 2023 ISSEL hackathon"
+    author: "klpanagi"
+    email: "klpanagi@gmail.com"
+
+MQTT:
+    name: issel_cloud_platform
+    host: "83.212.106.23"  # Fiware Platform
+    port: 1893
+    credentials:
+        username: "porolog"
+        password: "fiware"
+
+# Actuators
+# -------------------------------------------
+
+Entity:
+    name: humidifier
+    type: actuator
+    topic: "kitchen.humidifier"
+    broker: issel_cloud_platform
+    attributes:
+        - power: bool
+        - timer: int
+
+Entity:
+    name: thermostat
+    type: actuator
+    topic: "kitchen.thermostat"
+    broker: issel_cloud_platform
+    attributes:
+        - power: bool
+        - temperature: float
+
+Entity:
+    name: lamp
+    type: actuator
+    topic: "kitchen.lamp"
+    broker: issel_cloud_platform
+    attributes:
+        - power: bool
+        - colorR: int
+        - colorG: int
+        - colorB: int
+        - color: str
+
+Entity:
+    name: aircondition
+    type: actuator
+    topic: "bedroom.aircondition"
+    broker: issel_cloud_platform
+    attributes:
+        - power: bool
+        - temperature: float
+        - swing: bool
+        - mode: str
+
+Entity:
+    name: alarm
+    type: actuator
+    topic: "alarm"
+    broker: issel_cloud_platform
+    attributes:
+        - state: int = 0
+
+# Sensors
+# ------------------------------------------
+
+Entity:
+    name: humidity_sensor
+    type: sensor
+    topic: "kitchen.humidity"
+    broker: issel_cloud_platform
+    attributes:
+        - humidity: float -> linear(0, 0.1) with noise gaussian(0, 0.05)
+
+Entity:
+    name: temperature_sensor
+    type: sensor
+    freq: 10
+    topic: "bedroom.temperature"
+    broker: issel_cloud_platform
+    attributes:
+        - temperature: float -> linear(20, 1) with noise gaussian(0, 0.5)
+
+Entity:
+    name: gas_sensor
+    type: sensor
+    freq: 10
+    topic: "kitchen.gas"
+    broker: issel_cloud_platform
+    attributes:
+        - gas: float -> linear(0, 0.1) with noise gaussian(0, 0.1)
+
+Entity:
+    name: motion_detector
+    type: sensor
+    freq: 10
+    topic: "kitchen.motion_detector"
+    broker: issel_cloud_platform
+    attributes:
+        - detected: bool
+        - positionX: float -> gaussian(10, 100, 2) with noise gaussian(0, 2)
+        - positionY: float -> gaussian(20, 120, 2) with noise gaussian(0, 2)
+
