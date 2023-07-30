@@ -287,7 +287,7 @@ Automation:
         (
             (thermometer.temperature > 32) AND 
             (humidity.humidity > 30)
-        ) AND (aircondition.on NOT true)
+        ) AND (aircondition.on == true)
     enabled: true
     continuous: false
     actions:
