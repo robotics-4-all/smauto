@@ -4,21 +4,28 @@ import entity
 
 SmAutoModel:
     (metadata=Metadata)?
+    (
     brokers*=Broker
     entities*=Entity
     automations*=Automation
+    )#
 ;
 
 Metadata:
-'Metadata:'
-(
-    ('name:' name=ID)
-    ('version:' version=STRING)
-    ('author:' author=STRING)?
-    ('email:' email=STRING)?
-    ('description:' description=STRING)?
-)#
+    'Metadata:'
+    (
+        ('name:' name=ID)
+        ('version:' version=STRING)
+        ('author:' author=STRING)?
+        ('email:' email=STRING)?
+        ('description:' description=STRING)?
+    )#
 ;
+
+// FQN: ID('.'ID)*;
+FQN: ID+['.'];
+// FQNI: ID+['.']('.*')?;
+// Import: 'import' importURI=FQNI ('as' name=ID)?;
 
 // Comments
 Comment: /\#.*?$/;

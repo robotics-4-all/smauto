@@ -10,14 +10,14 @@ Automation:
         ('enabled:' enabled=BOOL)?
         ('continuous:' continuous=BOOL)?
         ('checkOnce:' checkOnce=BOOL)?
-        ('after:' '-' after*=[Automation:FQN|automations]['-'])?
-        ('starts:' '-' starts*=[Automation:FQN|automations]['-'])?
-        ('stops:' '-' stops*=[Automation:FQN|automations]['-'])?
+        ('after:' '-' after*=[Automation:FQN|+pm:automations]['-'])?
+        ('starts:' '-' starts*=[Automation:FQN|+pm:automations]['-'])?
+        ('stops:' '-' stops*=[Automation:FQN|+pm:automations]['-'])?
         )#
 ;
 
 AutomationDependency:
-    automation=[Automation:FQN|automations] ('on' exitStatus=BOOL)?
+    automation=[Automation:FQN|+pm:automations] ('on' exitStatus=BOOL)?
 ;
 
 // === Conditions ===
@@ -40,7 +40,7 @@ PrimitiveCondition:
 AdvancedCondition: InRangeCondition | MathExpression;
 
 InRangeCondition:
-    attribute=[NumericAttribute:FQN|entities.attributes]  'in range'
+    attribute=[NumericAttribute:FQN|+pm:entities.attributes]  'in range'
         '[' min=NUMBER ',' max=NUMBER ']'
 ;
 
@@ -55,7 +55,7 @@ MathTerm: op=MathFactor (op=MulOrDiv op=MathFactor)*;
 
 MathFactor: (sign=PlusOrMinus)?  op=MathOperand;
 
-MathOperand: op=NUMBER | op=[NumericAttribute:FQN|entities.attributes] |
+MathOperand: op=NUMBER | op=[NumericAttribute:FQN|+pm:entities.attributes] |
 	('(' op=MathExpression ')');
 
 // String Conditions
@@ -64,7 +64,7 @@ StringCondition:
 ;
 
 StringR:
-    (operand1=[StringAttribute:FQN|entities.attributes]
+    (operand1=[StringAttribute:FQN|+pm:entities.attributes]
      operator=StringOperator
      operand2=STRING)
 ;
@@ -72,13 +72,13 @@ StringR:
 StringL:
     (operand1=STRING
      operator=StringOperator
-     operand2=[StringAttribute:FQN|entities.attributes])
+     operand2=[StringAttribute:FQN|+pm:entities.attributes])
 ;
 
 StringDouble:
-    (operand1=[StringAttribute:FQN|entities.attributes]
+    (operand1=[StringAttribute:FQN|+pm:entities.attributes]
      operator=StringOperator
-     operand2=[StringAttribute:FQN|entities.attributes])
+     operand2=[StringAttribute:FQN|+pm:entities.attributes])
 ;
 
 // Numeric Conditions
@@ -90,19 +90,19 @@ AugmentedNumericAttr:
 ;
 
 StdAttr:
-    'std' '(' attribute=[NumericAttribute:FQN|entities.attributes] ',' size=INT ')'
+    'std' '(' attribute=[NumericAttribute:FQN|+pm:entities.attributes] ',' size=INT ')'
 ;
 
 MeanAttr:
-    'mean' '(' attribute=[NumericAttribute:FQN|entities.attributes]  ',' size=INT ')'
+    'mean' '(' attribute=[NumericAttribute:FQN|+pm:entities.attributes]  ',' size=INT ')'
 ;
 
 MultiplyAttr:
-    'mul' '(' attributes*=[NumericAttribute:FQN|entities.attributes][','] ')'
+    'mul' '(' attributes*=[NumericAttribute:FQN|+pm:entities.attributes][','] ')'
 ;
 
 NoneFilterAttr:
-    attribute=[NumericAttribute:FQN|entities.attributes]
+    attribute=[NumericAttribute:FQN|+pm:entities.attributes]
 ;
 
 NumericCondition:
@@ -133,7 +133,7 @@ BoolCondition:
 ;
 
 BoolR:
-    (operand1=[BoolAttribute:FQN|entities.attributes]
+    (operand1=[BoolAttribute:FQN|+pm:entities.attributes]
      operator=BooleanValueOperator
      operand2=BOOL)
 ;
@@ -141,13 +141,13 @@ BoolR:
 BoolL:
     (operand1=BOOL
      operator=BooleanValueOperator
-     operand2=[BoolAttribute:FQN|entities.attributes])
+     operand2=[BoolAttribute:FQN|+pm:entities.attributes])
 ;
 
 BoolDouble:
-    (operand1=[BoolAttribute:FQN|entities.attributes]
+    (operand1=[BoolAttribute:FQN|+pm:entities.attributes]
      operator=BooleanValueOperator
-     operand2=[BoolAttribute:FQN|entities.attributes])
+     operand2=[BoolAttribute:FQN|+pm:entities.attributes])
 ;
 
 // List Conditions
@@ -165,7 +165,7 @@ ListElements:
 ;
 
 ListR:
-    (operand1=[ListAttribute:FQN|entities.attributes]
+    (operand1=[ListAttribute:FQN|+pm:entities.attributes]
      operator=ListOperator
      operand2=List)
 ;
@@ -173,13 +173,13 @@ ListR:
 ListL:
     (operand1=List
      operator=ListOperator
-     operand2=[ListAttribute:FQN|entities.attributes])
+     operand2=[ListAttribute:FQN|+pm:entities.attributes])
 ;
 
 ListDouble:
-    (operand1=[ListAttribute:FQN|entities.attributes]
+    (operand1=[ListAttribute:FQN|+pm:entities.attributes]
      operator=ListOperator
-     operand2=[ListAttribute:FQN|entities.attributes])
+     operand2=[ListAttribute:FQN|+pm:entities.attributes])
 ;
 
 // Dictionary Conditions
@@ -201,7 +201,7 @@ Dict:
 ;
 
 DictR:
-    (operand1=[DictAttribute:FQN|entities.attributes]
+    (operand1=[DictAttribute:FQN|+pm:entities.attributes]
      operator=DictOperator
      operand2=Dict)
 ;
@@ -209,13 +209,13 @@ DictR:
 DictL:
     (operand1=Dict
      operator=DictOperator
-     operand2=[DictAttribute:FQN|entities.attributes])
+     operand2=[DictAttribute:FQN|+pm:entities.attributes])
 ;
 
 DictDouble:
-    (operand1=[DictAttribute:FQN|entities.attributes]
+    (operand1=[DictAttribute:FQN|+pm:entities.attributes]
      operator=DictOperator
-     operand2=[DictAttribute:FQN|entities.attributes])
+     operand2=[DictAttribute:FQN|+pm:entities.attributes])
 ;
 
 
@@ -238,27 +238,27 @@ Action:
 ;
 
 IntAction:
-    ('-' attribute=[IntAttribute:FQN|entities.attributes] ':' value=INT)
+    ('-' attribute=[IntAttribute:FQN|+pm:entities.attributes] ':' value=INT)
 ;
 
 FloatAction:
-    ('-' attribute=[FloatAttribute:FQN|entities.attributes] ':' value=STRICTFLOAT)
+    ('-' attribute=[FloatAttribute:FQN|+pm:entities.attributes] ':' value=STRICTFLOAT)
 ;
 
 StringAction:
-    ('-' attribute=[StringAttribute:FQN|entities.attributes] ':' value=STRING)
+    ('-' attribute=[StringAttribute:FQN|+pm:entities.attributes] ':' value=STRING)
 ;
 
 BoolAction:
-    ('-' attribute=[BoolAttribute:FQN|entities.attributes] ':' value=BOOL)
+    ('-' attribute=[BoolAttribute:FQN|+pm:entities.attributes] ':' value=BOOL)
 ;
 
 ListAction:
-    ('-' attribute=[ListAttribute:FQN|entities.attributes] ':' value=List)
+    ('-' attribute=[ListAttribute:FQN|+pm:entities.attributes] ':' value=List)
 ;
 
 DictAction:
-    ('-' attribute=[DictAttribute:FQN|entities.attributes] ':' value=Dict)
+    ('-' attribute=[DictAttribute:FQN|+pm:entities.attributes] ':' value=Dict)
 ;
 
 // === Fully Qualified Names Rule ===

@@ -91,7 +91,18 @@ class AutomationState:
 
 
 # A class representing an Automation
-class Automation:
+class Automation(object):
+    parent = None
+    name: str = ""
+    condition: str = ""
+    actions: list = []
+    enabled: bool = True
+    continuous: bool = True
+    checkOnce: bool = True
+    after: list = []
+    starts: list = []
+    stops: list = []
+
     """
     The Automation class represents an automation that evaluates a condition to execute an action.
     ...

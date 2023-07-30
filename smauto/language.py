@@ -1,6 +1,7 @@
 import os
 from textx import language, metamodel_from_file
 import pathlib
+import textx.scoping.providers as scoping_providers
 
 from smauto.lib.automation import (
     Action,
@@ -33,30 +34,43 @@ from smauto.lib.entity import (
 
 CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 
+CUSTOM_CLASSES = [
+    Automation, Entity, Attribute, IntAttribute, FloatAttribute,
+    StringAttribute, BoolAttribute, ListAttribute,
+    DictAttribute, Broker, MQTTBroker, AMQPBroker,
+    RedisBroker, BrokerAuthPlain, Action,
+    IntAction, FloatAction, StringAction, BoolAction,
+    List, Dict
+]
+
+def class_provider(name):
+    classes = dict(map(lambda x: (x.__name__, x), CUSTOM_CLASSES))
+    return classes.get(name)
+
 
 def get_metamodel():
     metamodel = metamodel_from_file(
         CURRENT_FPATH.joinpath('grammar/smauto.tx'),
-        classes=[
-            Entity, Attribute, IntAttribute, FloatAttribute,
-            StringAttribute, BoolAttribute, ListAttribute,
-            DictAttribute, Broker, MQTTBroker, AMQPBroker,
-            RedisBroker, BrokerAuthPlain, Automation, Action,
-            IntAction, FloatAction, StringAction, BoolAction,
-            List, Dict
-        ],
+        classes=class_provider,
         auto_init_attributes=False
     )
+    # metamodel.register_scope_providers(
+    #     {
+    #         "*.*": scoping_providers.FQNImportURI(importAs=True),
+    #     }
+    # )
     return metamodel
 
 
 def build_model(model_path):
     # Parse model
-    model = get_metamodel().model_from_file(model_path)
+    mm = get_metamodel()
+    model = mm.model_from_file(model_path)
     return model
 
 
 @language('smauto', '*.auto')
 def smauto_language():
     "SmartAutomation (SmAuto) language"
-    return get_metamodel()
+    mm = get_metamodel()
+    return mm

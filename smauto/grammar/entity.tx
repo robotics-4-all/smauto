@@ -1,6 +1,5 @@
 import broker
 
-//TODO: Model mqtt topics?
 Entity:
     'Entity:'
         (
@@ -32,11 +31,13 @@ NumericAttribute:
 ;
 
 IntAttribute:
-    name=ID ':' 'int' ('=' default=INT)? ('->' generator=NumericValueGen ('with noise' noise=Noise)?)?
+    name=ID ':' 'int' ('=' default=INT)?
+        ('->' generator=NumericValueGen ('with noise' noise=Noise)?)?
 ;
 
 FloatAttribute:
-    name=ID ':' 'float' ('=' default=FLOAT)? ('->' generator=NumericValueGen ('with noise' noise=Noise)?)?
+    name=ID ':' 'float' ('=' default=FLOAT)?
+        ('->' generator=NumericValueGen ('with noise' noise=Noise)?)?
 ;
 
 StringAttribute:
@@ -44,19 +45,28 @@ StringAttribute:
 ;
 
 BoolAttribute:
-    name=ID ':' 'bool' ('=' default=BOOL)? ('->' generator=BooleanValueGen)?
+    name=ID ':' 'bool' ('=' default=BOOL)?
+        ('->' generator=BooleanValueGen)?
 ;
 
 ListAttribute:
-    name=ID ':' 'list' ('=' '[' default*=OBJECT[','] ']')? ('->' generator=ListValueGen)?
+    name=ID ':' 'list' ('=' '[' default*=OBJECT[','] ']')?
+        ('->' generator=ListValueGen)?
 ;
 
 DictAttribute:
-    name=ID ':' 'dict' ('=' '{' items*=Attribute[','] '}')? ('->' generator=DictValueGen)?
+    name=ID ':' 'dict' ('=' '{' items*=Attribute[','] '}')?
+        ('->' generator=DictValueGen)?
 ;
 
 
-NumericValueGen: ConstantFun | LinearFun | GaussianFun | ReplayFun | ReplayFileFun;
+NumericValueGen:
+    ConstantFun     |
+    LinearFun       |
+    GaussianFun     |
+    ReplayFun       |
+    ReplayFileFun
+;
 
 BooleanValueGen: ReplayFun | ReplayFileFun;
 

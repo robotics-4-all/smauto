@@ -33,7 +33,6 @@ Entity:
         - pos: list -> replay("~/recorded_data")
         - mode: str
 
-
 Automation:
     name: motion_detected_2
     condition:
