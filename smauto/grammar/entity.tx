@@ -63,6 +63,7 @@ DictAttribute:
 NumericValueGen:
     ConstantFun     |
     LinearFun       |
+    SawtoothFun     |
     GaussianFun     |
     ReplayFun       |
     ReplayFileFun
@@ -84,6 +85,10 @@ ConstantFun:
 
 LinearFun:
     'linear' '(' start=NUMBER ',' step=NUMBER ')'
+;
+
+SawtoothFun:
+    'sawtooth' '(' min=NUMBER ',' max=NUMBER ',' step=NUMBER ')'
 ;
 
 ReplayFun:

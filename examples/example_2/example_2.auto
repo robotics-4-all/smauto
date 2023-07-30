@@ -20,6 +20,10 @@ Entity:
     broker: cloud_platform_issel
     attributes:
         - power: bool
+        - colorR: int -> sawtooth(0, 255, 1)  # 0-255
+        - colorG: int  # 0-255
+        - colorB: int  # 0-255
+
 
 Entity:
     name: motion_detector
@@ -29,8 +33,8 @@ Entity:
     broker: cloud_platform_issel
     attributes:
         - detected: bool -> replay([false, false, false, false, true], -1)
-        - posX: int -> replay([1, 2, 3, 4, 5], -1) with noise uniform(0, 1)
-        - posY: int
+        - posX: int -> linear(0, 1)
+        - posY: int -> replay([1, 2, 3, 4, 5], -1) with noise uniform(0, 1)
         - pos: list -> replay("~/recorded_data")  # Generator not yet Implemented
         - mode: str
 
@@ -39,9 +43,9 @@ Automation:
     condition:
 		# Pythonic expressions: A is true/false
         (motion_detector.detected is true) AND
-        (motion_detector.posX >= 10)
+        (motion_detector.posX >= 5)
     enabled: true
-    continuous: true
+    continuous: false
     actions:
         - bedroom_lamp.power: true
 	starts:
