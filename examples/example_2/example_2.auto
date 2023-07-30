@@ -20,10 +20,9 @@ Entity:
     broker: cloud_platform_issel
     attributes:
         - power: bool
-        - colorR: int -> sawtooth(0, 255, 1)  # 0-255
-        - colorG: int  # 0-255
-        - colorB: int  # 0-255
-
+        - colorR: int
+        - colorG: int
+        - colorB: int
 
 Entity:
     name: motion_detector
@@ -33,8 +32,9 @@ Entity:
     broker: cloud_platform_issel
     attributes:
         - detected: bool -> replay([false, false, false, false, true], -1)
-        - posX: int -> linear(0, 1)
-        - posY: int -> replay([1, 2, 3, 4, 5], -1) with noise uniform(0, 1)
+        - posX: int -> saw(0, 3, 1)
+        - posY: int -> gaussian(0, 10, 1) with noise uniform(0, 1)
+		# - posY: int -> replay([1, 2, 3, 4, 5], -1) with noise uniform(0, 1)
         - pos: list -> replay("~/recorded_data")  # Generator not yet Implemented
         - mode: str
 

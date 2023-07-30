@@ -5,9 +5,9 @@ import random
 
 from enum import Enum
 from dataclasses import dataclass
-from os import wait
 import time
 import numpy as np
+from typing import Optional
 
 {% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
 from commlib.transports.mqtt import ConnectionParameters
@@ -67,18 +67,28 @@ class Noise:
 class ValueGeneratorProperties:
     @dataclass
     class Constant:
-      value: float
+        value: float
 
     @dataclass
     class Linear:
-      start: float
-      step: float # per second
+        start: float
+        step: float # per second
+
+    @dataclass
+    class Saw:
+        min: float
+        max: float
+        step: float
+
+        _internal_start: Optional[float] = 0.0
 
     @dataclass
     class Gaussian:
         value: float
         max_value: float
         sigma: float # this is time (seconds)
+
+        _internal_start: Optional[float] = 0.0
 
     @dataclass
     class Replay:
@@ -118,10 +128,13 @@ class ValueGenerator:
 
     def start(self, minutes=None):
         start = time.time()
-        internal_start = start
         value = None
         replay_counter = 0
         replay_iter = 0
+        for c in self.components:
+            if c.type in (ValueGeneratorType.Gaussian,
+                          ValueGeneratorType.Saw):
+                c.properties._internal_start = start
         while True:
             msg = {}
             for c in self.components:
@@ -130,11 +143,20 @@ class ValueGenerator:
                 elif c.type == ValueGeneratorType.Linear:
                     value = c.properties.start + (time.time() - start) * c.properties.step
                     value += c.noise.generate()
+                elif c.type == ValueGeneratorType.Saw:
+                    value = c.properties.min + \
+                        (time.time() - c.properties._internal_start) * \
+                            c.properties.step
+                    value += c.noise.generate()
+                    if value >= c.properties.max:
+                        c.properties._internal_start = time.time()
                 elif c.type == ValueGeneratorType.Gaussian:
-                    if time.time() - internal_start > 8 * c.properties.sigma:
-                        internal_start = time.time()
+                    if time.time() - c.properties._internal_start > 8 * c.properties.sigma:
+                        c.properties._internal_start = time.time()
                     value = c.properties.value
-                    _norm_exp = -np.power(time.time() - internal_start - 4 * c.properties.sigma, 2.) / (2 * np.power(c.properties.sigma, 2.))
+                    _norm_exp = -np.power(
+                        time.time() - c.properties._internal_start - 4 *
+                        c.properties.sigma, 2.) / (2 * np.power(c.properties.sigma, 2.))
                     value += np.exp(_norm_exp) * (c.properties.max_value - c.properties.value)
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Replay:
@@ -149,6 +171,7 @@ class ValueGenerator:
                     if replay_counter == 0:
                         replay_iter += 1
                 msg[c.name] = value
+
 
             self.publisher.publish(
                 msg
@@ -231,6 +254,13 @@ class {{ entity.camel_name }}Node(Node):
             step={{ attr.generator.step }}
         )
         _gen_type = ValueGeneratorType.Linear
+        {% elif attr.generator.__class__.__name__ == 'SawFun' %}
+        {{ attr.name }}_properties = ValueGeneratorProperties.Saw(
+            min={{ attr.generator.min }},
+            max={{ attr.generator.max }},
+            step={{ attr.generator.step }}
+        )
+        _gen_type = ValueGeneratorType.Saw
         {% elif attr.generator.__class__.__name__ == 'ReplayFun' %}
         {{ attr.name }}_properties = ValueGeneratorProperties.Replay(
             values={{ attr.generator.values }},

@@ -63,7 +63,7 @@ DictAttribute:
 NumericValueGen:
     ConstantFun     |
     LinearFun       |
-    SawtoothFun     |
+    SawFun     |
     GaussianFun     |
     ReplayFun       |
     ReplayFileFun
@@ -87,10 +87,12 @@ LinearFun:
     'linear' '(' start=NUMBER ',' step=NUMBER ')'
 ;
 
-SawtoothFun:
-    'sawtooth' '(' min=NUMBER ',' max=NUMBER ',' step=NUMBER ')'
+SawFun:
+    'saw' '(' min=NUMBER ',' max=NUMBER ',' step=NUMBER ')'
 ;
 
+// το concept είναι ότι θες να δίνεις συγκεκριμένα patterns ή έχεις κρατήσει
+// τιμές από πραγματικούς αισθητήρες και θες να τις αναπαράγεις
 ReplayFun:
     'replay' '(' '[' values*=BASETYPE[','] ']' ',' times=INT ')'
 ;
