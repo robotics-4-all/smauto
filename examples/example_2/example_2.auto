@@ -36,7 +36,7 @@ Entity:
 Automation:
     name: motion_detected_2
     condition:
-        (motion_detector.detected == true) AND
+        (motion_detector.detected is true) AND
         (motion_detector.posX == 10)
     enabled: true
     continuous: true

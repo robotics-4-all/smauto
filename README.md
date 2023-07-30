@@ -405,7 +405,8 @@ of the language.
 
 - String Operators: `~`, `!~`, `==`, `!=`
 - Numeric Operators: `>`, `<`, `==`, `!=`
-- Boolean / Logical Operators: `AND`, `OR`, `NOT`, `XOR`, `NOR`, `XNOR`, `NAND`
+- Logical Operators: `AND`, `OR`, `NOT`, `XOR`, `NOR`, `XNOR`, `NAND`
+- BooleanValueOperator: '==' , '!=' , 'is' , 'is not';
 - List and Dictionary Operators: `==`, `!=`
 
 #### Build-in attribute processing functions

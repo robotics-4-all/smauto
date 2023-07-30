@@ -226,7 +226,7 @@ NumericOperator: '>' | '<' | '==' | '!=' | 'is' | 'is not';
 
 LogicalOperator: 'AND' | 'OR' | 'NOT' | 'XOR' | 'NOR' | 'XNOR' | 'NAND';
 
-BooleanValueOperator: '==' | '!=' | 'is' 'is not';
+BooleanValueOperator: '==' | '!=' | 'is' | 'is not';
 
 ListOperator: '==' | '!=';
 
