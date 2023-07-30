@@ -49,4 +49,4 @@ Automation:
     actions:
         - bedroom_lamp.power: true
 	starts:
-		- motion_detected_2
+		- motion_detected_self_start

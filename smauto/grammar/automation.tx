@@ -26,7 +26,7 @@ Condition: ConditionGroup | PrimitiveCondition | AdvancedCondition;
 
 ConditionGroup:
     '(' r1=Condition ')' operator=LogicalOperator '(' r2=Condition ')'
-    //(cond=Condition operator=LogicalOperator)*
+    // (cond=Condition (operator=LogicalOperator)?)*
 ;
 
 PrimitiveCondition:
