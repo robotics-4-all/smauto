@@ -24,21 +24,25 @@ Entity:
 Entity:
     name: motion_detector
     type: sensor
+	freq: 1
     topic: "bedroom.motion_detector"
     broker: cloud_platform_issel
     attributes:
-        - detected: bool -> replay([true, false, false, false], 10)
-        - posX: int
+        - detected: bool -> replay([false, false, false, false, true], -1)
+        - posX: int -> replay([1, 2, 3, 4, 5], -1)
         - posY: int
-        - pos: list -> replay("~/recorded_data")
+        - pos: list -> replay("~/recorded_data")  # Generator not yet Implemented
         - mode: str
 
 Automation:
     name: motion_detected_2
     condition:
+		# Pythonic expressions: A is true/false
         (motion_detector.detected is true) AND
-        (motion_detector.posX == 10)
+        (motion_detector.posX >= 10)
     enabled: true
     continuous: true
     actions:
         - bedroom_lamp.power: true
+	starts:
+		- motion_detected_2

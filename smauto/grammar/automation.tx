@@ -220,17 +220,17 @@ DictDouble:
 
 
 // Operators
-StringOperator: '~' | '!~' | '==' | '!=' | 'is' 'is not' 'has';
+StringOperator: '~' | '!~' | '==' | '!=' | 'is not' | 'is' | 'has';
 
-NumericOperator: '>' | '<' | '==' | '!=' | 'is' | 'is not';
+NumericOperator: '>=' | '>' | '<=' | '<' | '==' | '!=' | 'is not' | 'is';
 
 LogicalOperator: 'AND' | 'OR' | 'NOT' | 'XOR' | 'NOR' | 'XNOR' | 'NAND';
 
-BooleanValueOperator: '==' | '!=' | 'is' | 'is not';
+BooleanValueOperator: '==' | '!=' | 'is not' | 'is';
 
-ListOperator: '==' | '!=';
+ListOperator: '==' | '!=' | 'is' | 'is not';
 
-DictOperator: '==' | '!=';
+DictOperator: '==' | '!=' | 'is' | 'is not';
 
 // === Actions ===
 Action:

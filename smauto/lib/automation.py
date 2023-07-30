@@ -27,7 +27,9 @@ OPERATORS = {
 
     # Numeric operators
     '>': lambda left, right: f"({left} > {right})",
+    '>=': lambda left, right: f"({left} >= {right})",
     '<': lambda left, right: f"({left} < {right})",
+    '<=': lambda left, right: f"({left} <= {right})",
 
     # Logical operators
     'AND': lambda left, right: f"({left} and {right})",

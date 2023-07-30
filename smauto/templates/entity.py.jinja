@@ -80,6 +80,11 @@ class ValueGeneratorProperties:
         max_value: float
         sigma: float # this is time (seconds)
 
+    @dataclass
+    class Replay:
+        values: list
+        times: int
+
 
 class ValueGeneratorType(Enum):
     Constant = 1
@@ -90,6 +95,7 @@ class ValueGeneratorType(Enum):
     Sinus = 7
     Logarithmic = 8
     Exponential = 9
+    Replay = 10
 # ----------------------------------------
 
 
@@ -114,6 +120,8 @@ class ValueGenerator:
         start = time.time()
         internal_start = start
         value = None
+        replay_counter = 0
+        replay_iter = 0
         while True:
             msg = {}
             for c in self.components:
@@ -129,6 +137,17 @@ class ValueGenerator:
                     _norm_exp = -np.power(time.time() - internal_start - 4 * c.properties.sigma, 2.) / (2 * np.power(c.properties.sigma, 2.))
                     value += np.exp(_norm_exp) * (c.properties.max_value - c.properties.value)
                     value += c.noise.generate()
+                elif c.type == ValueGeneratorType.Replay:
+                    values = c.properties.values
+                    times = c.properties.times
+                    if replay_iter == times:
+                        msg[c.name] = values[-1]
+                        continue
+                    value = values[replay_counter]
+                    replay_counter += 1
+                    replay_counter = replay_counter % (len(values))
+                    if replay_counter == 0:
+                        replay_iter += 1
                 msg[c.name] = value
 
             self.publisher.publish(
@@ -212,6 +231,12 @@ class {{ entity.camel_name }}Node(Node):
             step={{ attr.generator.step }}
         )
         _gen_type = ValueGeneratorType.Linear
+        {% elif attr.generator.__class__.__name__ == 'ReplayFun' %}
+        {{ attr.name }}_properties = ValueGeneratorProperties.Replay(
+            values={{ attr.generator.values }},
+            times={{ attr.generator.times }},
+        )
+        _gen_type = ValueGeneratorType.Replay
         {% else %}
         {{ attr.name }}_properties = ValueGeneratorProperties.Constant(
             0
