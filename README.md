@@ -227,9 +227,14 @@ it's own value and noise generators, using a simple grammar as evident below:
 
 **Supported Value Generators:**
 
-- **Constant**: `constant(value)`.
-- **Linear**: `linear(min, step)`.
-- **Gaussian**: `gaussian(value, maxValue, sigma)`.
+- **Constant**: `constant(value)`. Constant value
+- **Linear**: `linear(min, step)`. Linear function
+- **Saw**: `saw(min, max, step)`. Saw function.
+- **Gaussian**: `gaussian(value, maxValue, sigma)`. Gaussian function
+- **Replay**: `replay([values], times)`. Replay from a list of values. The `times` parameter can be used to force replay iterations to a specific value. If `times=-1` then values will
+be replayed infinitely.
+
+
 
 
 **Supported Noise Generators:**
