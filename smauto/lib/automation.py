@@ -15,19 +15,21 @@ PRIMITIVES = (int, float, str, bool)
 OPERATORS = {
     # String operators
     '~': lambda left, right: f"({left} in {right})",
+    'has': lambda left, right: f"({left} in {right})",
     '!~': lambda left, right: f"({left} not in {right})",
+    'has not': lambda left, right: f"({left} not in {right})",
 
     # Shared operators
     '==': lambda left, right: f"({left} == {right})",
     '!=': lambda left, right: f"({left} != {right})",
+    'is': lambda left, right: f"({left} == {right})",
+    'is not': lambda left, right: f"({left} != {right})",
 
     # Numeric operators
     '>': lambda left, right: f"({left} > {right})",
     '<': lambda left, right: f"({left} < {right})",
 
-    'InRange': lambda attr, min, max: f"({attr} > {min} and {attr} < {max})",
-
-    # Boolean operators
+    # Logical operators
     'AND': lambda left, right: f"({left} and {right})",
     'OR': lambda left, right: f"({left} or {right})",
     'NOT': lambda left, right: f"({left} is not {right})",
@@ -36,6 +38,8 @@ OPERATORS = {
     'XNOR': lambda left, right: f"(({left} or {right}) and (not {left} or not {right}))",
     'NAND': lambda left, right: f"(not ({left} and {right}))",
 
+    # Advanced
+    'InRange': lambda attr, min, max: f"({attr} > {min} and {attr} < {max})",
 }
 
 
@@ -91,7 +95,18 @@ class AutomationState:
 
 
 # A class representing an Automation
-class Automation:
+class Automation(object):
+    parent = None
+    name: str = ""
+    condition: str = ""
+    actions: list = []
+    enabled: bool = True
+    continuous: bool = True
+    checkOnce: bool = True
+    after: list = []
+    starts: list = []
+    stops: list = []
+
     """
     The Automation class represents an automation that evaluates a condition to execute an action.
     ...
