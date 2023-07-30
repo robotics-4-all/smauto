@@ -32,11 +32,11 @@ NumericAttribute:
 ;
 
 IntAttribute:
-    name=ID ':' 'int' ('=' default=INT)? ('->' generator=AttrValueGen ('with noise' noise=Noise)?)?
+    name=ID ':' 'int' ('=' default=INT)? ('->' generator=NumericValueGen ('with noise' noise=Noise)?)?
 ;
 
 FloatAttribute:
-    name=ID ':' 'float' ('=' default=FLOAT)? ('->' generator=AttrValueGen ('with noise' noise=Noise)?)?
+    name=ID ':' 'float' ('=' default=FLOAT)? ('->' generator=NumericValueGen ('with noise' noise=Noise)?)?
 ;
 
 StringAttribute:
@@ -44,21 +44,25 @@ StringAttribute:
 ;
 
 BoolAttribute:
-    name=ID ':' 'bool' ('=' default=BOOL)?
+    name=ID ':' 'bool' ('=' default=BOOL)? ('->' generator=BooleanValueGen)?
 ;
 
 ListAttribute:
-    name=ID ':' 'list' ('=' '[' default*=OBJECT[','] ']')?
+    name=ID ':' 'list' ('=' '[' default*=OBJECT[','] ']')? ('->' generator=ListValueGen)?
 ;
 
 DictAttribute:
-    name=ID ':' 'dict' ('=' '{' items*=Attribute[','] '}')?
+    name=ID ':' 'dict' ('=' '{' items*=Attribute[','] '}')? ('->' generator=DictValueGen)?
 ;
 
 
-AttrValueGen: ConstantFun | LinearFun | GaussianFun;
+NumericValueGen: ConstantFun | LinearFun | GaussianFun | ReplayFun | ReplayFileFun;
 
-Noise: UniformNoise | GaussianNoise;
+BooleanValueGen: ReplayFun | ReplayFileFun;
+
+ListValueGen: ReplayFun | ReplayFileFun;
+
+DictValueGen: ReplayFun | ReplayFileFun;
 
 GaussianFun:
     'gaussian' '(' value=NUMBER ',' maxValue=NUMBER ',' sigma=NUMBER ')'
@@ -72,6 +76,17 @@ LinearFun:
     'linear' '(' start=NUMBER ',' step=NUMBER ')'
 ;
 
+ReplayFun:
+    'replay' '(' '[' values*=BASETYPE[','] ']' ',' times=INT ')'
+;
+
+ReplayFileFun:
+    'replay' '(' filepath=STRING ')'
+;
+
+
+Noise: UniformNoise | GaussianNoise;
+
 UniformNoise:
     'uniform' '(' min=NUMBER ',' max=NUMBER ')'
 ;
@@ -80,3 +95,5 @@ GaussianNoise:
     'gaussian' '(' mu=NUMBER ',' sigma=NUMBER ')'
 ;
 
+
+NID: /(.*?)\n/;

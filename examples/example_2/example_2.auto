@@ -27,20 +27,11 @@ Entity:
     topic: "bedroom.motion_detector"
     broker: cloud_platform_issel
     attributes:
-        - detected: bool
+        - detected: bool -> replay([true, false, false, false], 10)
         - posX: int
-        - pos: list
+        - posY: int
+        - pos: list -> replay("~/recorded_data")
         - mode: str
-
-
-Automation:
-    name: motion_detected_1
-    condition:
-        motion_detector.pos == [10, 0]
-    enabled: true
-    continuous: true
-    actions:
-        - bedroom_lamp.power: true
 
 
 Automation:

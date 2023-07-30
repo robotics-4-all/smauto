@@ -185,25 +185,28 @@ class StringAttribute(Attribute):
 
 
 class BoolAttribute(Attribute):
-    def __init__(self, parent, name, default):
+    def __init__(self, parent, name, default, generator):
         super().__init__(parent, name, default)
+        self.generator = generator
         self.type = 'bool'
         if self.value is None:
             self.value = False
 
 
 class ListAttribute(Attribute):
-    def __init__(self, parent, name, default):
+    def __init__(self, parent, name, default, generator):
         super().__init__(parent, name, default)
+        self.generator = generator
         self.type = 'list'
         if self.value is None:
             self.value = []
 
 
 class DictAttribute(Attribute):
-    def __init__(self, parent, name, items):
+    def __init__(self, parent, name, items, generator):
         # Create dictionary structure from items
         value = {item.name: item for item in items}
+        self.generator = generator
         self.type = "dict"
         super().__init__(parent, name, value=value)
         self.items = items
