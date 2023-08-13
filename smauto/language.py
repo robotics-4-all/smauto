@@ -54,11 +54,11 @@ def get_metamodel():
         classes=class_provider,
         auto_init_attributes=False
     )
-    # metamodel.register_scope_providers(
-    #     {
-    #         "*.*": scoping_providers.FQNImportURI(importAs=True),
-    #     }
-    # )
+    metamodel.register_scope_providers(
+        {
+            "*.*": scoping_providers.FQNImportURI(importAs=True),
+        }
+    )
     return metamodel
 
 

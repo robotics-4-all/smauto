@@ -45,6 +45,32 @@ OPERATORS = {
 }
 
 
+def transform_augmented_attr(aattr):
+    parent = aattr.parent
+    if aattr.__class__.__name__ == 'SimpleAttr':
+        attr_ref = aattr.attribute
+        entity_ref = aattr.attribute.parent
+        print(parent)
+        if parent.__class__.__name__ in ('StdAttr', 'MeanAttr', 'VarAttr'):  # Have buffer
+            entity_ref.init_attr_buffer(attr_ref.name, parent.size)
+            val = f"entities['{entity_ref.name}']." + \
+                f"get_buffer('{attr_ref.name}')"
+        else:
+            val = f"entities['{entity_ref.name}']." + \
+                    f"attributes_dict['{attr_ref.name}'].value"
+        return val
+    elif aattr.__class__.__name__ == 'StdAttr':
+        print(parent)
+        val = f"std({transform_augmented_attr(aattr.attribute)})"
+        return val
+    elif aattr.__class__.__name__ == 'MeanAttr':
+        val = f"mean({transform_augmented_attr(aattr.attribute)})"
+        return val
+    elif aattr.__class__.__name__ == 'VarAttr':
+        val = f"var({transform_augmented_attr(aattr.attribute)})"
+        return val
+
+
 # Returns printed version of operand if operand is a primitive.
 # Else if attribute returns code pointing to the Attribute.
 def transform_operand(node):
@@ -63,25 +89,9 @@ def transform_operand(node):
     # Node is an Attribute, print its full name including Entity
     elif textx_isinstance(
         node,
-        get_metamodel(node).namespaces['automation']['AugmentedNumericAttr']
+        get_metamodel(node).namespaces['condition']['AugmentedNumericAttr']
         ):
-        if node.__class__.__name__ == 'StdAttr':
-            node.attribute.parent.init_attr_buffer(node.attribute.name,
-                                                   node.size)
-            val = f"entities['{node.attribute.parent.name}']." + \
-                    f"get_buffer('{node.attribute.name}')"
-                    # f"attributes_buff['{node.attribute.name}']"
-            val = f"std({val})"
-        elif node.__class__.__name__ == 'MeanAttr':
-            node.attribute.parent.init_attr_buffer(node.attribute.name,
-                                                   node.size)
-            val = f"entities['{node.attribute.parent.name}']." + \
-                    f"get_buffer('{node.attribute.name}')"
-                    # f"attributes_buff['{node.attribute.name}']"
-            val = f"mean({val})"
-        else:
-            val = f"entities['{node.attribute.parent.name}']." + \
-                    f"attributes_dict['{node.attribute.name}'].value"
+        val = transform_augmented_attr(node)
         return val
     else:
         val = f"entities['{node.parent.name}']." + \
@@ -108,28 +118,6 @@ class Automation(object):
     after: list = []
     starts: list = []
     stops: list = []
-
-    """
-    The Automation class represents an automation that evaluates a condition to execute an action.
-    ...
-
-    Attributes
-    ----------
-        name: str
-            Automation name. e.g: 'open_lights'
-        enabled: bool
-            Whether the automation should be evaluated or not. e.g: True->Enabled, False->Disabled
-        condition: object
-            A condition type object evaluated to determine if the Automation's actions should be executed
-        actions: list
-            A list of Action objects to be executed upon successful condition evaluation
-        continuous: bool
-            Indicates if the Automation should remain enabled after actions are run. e.g: True->Remain Enabled.
-    Methods
-    -------
-        evaluate(self): Evaluates the Automation's conditions and runs the actions. Meant to be run by the
-            update_state() function in the Entities listed in condition_entities upon them updating their states.
-    """
 
     def __init__(self, parent, name, condition, actions,
                  enabled, continuous, checkOnce, after, starts, stops):
@@ -166,7 +154,7 @@ class Automation(object):
         self.state = AutomationState.IDLE
 
     # Evaluate the Automation's conditions and run the actions
-    def evaluate(self):
+    def evaluate_condition(self):
         """
             Evaluates the Automation's conditions if enabled is
             True and returns the result and the activation message.
@@ -200,7 +188,7 @@ class Automation(object):
             return False, f"{self.name}: Automation disabled."
 
     # Run Automation's actions
-    def trigger(self):
+    def trigger_actions(self):
         """
         Runs the Automation's actions.
         :return:
@@ -237,7 +225,7 @@ class Automation(object):
 
         # If we are in a ConditionGroup node, recursively visit the left and right sides
         if textx_isinstance(
-            cond_node, metamodel.namespaces['automation']['ConditionGroup']):
+            cond_node, metamodel.namespaces['condition']['ConditionGroup']):
 
             # Visit left node
             self.process_node_condition(cond_node.r1)
@@ -249,7 +237,7 @@ class Automation(object):
 
         # If we are in a primitive condition node, form conditions using operands
         elif textx_isinstance(
-            cond_node, metamodel.namespaces['automation']['InRangeCondition']):
+            cond_node, metamodel.namespaces['condition']['InRangeCondition']):
             operand1 = transform_operand(cond_node.attribute)
             cond_lambda = (OPERATORS['InRange'])(operand1,
                                                  cond_node.min,
@@ -301,14 +289,16 @@ class Automation(object):
                 time.sleep(1)
             while self.state == AutomationState.RUNNING:
                 try:
-                    triggered, msg = self.evaluate()
-                    # Check if action is triggered
+                    triggered, msg = self.evaluate_condition()
                     if triggered:
                         print(f"[bold yellow][*] Automation <{self.name}> "
-                              f"Triggered![/bold yellow]")
-                        print(f"[bold blue][*] Condition met: {self.condition.cond_lambda}")
+                            f"Triggered![/bold yellow]"
+                        )
+                        print(f"[bold blue][*] Condition met: "
+                            f"{self.condition.cond_lambda}"
+                        )
                         # If automation triggered run its actions
-                        self.trigger()
+                        self.trigger_actions()
                         self.state = AutomationState.EXITED_SUCCESS
                         for automation in self.starts:
                             automation.enable()
@@ -330,28 +320,10 @@ class Automation(object):
 
     def disable(self):
         self.enabled = False
+        print(f"[bold yellow][*] Disabled Automation: {self.name}[/bold yellow]")
 
-# List class for List type
+
 class List:
-    """
-        Attributes
-    ----------
-        items: list
-            Python list of items included in the List.
-            Can be primitives or other List items
-        parent: obj
-            Reference to the parent element in the parsed textX hierarchy
-
-    Methods
-    -------
-        __repr__():
-            Used to print out a string of the List with subList
-            items also being printed out as strings
-        print_item():
-            Static method used by __repr__() and called recursively to
-            return a python list of sub-items.
-    """
-
     def __init__(self, parent, items):
         self.parent = parent
         self.items = items
@@ -363,13 +335,6 @@ class List:
     # List representation to bring out subLists instead of List items
     @staticmethod
     def print_item(item):
-        """
-        Static method used by __repr__() and called recursively
-            to return a python list of sub-items.
-        :param item: List or primitive item to open up
-        :return: Python list of primitives or python lists
-            (previously sub-List items)
-        """
         # If item is a list return list of items printed out including sublists
         if type(item) == List:
             return [item.print_item(x) for x in item.items]
@@ -379,7 +344,6 @@ class List:
 
 
 class Dict:
-
     def __init__(self, parent, items):
         self.parent = parent
         self.items = items
@@ -394,16 +358,8 @@ class Dict:
         final_str = final_str + '}'
         return final_str
 
-    # List representation to bring out subLists instead of List items
-    # TODO: This is a copy of the same method in the List class. Maybe unify them? Might change though with nested
-    # Dicts support.
     @staticmethod
     def print_item(item):
-        """
-        Static method used by __repr__() and called recursively to return a python list of sub-items.
-        :param item: List or primitive item to open up
-        :return: Python list of primitives or python lists (previously sub-List items)
-        """
         # If item is a list return list of items printed out including sublists
         if type(item) == List:
             return [item.print_item(x) for x in item.items]

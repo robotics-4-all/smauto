@@ -2,7 +2,7 @@
 
 import traceback
 from rich import print, pretty
-from concurrent.futures import ThreadPoolExecutor, ALL_COMPLETED, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait
 from smauto.language import build_model
 
 pretty.install()
@@ -30,7 +30,7 @@ class ModelExecutor:
                     automation.start
                 ).add_done_callback(ModelExecutor._worker_clb)
                 works.append(work)
-            done, not_done = wait(works)
+            # done, not_done = wait(works)
         print('[bold magenta][*] All automations completed!![/bold magenta]')
 
     @staticmethod

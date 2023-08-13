@@ -1,0 +1,52 @@
+Metadata:
+    name: SimpleHomeAutomation
+    version: "0.1.0"
+    description: "Simple home automation model."
+    author: "klpanagi"
+    email: "klpanagi@gmail.com"
+
+MQTT:
+    name: home_broker
+    host: "localhost"
+    port: 1883
+    credentials:
+        username: ""
+        password: ""
+
+Entity:
+    name: bedroom_lamp
+    type: actuator
+    topic: "bedroom.lamp"
+    broker: home_broker
+    attributes:
+        - power: bool
+        - colorR: int
+        - colorG: int
+        - colorB: int
+
+Entity:
+    name: temperature_sensor
+    type: sensor
+    topic: "home.temperature"
+    broker: home_broker
+    attributes:
+        - temperature: float
+
+Entity:
+    name: humidity_sensor
+    type: sensor
+    topic: "home.humidity"
+    broker: home_broker
+    attributes:
+        - humidity: float
+
+Automation:
+    name: motion_detected_self_start
+    condition:
+        var(mean(temperature_sensor.temperature, 10), 10) >= 30
+    enabled: true
+    continuous: false
+    actions:
+        - bedroom_lamp.power: true
+    starts:
+        - motion_detected_self_start

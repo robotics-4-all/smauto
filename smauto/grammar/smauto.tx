@@ -24,8 +24,8 @@ Metadata:
 
 // FQN: ID('.'ID)*;
 FQN: ID+['.'];
-// FQNI: ID+['.']('.*')?;
-// Import: 'import' importURI=FQNI ('as' name=ID)?;
+FQNI: ID+['.']('.*')?;
+Import: 'import' importURI=FQNI ('as' name=ID)?;
 
 // Comments
 Comment: /\#.*?$/;
