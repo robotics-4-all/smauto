@@ -65,6 +65,8 @@ AugmentedNumericAttr:
     StdAttr         |
     VarAttr         |
     MeanAttr        |
+    MinAttr         |
+    MaxAttr         |
     MultiplyAttr    |
     SimpleAttr
 ;
@@ -79,6 +81,14 @@ VarAttr:
 
 MeanAttr:
     'mean' '(' attribute=AugmentedNumericAttr  ',' size=INT ')'
+;
+
+MinAttr:
+    'min' '(' attribute=AugmentedNumericAttr  ',' size=INT ')'
+;
+
+MaxAttr:
+    'max' '(' attribute=AugmentedNumericAttr  ',' size=INT ')'
 ;
 
 MultiplyAttr:

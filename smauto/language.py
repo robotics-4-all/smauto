@@ -31,11 +31,26 @@ from smauto.lib.entity import (
     StringAttribute
 )
 
+from smauto.lib.condition import (
+    Condition,
+    ConditionGroup,
+    PrimitiveCondition,
+    AdvancedCondition,
+    NumericCondition, NumericR, NumericL, NumericDouble,
+    BoolCondition, BoolR, BoolL, BoolDouble,
+    StringCondition, StringR, StringL, StringDouble,
+)
+
 
 CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 
 CUSTOM_CLASSES = [
-    Automation, Entity, Attribute, IntAttribute, FloatAttribute,
+    Automation, Entity, Condition, ConditionGroup, PrimitiveCondition,
+    AdvancedCondition,
+    NumericCondition, NumericR, NumericL, NumericDouble,
+    BoolCondition, BoolR, BoolL, BoolDouble,
+    StringCondition, StringR, StringL, StringDouble,
+    Attribute, IntAttribute, FloatAttribute,
     StringAttribute, BoolAttribute, ListAttribute,
     DictAttribute, Broker, MQTTBroker, AMQPBroker,
     RedisBroker, BrokerAuthPlain, Action,
@@ -54,11 +69,11 @@ def get_metamodel():
         classes=class_provider,
         auto_init_attributes=False
     )
-    metamodel.register_scope_providers(
-        {
-            "*.*": scoping_providers.FQNImportURI(importAs=True),
-        }
-    )
+    # metamodel.register_scope_providers(
+    #     {
+    #         "*.*": scoping_providers.FQNImportURI(importAs=True),
+    #     }
+    # )
     return metamodel
 
 

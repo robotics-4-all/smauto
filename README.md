@@ -369,8 +369,8 @@ Entity:
 Automation:
     name: start_aircondition
     condition:
-        (corridor.temperature > 30) AND
-        (kitchen.temperature > 30)
+        (corridor_temperature.temperature > 30) AND
+        (kitchen_temperature.temperature > 30)
     actions:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
@@ -421,9 +421,18 @@ when defining a Condition.
 
 ```yml
 condition:
-    (mean(weather_station.temperature, 10) > 28) AND
-    (std(weather_station.temperature, 10) > 1)
+    (mean(bedroom_temp_sensor.temperature, 10) > 28) AND
+    (std(bedroom_temp_sensor.temperature, 10) > 1)
 
+condition:
+    bedroom_humidity_sensor.humidity in range(30, 60)
+
+condition:
+    bedroom_temp_sensor.temperature in range(24, 26) AND
+    bedroom_humidity_sensor.humidity in range(30, 60)
+
+condition:
+    var(mean(bedroom_temp_sensor.temperature, 10), 10) >= 0.1
 ```
 
 #### Writing Conditions
