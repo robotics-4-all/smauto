@@ -9,10 +9,8 @@ import time
 import numpy as np
 from typing import Optional
 
-{% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
 from commlib.transports.mqtt import ConnectionParameters
 from rich import print, console, pretty
-{% endif %}
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
 from commlib.node import Node
@@ -21,7 +19,6 @@ pretty.install()
 console = console.Console()
 
 
-{% if entity.etype == 'sensor' %}
 # Noise definitions
 # ----------------------------------------
 @dataclass
@@ -182,123 +179,85 @@ class ValueGenerator:
             if minutes is not None:
                 if time.time() - start < minutes * 60.0:
                     break
-{% endif %}
 
 
-class {{ entity.camel_name }}Msg(PubSubMessage):
-    {% for a in entity.attributes %}
-    {% if a.type == "str" %}
-        {{ a.name }}: {{ a.type }} = '{{ a.value }}'
-    {% else %}
-        {{ a.name }}: {{ a.type }} = {{ a.value }}
-    {% endif %}
-    {% endfor %}
+class EnvSensorMsg(PubSubMessage):
+        temperature: float = 0.0
+        humidity: float = 0.0
+        pressure: float = 0.0
 
 
-class {{ entity.camel_name }}Node(Node):
+class EnvSensorNode(Node):
     def __init__(self, *args, **kwargs):
-    {% if entity.etype == 'actuator' %}
-        self.tick_hz = 1
-    {% elif entity.etype == 'sensor' %}
-        self.pub_freq = {{ entity.freq }}
-    {% endif %}
-        self.topic = '{{ entity.topic }}'
+        self.pub_freq = 10
+        self.topic = 'bedroom.env'
         conn_params = ConnectionParameters(
-            host='{{ entity.broker.host }}',
-            port={{ entity.broker.port }},
-            username='{{ entity.broker.credentials.username }}',
-            password='{{ entity.broker.credentials.password }}',
+            host='snf-889260.vm.okeanos.grnet.gr',
+            port=1893,
+            username='porolog',
+            password='fiware',
         )
         super().__init__(
-            node_name='entities.{{ entity.name.lower() }}',
+            node_name='entities.env_sensor',
             connection_params=conn_params,
             *args, **kwargs
         )
-    {% if entity.etype == 'actuator' %}
-        self.sub = self.create_subscriber(
-            msg_type={{ entity.camel_name }}Msg,
-            topic=self.topic,
-            on_message=self._on_message
-        )
-
-    def start(self):
-        self.run()
-        rate = Rate(self.tick_hz)
-        while True:
-            rate.sleep()
-
-    def _on_message(self, msg):
-        print(f'[*] State change command received: {msg}')
-    {% elif entity.etype == 'sensor' %}
         self.pub = self.create_publisher(
-            msg_type={{ entity.camel_name }}Msg,
+            msg_type=EnvSensorMsg,
             topic=self.topic
         )
 
     def init_gen_components(self):
         components = []
-        {% for attr in entity.attributes %}
-        {% if attr.generator.__class__.__name__ == 'GaussianFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Gaussian(
-            value={{ attr.generator.value }},
-            max_value={{ attr.generator.maxValue }},
-            sigma={{ attr.generator.sigma }},
+        temperature_properties = ValueGeneratorProperties.Gaussian(
+            value=10,
+            max_value=20,
+            sigma=5,
         )
         _gen_type = ValueGeneratorType.Gaussian
-        {% elif attr.generator.__class__.__name__ == 'ConstantFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Constant(
-            value={{ attr.generator.value }}
+        temperature_noise = Noise(
+            _type=NoiseType.Gaussian,
+            properties=NoiseGaussian(1, 1)
         )
-        _gen_type = ValueGeneratorType.Constant
-        {% elif attr.generator.__class__.__name__ == 'LinearFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Linear(
-            start={{ attr.generator.start }},
-            step={{ attr.generator.step }}
+        temperature_component = ValueComponent(
+            _type=_gen_type,
+            name="temperature",
+            properties = temperature_properties,
+            noise=temperature_noise
+        )
+        components.append(temperature_component)
+        humidity_properties = ValueGeneratorProperties.Linear(
+            start=1,
+            step=0.2
         )
         _gen_type = ValueGeneratorType.Linear
-        {% elif attr.generator.__class__.__name__ == 'SawFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Saw(
-            min={{ attr.generator.min }},
-            max={{ attr.generator.max }},
-            step={{ attr.generator.step }}
+        humidity_noise = Noise(
+            _type=NoiseType.Uniform,
+            properties=NoiseUniform(0, 1)
         )
-        _gen_type = ValueGeneratorType.Saw
-        {% elif attr.generator.__class__.__name__ == 'ReplayFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Replay(
-            values={{ attr.generator.values }},
-            times={{ attr.generator.times }},
+        humidity_component = ValueComponent(
+            _type=_gen_type,
+            name="humidity",
+            properties = humidity_properties,
+            noise=humidity_noise
+        )
+        components.append(humidity_component)
+        pressure_properties = ValueGeneratorProperties.Replay(
+            values=[0.2, 0.2, 0.2, 0.3, 0.25, 0.25, 0.25, 0.2],
+            times=-1,
         )
         _gen_type = ValueGeneratorType.Replay
-        {% else %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Constant(
-            0
-        )
-        _gen_type = ValueGeneratorType.Constant
-        {% endif %}
-        {% if attr.noise.__class__.__name__ == 'UniformNoise' %}
-        {{ attr.name }}_noise = Noise(
-            _type=NoiseType.Uniform,
-            properties=NoiseUniform({{ attr.noise.min }}, {{ attr.noise.max }})
-        )
-        {% elif attr.noise.__class__.__name__ == 'GaussianNoise' %}
-        {{ attr.name }}_noise = Noise(
-            _type=NoiseType.Gaussian,
-            properties=NoiseGaussian({{ attr.noise.mu }}, {{ attr.noise.sigma }})
-        )
-        {% else %}
-        {{ attr.name }}_noise = Noise(
+        pressure_noise = Noise(
             _type=NoiseType.Zero,
             properties=NoiseZero()
         )
-        {% endif %}
-        {{ attr.name }}_component = ValueComponent(
+        pressure_component = ValueComponent(
             _type=_gen_type,
-            name="{{ attr.name }}",
-            properties = {{ attr.name }}_properties,
-            noise={{ attr.name }}_noise
+            name="pressure",
+            properties = pressure_properties,
+            noise=pressure_noise
         )
-        components.append({{ attr.name }}_component)
-        {% endfor %}
+        components.append(pressure_component)
         generator = ValueGenerator(
             self.topic,
             self.pub_freq,
@@ -311,9 +270,8 @@ class {{ entity.camel_name }}Node(Node):
     def start(self):
         generator = self.init_gen_components()
         generator.start()
-    {% endif %}
 
 
 if __name__ == '__main__':
-    node = {{ entity.camel_name }}Node()
+    node = EnvSensorNode()
     node.start()

@@ -9,10 +9,8 @@ import time
 import numpy as np
 from typing import Optional
 
-{% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
 from commlib.transports.mqtt import ConnectionParameters
 from rich import print, console, pretty
-{% endif %}
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
 from commlib.node import Node
@@ -21,7 +19,6 @@ pretty.install()
 console = console.Console()
 
 
-{% if entity.etype == 'sensor' %}
 # Noise definitions
 # ----------------------------------------
 @dataclass
@@ -182,123 +179,50 @@ class ValueGenerator:
             if minutes is not None:
                 if time.time() - start < minutes * 60.0:
                     break
-{% endif %}
 
 
-class {{ entity.camel_name }}Msg(PubSubMessage):
-    {% for a in entity.attributes %}
-    {% if a.type == "str" %}
-        {{ a.name }}: {{ a.type }} = '{{ a.value }}'
-    {% else %}
-        {{ a.name }}: {{ a.type }} = {{ a.value }}
-    {% endif %}
-    {% endfor %}
+class KitchenGasSensorMsg(PubSubMessage):
+        gas: float = 0.0
 
 
-class {{ entity.camel_name }}Node(Node):
+class KitchenGasSensorNode(Node):
     def __init__(self, *args, **kwargs):
-    {% if entity.etype == 'actuator' %}
-        self.tick_hz = 1
-    {% elif entity.etype == 'sensor' %}
-        self.pub_freq = {{ entity.freq }}
-    {% endif %}
-        self.topic = '{{ entity.topic }}'
+        self.pub_freq = 10
+        self.topic = 'kitchen.gas'
         conn_params = ConnectionParameters(
-            host='{{ entity.broker.host }}',
-            port={{ entity.broker.port }},
-            username='{{ entity.broker.credentials.username }}',
-            password='{{ entity.broker.credentials.password }}',
+            host='snf-889260.vm.okeanos.grnet.gr',
+            port=1893,
+            username='porolog',
+            password='fiware',
         )
         super().__init__(
-            node_name='entities.{{ entity.name.lower() }}',
+            node_name='entities.kitchen_gas_sensor',
             connection_params=conn_params,
             *args, **kwargs
         )
-    {% if entity.etype == 'actuator' %}
-        self.sub = self.create_subscriber(
-            msg_type={{ entity.camel_name }}Msg,
-            topic=self.topic,
-            on_message=self._on_message
-        )
-
-    def start(self):
-        self.run()
-        rate = Rate(self.tick_hz)
-        while True:
-            rate.sleep()
-
-    def _on_message(self, msg):
-        print(f'[*] State change command received: {msg}')
-    {% elif entity.etype == 'sensor' %}
         self.pub = self.create_publisher(
-            msg_type={{ entity.camel_name }}Msg,
+            msg_type=KitchenGasSensorMsg,
             topic=self.topic
         )
 
     def init_gen_components(self):
         components = []
-        {% for attr in entity.attributes %}
-        {% if attr.generator.__class__.__name__ == 'GaussianFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Gaussian(
-            value={{ attr.generator.value }},
-            max_value={{ attr.generator.maxValue }},
-            sigma={{ attr.generator.sigma }},
-        )
-        _gen_type = ValueGeneratorType.Gaussian
-        {% elif attr.generator.__class__.__name__ == 'ConstantFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Constant(
-            value={{ attr.generator.value }}
-        )
-        _gen_type = ValueGeneratorType.Constant
-        {% elif attr.generator.__class__.__name__ == 'LinearFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Linear(
-            start={{ attr.generator.start }},
-            step={{ attr.generator.step }}
+        gas_properties = ValueGeneratorProperties.Linear(
+            start=0,
+            step=0.1
         )
         _gen_type = ValueGeneratorType.Linear
-        {% elif attr.generator.__class__.__name__ == 'SawFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Saw(
-            min={{ attr.generator.min }},
-            max={{ attr.generator.max }},
-            step={{ attr.generator.step }}
-        )
-        _gen_type = ValueGeneratorType.Saw
-        {% elif attr.generator.__class__.__name__ == 'ReplayFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Replay(
-            values={{ attr.generator.values }},
-            times={{ attr.generator.times }},
-        )
-        _gen_type = ValueGeneratorType.Replay
-        {% else %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Constant(
-            0
-        )
-        _gen_type = ValueGeneratorType.Constant
-        {% endif %}
-        {% if attr.noise.__class__.__name__ == 'UniformNoise' %}
-        {{ attr.name }}_noise = Noise(
-            _type=NoiseType.Uniform,
-            properties=NoiseUniform({{ attr.noise.min }}, {{ attr.noise.max }})
-        )
-        {% elif attr.noise.__class__.__name__ == 'GaussianNoise' %}
-        {{ attr.name }}_noise = Noise(
+        gas_noise = Noise(
             _type=NoiseType.Gaussian,
-            properties=NoiseGaussian({{ attr.noise.mu }}, {{ attr.noise.sigma }})
+            properties=NoiseGaussian(0, 0.1)
         )
-        {% else %}
-        {{ attr.name }}_noise = Noise(
-            _type=NoiseType.Zero,
-            properties=NoiseZero()
-        )
-        {% endif %}
-        {{ attr.name }}_component = ValueComponent(
+        gas_component = ValueComponent(
             _type=_gen_type,
-            name="{{ attr.name }}",
-            properties = {{ attr.name }}_properties,
-            noise={{ attr.name }}_noise
+            name="gas",
+            properties = gas_properties,
+            noise=gas_noise
         )
-        components.append({{ attr.name }}_component)
-        {% endfor %}
+        components.append(gas_component)
         generator = ValueGenerator(
             self.topic,
             self.pub_freq,
@@ -311,9 +235,8 @@ class {{ entity.camel_name }}Node(Node):
     def start(self):
         generator = self.init_gen_components()
         generator.start()
-    {% endif %}
 
 
 if __name__ == '__main__':
-    node = {{ entity.camel_name }}Node()
+    node = KitchenGasSensorNode()
     node.start()

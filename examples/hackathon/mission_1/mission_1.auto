@@ -6,7 +6,7 @@ Metadata:
     email: "klpanagi@gmail.com"
 
 MQTT:
-    name: cloud_platform_issel
+    name: issel_cloud_platform
     host: "localhost"
     port: 1883
     credentials:
