@@ -41,12 +41,12 @@ Entity:
 Automation:
     name: motion_detected_self_start
     condition:
-		# Pythonic expressions: A is true/false
+        # Pythonic expressions: A is true/false
         (motion_detector.detected is true) AND
         (motion_detector.posX >= 5)
     enabled: true
     continuous: false
     actions:
         - bedroom_lamp.power: true
-	starts:
-		- motion_detected_self_start
+    starts:
+        - motion_detected_self_start
