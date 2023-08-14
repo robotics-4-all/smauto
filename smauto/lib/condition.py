@@ -10,15 +10,17 @@ PRIMITIVES = (int, float, str, bool)
 OPERATORS = {
     # String operators
     '~': lambda left, right: f"({left} in {right})",
-    'has': lambda left, right: f"({left} in {right})",
     '!~': lambda left, right: f"({left} not in {right})",
-    'has not': lambda left, right: f"({left} not in {right})",
+    'has': lambda left, right: f"({right} in {left})",
+    'has not': lambda left, right: f"({right} not in {left})",
 
     # Shared operators
     '==': lambda left, right: f"({left} == {right})",
     '!=': lambda left, right: f"({left} != {right})",
     'is': lambda left, right: f"({left} == {right})",
     'is not': lambda left, right: f"({left} != {right})",
+    'in': lambda left, right: f"({left} in {right})",
+    'not in': lambda left, right: f"({left} not in {right})",
 
     # Numeric operators
     '>': lambda left, right: f"({left} > {right})",
@@ -62,7 +64,7 @@ class Condition(object):
         # Node is an Attribute, print its full name including Entity
         elif textx_isinstance(
             node,
-            get_metamodel(node).namespaces['condition']['AugmentedNumericAttr']
+            get_metamodel(node).namespaces['condition']['AugmentedAttr']
             ):
             return Condition.transform_augmented_attr(node)
         else:
@@ -74,22 +76,47 @@ class Condition(object):
     def transform_augmented_attr(aattr) -> str:
         parent = aattr.parent
         val: str = ''
-        if aattr.__class__.__name__ == 'SimpleAttr':
+        if aattr.__class__.__name__ == 'SimpleNumericAttr':
             attr_ref = aattr.attribute
             entity_ref = aattr.attribute.parent
-            if parent.__class__.__name__ in ('StdAttr', 'MeanAttr', 'VarAttr'):  # Have buffer
+            if parent.__class__.__name__ in ('StdAttr', 'MeanAttr', 'VarAttr',
+                                             'MinAttr', 'MaxAttr'):  # Have buffer
                 entity_ref.init_attr_buffer(attr_ref.name, parent.size)
                 val = f"entities['{entity_ref.name}']." + \
                     f"get_buffer('{attr_ref.name}')"
             else:
                 val = f"entities['{entity_ref.name}']." + \
                         f"attributes_dict['{attr_ref.name}'].value"
-        elif aattr.__class__.__name__ == 'StdAttr':
+        elif aattr.__class__.__name__ == 'SimpleBoolAttr':
+            attr_ref = aattr.attribute
+            entity_ref = aattr.attribute.parent
+            val = f"entities['{entity_ref.name}']." + \
+                    f"attributes_dict['{attr_ref.name}'].value"
+        elif aattr.__class__.__name__ == 'SimpleStringAttr':
+            attr_ref = aattr.attribute
+            entity_ref = aattr.attribute.parent
+            val = f"entities['{entity_ref.name}']." + \
+                    f"attributes_dict['{attr_ref.name}'].value"
+        elif aattr.__class__.__name__ == 'SimpleDictAttr':
+            attr_ref = aattr.attribute
+            entity_ref = aattr.attribute.parent
+            val = f"entities['{entity_ref.name}']." + \
+                    f"attributes_dict['{attr_ref.name}'].value"
+        elif aattr.__class__.__name__ == 'SimpleListAttr':
+            attr_ref = aattr.attribute
+            entity_ref = aattr.attribute.parent
+            val = f"entities['{entity_ref.name}']." + \
+                    f"attributes_dict['{attr_ref.name}'].value"
+        elif aattr.__class__.__name__ in 'StdAttr':
             val = f"std({Condition.transform_augmented_attr(aattr.attribute)})"
         elif aattr.__class__.__name__ == 'MeanAttr':
             val = f"mean({Condition.transform_augmented_attr(aattr.attribute)})"
         elif aattr.__class__.__name__ == 'VarAttr':
             val = f"var({Condition.transform_augmented_attr(aattr.attribute)})"
+        elif aattr.__class__.__name__ == 'MaxAttr':
+            val = f"max({Condition.transform_augmented_attr(aattr.attribute)})"
+        elif aattr.__class__.__name__ == 'MinAttr':
+            val = f"min({Condition.transform_augmented_attr(aattr.attribute)})"
         return val
 
     def build(self):
@@ -132,8 +159,10 @@ class Condition(object):
                     },
                     {
                         'std': statistics.stdev,
-                        'var': statistics.stdev,
+                        'var': statistics.variance,
                         'mean': statistics.mean,
+                        'min': min,
+                        'max': max,
                     }
                 ):
                     return True, f"{self.parent.name}: triggered."
@@ -179,27 +208,6 @@ class InRangeCondition(AdvancedCondition):
 
 
 class NumericCondition(PrimitiveCondition):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-
-class NumericR(NumericCondition):
-    def __init__(self, parent, operand1, operator, operand2):
-        self.operand1 = operand1
-        self.operand2 = operand2
-        self.operator = operator
-        super().__init__(parent)
-
-
-class NumericL(NumericCondition):
-    def __init__(self, parent, operand1, operator, operand2):
-        self.operand1 = operand1
-        self.operand2 = operand2
-        self.operator = operator
-        super().__init__(parent)
-
-
-class NumericDouble(NumericCondition):
     def __init__(self, parent, operand1, operator, operand2):
         self.operand1 = operand1
         self.operand2 = operand2
@@ -208,27 +216,6 @@ class NumericDouble(NumericCondition):
 
 
 class BoolCondition(PrimitiveCondition):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-
-class BoolR(BoolCondition):
-    def __init__(self, parent, operand1, operator, operand2):
-        self.operand1 = operand1
-        self.operand2 = operand2
-        self.operator = operator
-        super().__init__(parent)
-
-
-class BoolL(BoolCondition):
-    def __init__(self, parent, operand1, operator, operand2):
-        self.operand1 = operand1
-        self.operand2 = operand2
-        self.operator = operator
-        super().__init__(parent)
-
-
-class BoolDouble(BoolCondition):
     def __init__(self, parent, operand1, operator, operand2):
         self.operand1 = operand1
         self.operand2 = operand2
@@ -237,11 +224,6 @@ class BoolDouble(BoolCondition):
 
 
 class StringCondition(PrimitiveCondition):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-
-class StringR(StringCondition):
     def __init__(self, parent, operand1, operator, operand2):
         self.operand1 = operand1
         self.operand2 = operand2
@@ -249,7 +231,7 @@ class StringR(StringCondition):
         super().__init__(parent)
 
 
-class StringL(StringCondition):
+class ListCondition(PrimitiveCondition):
     def __init__(self, parent, operand1, operator, operand2):
         self.operand1 = operand1
         self.operand2 = operand2
@@ -257,7 +239,7 @@ class StringL(StringCondition):
         super().__init__(parent)
 
 
-class StringDouble(StringCondition):
+class DictCondition(PrimitiveCondition):
     def __init__(self, parent, operand1, operator, operand2):
         self.operand1 = operand1
         self.operand2 = operand2

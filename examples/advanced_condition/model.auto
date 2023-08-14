@@ -14,15 +14,12 @@ MQTT:
         password: ""
 
 Entity:
-    name: bedroom_lamp
+    name: aircondition
     type: actuator
-    topic: "bedroom.lamp"
+    topic: "home.aircondition"
     broker: home_broker
     attributes:
         - power: bool
-        - colorR: int
-        - colorG: int
-        - colorB: int
 
 Entity:
     name: temperature_sensor
@@ -30,23 +27,26 @@ Entity:
     topic: "home.temperature"
     broker: home_broker
     attributes:
-        - temperature: float
-
-Entity:
-    name: humidity_sensor
-    type: sensor
-    topic: "home.humidity"
-    broker: home_broker
-    attributes:
-        - humidity: float
+        - temperature: float -> linear(20, 1)
 
 Automation:
-    name: motion_detected_self_start
+    name: mean_example
     condition:
-        var(mean(temperature_sensor.temperature, 10), 10) >= 30
+        mean(temperature_sensor.temperature, 4) >= 30
     enabled: true
     continuous: false
     actions:
-        - bedroom_lamp.power: true
+        - aircondition.power: true
     starts:
-        - motion_detected_self_start
+        - mean_example
+
+Automation:
+    name: min_example
+    condition:
+        min(temperature_sensor.temperature, 4) >= 30
+    enabled: true
+    continuous: false
+    actions:
+        - aircondition.power: true
+    starts:
+        - mean_example

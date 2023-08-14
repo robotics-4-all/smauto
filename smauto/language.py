@@ -36,9 +36,11 @@ from smauto.lib.condition import (
     ConditionGroup,
     PrimitiveCondition,
     AdvancedCondition,
-    NumericCondition, NumericR, NumericL, NumericDouble,
-    BoolCondition, BoolR, BoolL, BoolDouble,
-    StringCondition, StringR, StringL, StringDouble,
+    NumericCondition,
+    BoolCondition,
+    StringCondition,
+    DictCondition,
+    ListCondition
 )
 
 
@@ -46,10 +48,8 @@ CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 
 CUSTOM_CLASSES = [
     Automation, Entity, Condition, ConditionGroup, PrimitiveCondition,
-    AdvancedCondition,
-    NumericCondition, NumericR, NumericL, NumericDouble,
-    BoolCondition, BoolR, BoolL, BoolDouble,
-    StringCondition, StringR, StringL, StringDouble,
+    AdvancedCondition, NumericCondition, BoolCondition, StringCondition,
+    ListCondition, DictCondition,
     Attribute, IntAttribute, FloatAttribute,
     StringAttribute, BoolAttribute, ListAttribute,
     DictAttribute, Broker, MQTTBroker, AMQPBroker,
