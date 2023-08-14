@@ -1,6 +1,6 @@
 from textx import textx_isinstance, get_metamodel
 import statistics
-from smauto.lib.types import List, Dict
+from smauto.lib.types import List, Dict, Time, Date
 
 
 # List of primitive types that can be directly printed
@@ -46,9 +46,10 @@ class Condition(object):
     def __init__(self, parent):
         self.parent = parent
         self.cond_lambda = None
+        self.cond_raw = None
 
     @staticmethod
-    def transform_operand(node):
+    def transform_operand(node) -> str:
         # If node is a primitive type return as is (if string, add quotation marks)
         if type(node) in PRIMITIVES:
             if type(node) is str:
@@ -61,12 +62,21 @@ class Condition(object):
         # If node is a Dict object just print it out. List has __repr()__ built in
         elif type(node) == Dict:
             return node
+        elif type(node) == Time:
+            return int(str(f'{node.hours}{node.minutes}{node.seconds}'))
         # Node is an Attribute, print its full name including Entity
         elif textx_isinstance(
             node,
             get_metamodel(node).namespaces['condition']['AugmentedAttr']
             ):
             return Condition.transform_augmented_attr(node)
+        elif textx_isinstance(
+            node,
+            get_metamodel(node).namespaces['condition']['SimpleTimeAttr']
+            ):
+                val = f"entities['{node.attribute.parent.name}']." + \
+                        f"attributes_dict['{node.attribute.name}'].value.to_int()"
+                return val
         else:
             val = f"entities['{node.parent.name}']." + \
                     f"attributes_dict['{node.name}'].value"
@@ -140,7 +150,6 @@ class Condition(object):
             # Build lambda
             cond_node.cond_lambda = (OPERATORS[cond_node.operator])(
                 cond_node.r1.cond_lambda, cond_node.r2.cond_lambda)
-
         else:
             operand1 = Condition.transform_operand(cond_node.operand1)
             operand2 = Condition.transform_operand(cond_node.operand2)
@@ -240,6 +249,14 @@ class ListCondition(PrimitiveCondition):
 
 
 class DictCondition(PrimitiveCondition):
+    def __init__(self, parent, operand1, operator, operand2):
+        self.operand1 = operand1
+        self.operand2 = operand2
+        self.operator = operator
+        super().__init__(parent)
+
+
+class TimeCondition(PrimitiveCondition):
     def __init__(self, parent, operand1, operator, operand2):
         self.operand1 = operand1
         self.operand2 = operand2

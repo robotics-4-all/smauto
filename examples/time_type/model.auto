@@ -32,7 +32,6 @@ Entity:
         - colorG: int
         - colorB: int
 
-
 Automation:
     name: motion_detected_self_start
     condition:

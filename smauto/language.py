@@ -12,7 +12,7 @@ from smauto.lib.automation import (
     StringAction
 )
 from smauto.lib.types import (
-    Dict, List, Time
+    Dict, List, Time, Date
 )
 from smauto.lib.broker import (
     AMQPBroker,
@@ -39,6 +39,7 @@ from smauto.lib.condition import (
     AdvancedCondition,
     NumericCondition,
     BoolCondition,
+    TimeCondition,
     StringCondition,
     DictCondition,
     ListCondition
@@ -50,13 +51,13 @@ CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 CUSTOM_CLASSES = [
     Automation, Entity, Condition, ConditionGroup, PrimitiveCondition,
     AdvancedCondition, NumericCondition, BoolCondition, StringCondition,
-    ListCondition, DictCondition,
+    ListCondition, DictCondition, TimeCondition,
     Attribute, IntAttribute, FloatAttribute,
     StringAttribute, BoolAttribute, ListAttribute,
     DictAttribute, Broker, MQTTBroker, AMQPBroker,
     RedisBroker, BrokerAuthPlain, Action,
     IntAction, FloatAction, StringAction, BoolAction,
-    List, Dict, Time
+    List, Dict, Time, Date
 ]
 
 

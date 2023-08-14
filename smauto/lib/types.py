@@ -55,3 +55,14 @@ class Time:
         self.hours = hours
         self.minutes = minutes
         self.seconds = seconds
+
+    def to_int(self):
+        return int(str(f'{self.hours}{self.minutes}{self.seconds}'))
+
+
+class Date:
+    def __init__(self, parent, month, day, year):
+        self.parent = parent
+        self.month = month
+        self.day = day
+        self.year = year
