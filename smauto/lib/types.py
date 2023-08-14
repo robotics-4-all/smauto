@@ -1,4 +1,3 @@
-
 class List:
     def __init__(self, parent, items):
         self.parent = parent
@@ -47,3 +46,12 @@ class Dict:
         return {item.name: item.value for item in self.items}
 
 
+class Time:
+    def __init__(self, parent, hours, minutes, seconds):
+        self.parent = parent
+        hours = 0 if hours is None else hours
+        minutes = 0 if minutes is None else minutes
+        seconds = 0 if seconds is None else seconds
+        self.hours = hours
+        self.minutes = minutes
+        self.seconds = seconds

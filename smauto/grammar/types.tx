@@ -1,11 +1,18 @@
 // Types
 
+Time:
+    hours=INT (':' minutes=INT)? (':' seconds=INT)?
+;
+
+// Hours: /[0-2]?[0-9]?/;
+// Minutes: /[0-5][0-9]/;
+
 List:
     '[' items*=ListItem[','] ']'
 ;
 
 ListItem:
-    NUMBER | STRING | BOOL | List | Dict
+    NUMBER | STRING | BOOL | List | Dict | OBJECT
 ;
 
 Dict:
@@ -17,7 +24,7 @@ DictItem:
 ;
 
 DictType:
-    NUMBER | STRING | BOOL | Dict | List
+    NUMBER | STRING | BOOL | Dict | List | OBJECT
 ;
 
 NID: /(.*?)\n/;

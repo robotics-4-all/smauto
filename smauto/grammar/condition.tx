@@ -12,6 +12,7 @@ ConditionGroup:
 
 PrimitiveCondition:
     BoolCondition       |
+    TimeCondition       |
     NumericCondition    |
     StringCondition     |
     ListCondition       |
@@ -73,6 +74,43 @@ AugmentedAttr:
 ;
 
 
+NumericCondition:
+    (operand1=AugmentedNumericAttr
+     operator=NumericOperator
+     (operand2=NUMBER | operand2=AugmentedNumericAttr))
+;
+
+StringCondition:
+    (operand1=AugmentedStringAttr
+     operator=StringOperator
+     (operand2=STRING | operand2=AugmentedStringAttr))
+;
+
+BoolCondition:
+    (operand1=AugmentedBoolAttr
+     operator=BooleanOperator
+     (operand2=BOOL | operand2=AugmentedBoolAttr))
+;
+
+ListCondition:
+    (operand1=AugmentedListAttr
+     operator=ListOperator
+     (operand2=List | operand2=AugmentedListAttr))
+;
+
+DictCondition:
+    (operand1=AugmentedDictAttr
+     operator=DictOperator
+     (operand2=Dict | operand2=AugmentedDictAttr))
+;
+
+TimeCondition:
+    (operand1=SimpleTimeAttr
+     operator=TimeOperator
+     operand2=Time)
+;
+
+
 AugmentedNumericAttr:
     StdAttr         |
     VarAttr         |
@@ -83,65 +121,37 @@ AugmentedNumericAttr:
     SimpleNumericAttr
 ;
 
+AugmentedStringAttr: SimpleStringAttr;
+
+AugmentedBoolAttr: SimpleBoolAttr;
+
+AugmentedListAttr: SimpleListAttr;
+
+AugmentedDictAttr: SimpleDictAttr;
 
 SimpleNumericAttr:
     attribute=[NumericAttribute:FQN|+pm:entities.attributes]
 ;
 
-NumericCondition:
-    (operand1=AugmentedNumericAttr
-     operator=NumericOperator
-     (operand2=NUMBER | operand2=AugmentedNumericAttr))
-;
-
-AugmentedStringAttr: SimpleStringAttr;
-
 SimpleStringAttr:
     attribute=[StringAttribute:FQN|+pm:entities.attributes]
 ;
-
-StringCondition:
-    (operand1=AugmentedStringAttr
-     operator=StringOperator
-     (operand2=STRING | operand2=AugmentedStringAttr))
-;
-
-AugmentedBoolAttr: SimpleBoolAttr;
 
 SimpleBoolAttr:
     attribute=[BoolAttribute:FQN|+pm:entities.attributes]
 ;
 
-BoolCondition:
-    (operand1=AugmentedBoolAttr
-     operator=BooleanOperator
-     (operand2=BOOL | operand2=AugmentedBoolAttr))
-;
-
-AugmentedListAttr: SimpleListAttr;
-
 SimpleListAttr:
     attribute=[ListAttribute:FQN|+pm:entities.attributes]
 ;
-
-ListCondition:
-    (operand1=AugmentedListAttr
-     operator=ListOperator
-     (operand2=List | operand2=AugmentedListAttr))
-;
-
-AugmentedDictAttr: SimpleDictAttr;
 
 SimpleDictAttr:
     attribute=[DictAttribute:FQN|+pm:entities.attributes]
 ;
 
-DictCondition:
-    (operand1=AugmentedDictAttr
-     operator=DictOperator
-     (operand2=Dict | operand2=AugmentedDictAttr))
+SimpleTimeAttr:
+    attribute=[TimeAttribute:FQN|+pm:entities.attributes]
 ;
-
 
 // Operators
 
@@ -158,6 +168,8 @@ BooleanOperator: '==' | '!=' | 'is not' | 'is';
 ListOperator: '==' | '!=' | 'is' | 'is not' | 'in' | 'not in';
 
 DictOperator: '==' | '!=' | 'is' | 'is not';
+
+TimeOperator: '>=' | '>' | '<=' | '<' | '==' | '!=' | 'is not' | 'is';
 
 // === Fully Qualified Names Rule ===
 FQN: ID('.'ID)*;

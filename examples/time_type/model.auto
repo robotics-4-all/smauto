@@ -1,0 +1,45 @@
+Metadata:
+    name: SimpleHomeAutomation
+    version: "0.1.0"
+    description: "Simple home automation model."
+    author: "klpanagi"
+    email: "klpanagi@gmail.com"
+
+MQTT:
+    name: cloud_platform_issel
+    host: "localhost"
+    port: 1883
+    credentials:
+        username: ""
+        password: ""
+
+Entity:
+    name: clock
+    type: sensor
+    topic: "system.clock"
+    broker: cloud_platform_issel
+    attributes:
+        - daytime: time
+
+Entity:
+    name: bedroom_lamp
+    type: actuator
+    topic: "bedroom.lamp"
+    broker: cloud_platform_issel
+    attributes:
+        - power: bool
+        - colorR: int
+        - colorG: int
+        - colorB: int
+
+
+Automation:
+    name: motion_detected_self_start
+    condition:
+        clock.daytime >= 01:05
+    enabled: true
+    continuous: false
+    actions:
+        - bedroom_lamp.power: true
+    starts:
+        - motion_detected_self_start
