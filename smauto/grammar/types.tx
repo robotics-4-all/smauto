@@ -1,0 +1,23 @@
+// Types
+
+List:
+    '[' items*=ListItem[','] ']'
+;
+
+ListItem:
+    NUMBER | STRING | BOOL | List | Dict
+;
+
+Dict:
+    '{' items*=DictItem[','] '}'
+;
+
+DictItem:
+    name=STRING ':' value=DictType
+;
+
+DictType:
+    NUMBER | STRING | BOOL | Dict | List
+;
+
+NID: /(.*?)\n/;

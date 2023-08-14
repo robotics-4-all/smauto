@@ -1,4 +1,5 @@
 import entity
+import types
 
 // === Conditions ===
 // Condition: AdvancedCondition | PrimitiveCondition | ConditionGroup ;
@@ -141,27 +142,6 @@ DictCondition:
      (operand2=Dict | operand2=AugmentedDictAttr))
 ;
 
-// Types
-
-List:
-    '[' items*=ListItem[','] ']'
-;
-
-ListItem:
-    NUMBER | STRING | BOOL | List | Dict
-;
-
-Dict:
-    '{' items*=DictItem[','] '}'
-;
-
-DictItem:
-    name=STRING ':' value=DictType
-;
-
-DictType:
-    NUMBER | STRING | BOOL | Dict | List
-;
 
 // Operators
 
