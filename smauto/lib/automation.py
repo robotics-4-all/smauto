@@ -19,7 +19,7 @@ class AutomationState:
 # A class representing an Automation
 class Automation(object):
 
-    def __init__(self, parent, name, condition, actions,
+    def __init__(self, parent, name, condition, actions, freq,
                  enabled, continuous, checkOnce, after, starts, stops):
         """
         Creates and returns an Automation object
@@ -36,16 +36,14 @@ class Automation(object):
         enabled = True if enabled is None else enabled
         continuous = True if continuous is None else continuous
         checkOnce = False if checkOnce is None else checkOnce
+        freq = 1 if freq in (None, 0) else freq
         self.parent = parent
-        # Automation name
         self.name = name
-        # Automation Condition
         self.condition = condition
-        # Boolean variable indicating if the Automation is enabled and should be evaluated
         self.enabled = enabled
         self.continuous = continuous
         self.checkOnce = checkOnce
-        # Action function
+        self.freq = freq
         self.actions = actions
         self.after = after
         self.starts = starts
@@ -107,11 +105,22 @@ class Automation(object):
     def print(self):
         after = f'\n'.join(
             [f"      - {dep.name}" for dep in self.after])
+        starts = f'\n'.join(
+            [f"      - {dep.name}" for dep in self.starts])
+        stops = f'\n'.join(
+            [f"      - {dep.name}" for dep in self.stops])
         print(
             f"[*] Automation <{self.name}>\n"
             f"    Condition: {self.condition.cond_lambda}\n"
+            f"    Frequency: {self.freq} Hz\n"
+            f"    Continuoues: {self.continuous}\n"
+            f"    CheckOnce: {self.checkOnce}\n"
+            f"    Starts:\n"
+            f"      {starts}\n"
+            f"    Stops:\n"
+            f"      {stops}\n"
             f"    After:\n"
-            f"      {after}"
+            f"      {after}\n"
         )
 
     def start(self):
@@ -155,7 +164,7 @@ class Automation(object):
                     if self.checkOnce:
                         self.disable()
                         self.state = AutomationState.EXITED_SUCCESS
-                    time.sleep(1)
+                    time.sleep(1 / self.freq)
                 except Exception as e:
                     print(f'[ERROR] {e}')
                     return
