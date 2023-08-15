@@ -1,7 +1,0 @@
-Entity:
-    name: system_clock
-    type: sensor
-    topic: "system.clock"
-    broker: fake_broker
-    attributes:
-        - time: time

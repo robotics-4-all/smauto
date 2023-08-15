@@ -1,7 +1,7 @@
 // Types
 
 Time:
-    hours=INT (':' minutes=INT)? (':' seconds=INT)?
+    hours=INT ':' minutes=INT (':' seconds=INT)?
 ;
 
 Date: month=INT ':' day=INT ':' year=INT;

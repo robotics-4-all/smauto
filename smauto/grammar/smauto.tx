@@ -1,8 +1,10 @@
 import automation
 import broker
 import entity
+import types
 
 SmAutoModel:
+    imports*=Import
     (metadata=Metadata)?
     (
     brokers*=Broker
@@ -25,7 +27,9 @@ Metadata:
 // FQN: ID('.'ID)*;
 FQN: ID+['.'];
 FQNI: ID+['.']('.*')?;
-Import: 'import' importURI=FQNI ('as' name=ID)?;
+// Import: 'import' importURI=FQNI ('as' name=ID)?;
+NIDREF: NID+['.']('.*')?;
+Import: 'import' name=STRING;
 
 // Comments
 Comment: /\#.*?$/;

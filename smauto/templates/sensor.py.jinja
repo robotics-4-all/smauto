@@ -11,8 +11,8 @@ from typing import Optional
 
 {% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
 from commlib.transports.mqtt import ConnectionParameters
-from rich import print, console, pretty
 {% endif %}
+from rich import print, console, pretty
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
 from commlib.node import Node
@@ -21,7 +21,6 @@ pretty.install()
 console = console.Console()
 
 
-{% if entity.etype == 'sensor' %}
 # Noise definitions
 # ----------------------------------------
 @dataclass
@@ -182,7 +181,6 @@ class ValueGenerator:
             if minutes is not None:
                 if time.time() - start < minutes * 60.0:
                     break
-{% endif %}
 
 
 class {{ entity.camel_name }}Msg(PubSubMessage):
@@ -197,11 +195,7 @@ class {{ entity.camel_name }}Msg(PubSubMessage):
 
 class {{ entity.camel_name }}Node(Node):
     def __init__(self, *args, **kwargs):
-    {% if entity.etype == 'actuator' %}
-        self.tick_hz = 1
-    {% elif entity.etype == 'sensor' %}
         self.pub_freq = {{ entity.freq }}
-    {% endif %}
         self.topic = '{{ entity.topic }}'
         conn_params = ConnectionParameters(
             host='{{ entity.broker.host }}',
@@ -214,22 +208,6 @@ class {{ entity.camel_name }}Node(Node):
             connection_params=conn_params,
             *args, **kwargs
         )
-    {% if entity.etype == 'actuator' %}
-        self.sub = self.create_subscriber(
-            msg_type={{ entity.camel_name }}Msg,
-            topic=self.topic,
-            on_message=self._on_message
-        )
-
-    def start(self):
-        self.run()
-        rate = Rate(self.tick_hz)
-        while True:
-            rate.sleep()
-
-    def _on_message(self, msg):
-        print(f'[*] State change command received: {msg}')
-    {% elif entity.etype == 'sensor' %}
         self.pub = self.create_publisher(
             msg_type={{ entity.camel_name }}Msg,
             topic=self.topic
@@ -311,7 +289,6 @@ class {{ entity.camel_name }}Node(Node):
     def start(self):
         generator = self.init_gen_components()
         generator.start()
-    {% endif %}
 
 
 if __name__ == '__main__':

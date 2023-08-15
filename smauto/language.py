@@ -148,10 +148,10 @@ def get_metamodel(debug=False):
         {
             "*.*": scoping_providers.FQNImportURI(importAs=True),
             "brokers*": scoping_providers.FQNGlobalRepo(
-                join(MODEL_REPO_PATH, 'fake_broker.smauto')
+                join(MODEL_REPO_PATH, 'broker', 'fake_broker.smauto')
             ),
             "entities*": scoping_providers.FQNGlobalRepo(
-                join(MODEL_REPO_PATH, 'system_clock.smauto')
+                join(MODEL_REPO_PATH, 'entity', 'system_clock.smauto')
             ),
         }
     )

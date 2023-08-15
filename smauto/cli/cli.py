@@ -25,12 +25,13 @@ def cli(ctx):
 @click.pass_context
 @click.argument('model_path')
 def validate(ctx, model_path):
-    try:
-        model = build_model(model_path)
-        print('[*] Model validation success!!')
-    except Exception as e:
-        print('[*] Validation failed with error(s):')
-        print(str(e))
+    # try:
+    model = build_model(model_path)
+    print('[*] Model validation success!!')
+    # except Exception as e:
+    #     print('[*] Validation failed with error(s):')
+    #     
+    #     print(str(e))
 
 
 @cli.command('interpret',
