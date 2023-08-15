@@ -1,7 +1,8 @@
 from collections import deque
 from commlib.endpoints import endpoint_factory, EndpointType, TransportType
 
-from .broker import MQTTBroker, AMQPBroker, RedisBroker
+from smauto.lib.broker import MQTTBroker, AMQPBroker, RedisBroker
+from smauto.lib.types import Time
 
 # Broker classes and their corresponding TransportType
 broker_tt = {
@@ -191,6 +192,14 @@ class BoolAttribute(Attribute):
         self.type = 'bool'
         if self.value is None:
             self.value = False
+
+
+class TimeAttribute(Attribute):
+    def __init__(self, parent, name, default):
+        super().__init__(parent, name, default)
+        self.type = 'time'
+        if self.value is None:
+            self.value = Time(self, 0, 0, 0)
 
 
 class ListAttribute(Attribute):

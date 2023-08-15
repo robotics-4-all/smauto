@@ -53,14 +53,6 @@ class Automation(object):
 
     # Evaluate the Automation's conditions and run the actions
     def evaluate_condition(self):
-        """
-            Evaluates the Automation's conditions if enabled is
-            True and returns the result and the activation message.
-
-        :return: (Boolean showing the evaluation's success,
-            A string message regarding evaluation's status)
-        """
-        # Check if condition has been build using build_expression
         if self.enabled:
             return self.condition.evaluate()
         else:

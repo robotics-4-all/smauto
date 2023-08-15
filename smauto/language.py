@@ -1,7 +1,11 @@
 import os
+from os.path import join
 from textx import language, metamodel_from_file, get_children_of_type, TextXSemanticError
 import pathlib
 import textx.scoping.providers as scoping_providers
+from rich import print
+from textx.scoping import ModelRepository, GlobalModelRepository
+from smauto.definitions import MODEL_REPO_PATH
 
 from smauto.lib.automation import (
     Action,
@@ -29,7 +33,8 @@ from smauto.lib.entity import (
     FloatAttribute,
     IntAttribute,
     ListAttribute,
-    StringAttribute
+    StringAttribute,
+    TimeAttribute
 )
 
 from smauto.lib.condition import (
@@ -52,13 +57,51 @@ CUSTOM_CLASSES = [
     Automation, Entity, Condition, ConditionGroup, PrimitiveCondition,
     AdvancedCondition, NumericCondition, BoolCondition, StringCondition,
     ListCondition, DictCondition, TimeCondition,
-    Attribute, IntAttribute, FloatAttribute,
+    Attribute, IntAttribute, FloatAttribute, TimeAttribute,
     StringAttribute, BoolAttribute, ListAttribute,
     DictAttribute, Broker, MQTTBroker, AMQPBroker,
     RedisBroker, BrokerAuthPlain, Action,
     IntAction, FloatAction, StringAction, BoolAction,
     List, Dict, Time, Date
 ]
+
+
+ENTITY_BUILDINS = {
+    'system_clock': Entity(
+        None,
+        name='system_clock',
+        etype='sensor',
+        freq=1,
+        topic='system.clock',
+        broker=MQTTBroker(None, name='fake', host='localhost',
+                          port=1883, credentials=None),
+        attributes=[
+            TimeAttribute(None, 'time', None)
+        ]
+    )
+}
+
+FakeBroker = """
+MQTT:
+    name: fake_broker
+    host: "localhost"
+    port: 1883
+    credentials:
+        username: ""
+        password: ""
+"""
+
+SystemClock = """
+Entity:
+    name: system_clock
+    type: sensor
+    topic: "system.clock"
+    broker: fake_broker
+    attributes:
+        - time: time
+"""
+
+GLOBAL_REPO = GlobalModelRepository()
 
 
 def class_provider(name):
@@ -90,30 +133,43 @@ def model_proc(model, metamodel):
     process_time_class(model)
 
 
-def get_metamodel():
+def get_metamodel(debug=False):
     metamodel = metamodel_from_file(
         CURRENT_FPATH.joinpath('grammar/smauto.tx'),
         classes=class_provider,
-        auto_init_attributes=False
+        auto_init_attributes=False,
+        global_repository=GLOBAL_REPO,
+        debug=debug
     )
-    # obj_processors = {
-    #     'Time': time_obj_processor,
-    # }
     # metamodel.register_obj_processors(obj_processors)
     metamodel.register_model_processor(model_proc)
 
-    # metamodel.register_scope_providers(
-    #     {
-    #         "*.*": scoping_providers.FQNImportURI(importAs=True),
-    #     }
-    # )
+    metamodel.register_scope_providers(
+        {
+            "*.*": scoping_providers.FQNImportURI(importAs=True),
+            "brokers*": scoping_providers.FQNGlobalRepo(
+                join(MODEL_REPO_PATH, 'fake_broker.smauto')
+            ),
+            "entities*": scoping_providers.FQNGlobalRepo(
+                join(MODEL_REPO_PATH, 'system_clock.smauto')
+            ),
+        }
+    )
     return metamodel
+
+
+def get_buildin_models(metamodel):
+    buildin_models = ModelRepository()
+    buildin_models.add_model(metamodel.model_from_str(FakeBroker))
+    buildin_models.add_model(metamodel.model_from_str(SystemClock))
+    return buildin_models
 
 
 def build_model(model_path):
     # Parse model
-    mm = get_metamodel()
+    mm = get_metamodel(debug=False)
     model = mm.model_from_file(model_path)
+    # entities = get_children_of_type('Entity', model)
     return model
 
 

@@ -55,11 +55,17 @@ class MQTTBroker(Broker):
         super(MQTTBroker, self).__init__(parent, name, host, port, credentials)
         # lazy import
         from commlib.transports.mqtt import ConnectionParameters
+        if self.credentials is None:
+            username = ''
+            password = ''
+        else:
+            username = self.credentials.username
+            password = self.credentials.password
         self.conn_params = ConnectionParameters(
             host=self.host,
             port=self.port,
-            username=self.credentials.username,
-            password=self.credentials.password,
+            username=username,
+            password=password,
         )
 
 

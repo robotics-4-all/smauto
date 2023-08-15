@@ -14,18 +14,10 @@ MQTT:
         password: ""
 
 Entity:
-    name: clock
-    type: sensor
-    topic: "system.clock"
-    broker: cloud_platform_issel
-    attributes:
-        - daytime: time
-
-Entity:
     name: bedroom_lamp
     type: actuator
     topic: "bedroom.lamp"
-    broker: cloud_platform_issel
+    broker: fake_broker
     attributes:
         - power: bool
         - colorR: int
@@ -35,7 +27,7 @@ Entity:
 Automation:
     name: motion_detected_self_start
     condition:
-        clock.daytime >= 01:05
+        system_clock.time >= 01:05
     enabled: true
     continuous: false
     actions:

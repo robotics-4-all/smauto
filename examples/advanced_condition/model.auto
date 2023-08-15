@@ -49,4 +49,4 @@ Automation:
     actions:
         - aircondition.power: true
     starts:
-        - mean_example
+        - min_example
