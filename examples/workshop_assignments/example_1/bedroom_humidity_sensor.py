@@ -5,14 +5,12 @@ import random
 
 from enum import Enum
 from dataclasses import dataclass
-from os import wait
 import time
 import numpy as np
+from typing import Optional
 
-{% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
 from commlib.transports.mqtt import ConnectionParameters
 from rich import print, console, pretty
-{% endif %}
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
 from commlib.node import Node
@@ -67,18 +65,33 @@ class Noise:
 class ValueGeneratorProperties:
     @dataclass
     class Constant:
-      value: float
+        value: float
 
     @dataclass
     class Linear:
-      start: float
-      step: float # per second
+        start: float
+        step: float # per second
+
+    @dataclass
+    class Saw:
+        min: float
+        max: float
+        step: float
+
+        _internal_start: Optional[float] = 0.0
 
     @dataclass
     class Gaussian:
         value: float
         max_value: float
         sigma: float # this is time (seconds)
+
+        _internal_start: Optional[float] = 0.0
+
+    @dataclass
+    class Replay:
+        values: list
+        times: int
 
 
 class ValueGeneratorType(Enum):
@@ -90,6 +103,7 @@ class ValueGeneratorType(Enum):
     Sinus = 7
     Logarithmic = 8
     Exponential = 9
+    Replay = 10
 # ----------------------------------------
 
 
@@ -112,8 +126,13 @@ class ValueGenerator:
 
     def start(self, minutes=None):
         start = time.time()
-        internal_start = start
         value = None
+        replay_counter = 0
+        replay_iter = 0
+        for c in self.components:
+            if c.type in (ValueGeneratorType.Gaussian,
+                          ValueGeneratorType.Saw):
+                c.properties._internal_start = start
         while True:
             msg = {}
             for c in self.components:
@@ -122,14 +141,35 @@ class ValueGenerator:
                 elif c.type == ValueGeneratorType.Linear:
                     value = c.properties.start + (time.time() - start) * c.properties.step
                     value += c.noise.generate()
+                elif c.type == ValueGeneratorType.Saw:
+                    value = c.properties.min + \
+                        (time.time() - c.properties._internal_start) * \
+                            c.properties.step
+                    value += c.noise.generate()
+                    if value >= c.properties.max:
+                        c.properties._internal_start = time.time()
                 elif c.type == ValueGeneratorType.Gaussian:
-                    if time.time() - internal_start > 8 * c.properties.sigma:
-                        internal_start = time.time()
+                    if time.time() - c.properties._internal_start > 8 * c.properties.sigma:
+                        c.properties._internal_start = time.time()
                     value = c.properties.value
-                    _norm_exp = -np.power(time.time() - internal_start - 4 * c.properties.sigma, 2.) / (2 * np.power(c.properties.sigma, 2.))
+                    _norm_exp = -np.power(
+                        time.time() - c.properties._internal_start - 4 *
+                        c.properties.sigma, 2.) / (2 * np.power(c.properties.sigma, 2.))
                     value += np.exp(_norm_exp) * (c.properties.max_value - c.properties.value)
                     value += c.noise.generate()
+                elif c.type == ValueGeneratorType.Replay:
+                    values = c.properties.values
+                    times = c.properties.times
+                    if replay_iter == times:
+                        msg[c.name] = values[-1]
+                        continue
+                    value = values[replay_counter]
+                    replay_counter += 1
+                    replay_counter = replay_counter % (len(values))
+                    if replay_counter == 0:
+                        replay_iter += 1
                 msg[c.name] = value
+
 
             self.publisher.publish(
                 msg
@@ -141,107 +181,48 @@ class ValueGenerator:
                     break
 
 
-class {{ entity.camel_name }}Msg(PubSubMessage):
-    {% for a in entity.attributes %}
-    {% if a.type == "str" %}
-        {{ a.name }}: {{ a.type }} = '{{ a.value }}'
-    {% else %}
-        {{ a.name }}: {{ a.type }} = {{ a.value }}
-    {% endif %}
-    {% endfor %}
+class BedroomHumiditySensorMsg(PubSubMessage):
+        humidity: float = 0.0
 
 
-class {{ entity.camel_name }}Node(Node):
+class BedroomHumiditySensorNode(Node):
     def __init__(self, *args, **kwargs):
-    {% if entity.etype == 'actuator' %}
-        self.tick_hz = 1
-    {% elif entity.etype == 'sensor' %}
-        self.pub_freq = {{ entity.freq }}
-    {% endif %}
-        self.topic = '{{ entity.topic }}'
+        self.pub_freq = 1
+        self.topic = 'bedroom.humidity'
         conn_params = ConnectionParameters(
-            host='{{ entity.broker.host }}',
-            port={{ entity.broker.port }},
-            username='{{ entity.broker.credentials.username }}',
-            password='{{ entity.broker.credentials.password }}',
+            host='snf-889260.vm.okeanos.grnet.gr',
+            port=1893,
+            username='porolog',
+            password='fiware',
         )
         super().__init__(
-            node_name='entities.{{ entity.name.lower() }}',
+            node_name='entities.bedroom_humidity_sensor',
             connection_params=conn_params,
             *args, **kwargs
         )
-    {% if entity.etype == 'actuator' %}
-        self.sub = self.create_subscriber(
-            msg_type={{ entity.camel_name }}Msg,
-            topic=self.topic,
-            on_message=self._on_message
-        )
-
-    def start(self):
-        self.run()
-        rate = Rate(self.tick_hz)
-        while True:
-            rate.sleep()
-
-    def _on_message(self, msg):
-        print(f'[*] State change command received: {msg}')
-    {% elif entity.etype == 'sensor' %}
         self.pub = self.create_publisher(
-            msg_type={{ entity.camel_name }}Msg,
+            msg_type=BedroomHumiditySensorMsg,
             topic=self.topic
         )
 
     def init_gen_components(self):
         components = []
-        {% for attr in entity.attributes %}
-        {% if attr.generator.__class__.__name__ == 'GaussianFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Gaussian(
-            value={{ attr.generator.value }},
-            max_value={{ attr.generator.maxValue }},
-            sigma={{ attr.generator.sigma }},
-        )
-        _gen_type = ValueGeneratorType.Gaussian
-        {% elif attr.generator.__class__.__name__ == 'ConstantFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Constant(
-            value={{ attr.generator.value }}
-        )
-        _gen_type = ValueGeneratorType.Constant
-        {% elif attr.generator.__class__.__name__ == 'LinearFun' %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Linear(
-            start={{ attr.generator.start }},
-            step={{ attr.generator.step }}
+        humidity_properties = ValueGeneratorProperties.Linear(
+            start=0,
+            step=0.1
         )
         _gen_type = ValueGeneratorType.Linear
-        {% else %}
-        {{ attr.name }}_properties = ValueGeneratorProperties.Constant(
-            0
-        )
-        _gen_type = ValueGeneratorType.Constant
-        {% endif %}
-        {% if attr.noise.__class__.__name__ == 'UniformNoise' %}
-        {{ attr.name }}_noise = Noise(
-            _type=NoiseType.Uniform,
-            properties=NoiseUniform({{ attr.noise.min }}, {{ attr.noise.max }})
-        )
-        {% elif attr.noise.__class__.__name__ == 'GaussianNoise' %}
-        {{ attr.name }}_noise = Noise(
+        humidity_noise = Noise(
             _type=NoiseType.Gaussian,
-            properties=NoiseGaussian({{ attr.noise.mu }}, {{ attr.noise.sigma }})
+            properties=NoiseGaussian(0, 0.05)
         )
-        {% else %}
-        {{ attr.name }}_noise = Noise(
-            _type=NoiseType.Zero,
-            properties=NoiseZero()
-        )
-        {% endif %}
-        {{ attr.name }}_component = ValueComponent(
+        humidity_component = ValueComponent(
             _type=_gen_type,
-            name="{{ attr.name }}",
-            properties = {{ attr.name }}_properties,
-            noise={{ attr.name }}_noise
+            name="humidity",
+            properties = humidity_properties,
+            noise=humidity_noise
         )
-        components.append({{ attr.name }}_component)
-        {% endfor %}
+        components.append(humidity_component)
         generator = ValueGenerator(
             self.topic,
             self.pub_freq,
@@ -254,9 +235,8 @@ class {{ entity.camel_name }}Node(Node):
     def start(self):
         generator = self.init_gen_components()
         generator.start()
-    {% endif %}
 
 
 if __name__ == '__main__':
-    node = {{ entity.camel_name }}Node()
+    node = BedroomHumiditySensorNode()
     node.start()

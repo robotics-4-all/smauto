@@ -2,7 +2,7 @@ import click
 import os
 from rich import print, pretty
 
-from smauto.interpreter import execute_model_from_path
+from smauto.interpreter import ModelExecutor
 from smauto.generator import generate_automation_graph_from_file
 from smauto.language import build_model
 from smauto.transformations import model_to_vnodes
@@ -25,12 +25,13 @@ def cli(ctx):
 @click.pass_context
 @click.argument('model_path')
 def validate(ctx, model_path):
-    try:
-        model = build_model(model_path)
-        print('[*] Model validation success!!')
-    except Exception as e:
-        print('[*] Validation failed with error(s):')
-        print(str(e))
+    # try:
+    model = build_model(model_path)
+    print('[*] Model validation success!!')
+    # except Exception as e:
+    #     print('[*] Validation failed with error(s):')
+    #     
+    #     print(str(e))
 
 
 @cli.command('interpret',
@@ -38,7 +39,7 @@ def validate(ctx, model_path):
 @click.pass_context
 @click.argument('model_path')
 def interpret(ctx, model_path):
-    execute_model_from_path(model_path)
+    ModelExecutor.execute_automations_from_path(model_path)
 
 
 @cli.command('graph',

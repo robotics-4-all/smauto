@@ -1,0 +1,175 @@
+import entity
+import types
+
+// === Conditions ===
+// Condition: AdvancedCondition | PrimitiveCondition | ConditionGroup ;
+Condition: ConditionGroup | PrimitiveCondition | AdvancedCondition;
+
+ConditionGroup:
+    '(' r1=Condition ')' operator=LogicalOperator '(' r2=Condition ')'
+    // (cond=Condition (operator=LogicalOperator)?)*
+;
+
+PrimitiveCondition:
+    BoolCondition       |
+    TimeCondition       |
+    NumericCondition    |
+    StringCondition     |
+    ListCondition       |
+    DictCondition
+;
+
+AdvancedCondition: InRangeCondition | MathExpression;
+
+InRangeCondition:
+    attribute=AugmentedNumericAttr  'in range'
+        '[' min=NUMBER ',' max=NUMBER ']'
+;
+
+MathExpression:
+	'math' '(' op=MathTerm (op=PlusOrMinus op=MathTerm)* ')'
+;
+
+PlusOrMinus: '+' | '-';
+MulOrDiv: '*' | '/' ;
+
+MathTerm: op=MathFactor (op=MulOrDiv op=MathFactor)*;
+
+MathFactor: (sign=PlusOrMinus)?  op=MathOperand;
+
+MathOperand: op=NUMBER | op=[NumericAttribute:FQN|+pm:entities.attributes] |
+	('(' op=MathExpression ')');
+
+StdAttr:
+    'std' '(' attribute=AugmentedNumericAttr ',' size=INT ')'
+;
+
+VarAttr:
+    'var' '(' attribute=AugmentedNumericAttr ',' size=INT ')'
+;
+
+MeanAttr:
+    'mean' '(' attribute=AugmentedNumericAttr  ',' size=INT ')'
+;
+
+MinAttr:
+    'min' '(' attribute=AugmentedNumericAttr  ',' size=INT ')'
+;
+
+MaxAttr:
+    'max' '(' attribute=AugmentedNumericAttr  ',' size=INT ')'
+;
+
+MultiplyAttr:
+    'mul' '(' attribute*=AugmentedNumericAttr[','] ')'
+;
+
+
+AugmentedAttr:
+    AugmentedNumericAttr |
+    AugmentedStringAttr  |
+    AugmentedBoolAttr    |
+    AugmentedListAttr    |
+    AugmentedDictAttr
+;
+
+
+NumericCondition:
+    (operand1=AugmentedNumericAttr
+     operator=NumericOperator
+     (operand2=NUMBER | operand2=AugmentedNumericAttr))
+;
+
+StringCondition:
+    (operand1=AugmentedStringAttr
+     operator=StringOperator
+     (operand2=STRING | operand2=AugmentedStringAttr))
+;
+
+BoolCondition:
+    (operand1=AugmentedBoolAttr
+     operator=BooleanOperator
+     (operand2=BOOL | operand2=AugmentedBoolAttr))
+;
+
+ListCondition:
+    (operand1=AugmentedListAttr
+     operator=ListOperator
+     (operand2=List | operand2=AugmentedListAttr))
+;
+
+DictCondition:
+    (operand1=AugmentedDictAttr
+     operator=DictOperator
+     (operand2=Dict | operand2=AugmentedDictAttr))
+;
+
+TimeCondition:
+    (operand1=SimpleTimeAttr
+     operator=TimeOperator
+     operand2=Time)
+;
+
+
+AugmentedNumericAttr:
+    StdAttr         |
+    VarAttr         |
+    MeanAttr        |
+    MinAttr         |
+    MaxAttr         |
+    MultiplyAttr    |
+    SimpleNumericAttr
+;
+
+AugmentedStringAttr: SimpleStringAttr;
+
+AugmentedBoolAttr: SimpleBoolAttr;
+
+AugmentedListAttr: SimpleListAttr;
+
+AugmentedDictAttr: SimpleDictAttr;
+
+SimpleNumericAttr:
+    attribute=[NumericAttribute:FQN|+pm:entities.attributes]
+;
+
+SimpleStringAttr:
+    attribute=[StringAttribute:FQN|+pm:entities.attributes]
+;
+
+SimpleBoolAttr:
+    attribute=[BoolAttribute:FQN|+pm:entities.attributes]
+;
+
+SimpleListAttr:
+    attribute=[ListAttribute:FQN|+pm:entities.attributes]
+;
+
+SimpleDictAttr:
+    attribute=[DictAttribute:FQN|+pm:entities.attributes]
+;
+
+SimpleTimeAttr:
+    attribute=[TimeAttribute:FQN|+pm:entities.attributes]
+;
+
+// Operators
+
+// SharedOperator: '==' | '!=' | 'is' | 'is not';
+
+StringOperator: '~' | '!~' | '==' | '!=' | 'is not' | 'is' | 'has' | 'in' | 'not in';
+
+NumericOperator: '>=' | '>' | '<=' | '<' | '==' | '!=' | 'is not' | 'is';
+
+LogicalOperator: 'AND' | 'OR' | 'NOT' | 'XOR' | 'NOR' | 'XNOR' | 'NAND';
+
+BooleanOperator: '==' | '!=' | 'is not' | 'is';
+
+ListOperator: '==' | '!=' | 'is' | 'is not' | 'in' | 'not in';
+
+DictOperator: '==' | '!=' | 'is' | 'is not';
+
+TimeOperator: '>=' | '>' | '<=' | '<' | '==' | '!=' | 'is not' | 'is';
+
+// === Fully Qualified Names Rule ===
+FQN: ID('.'ID)*;

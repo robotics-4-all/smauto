@@ -227,9 +227,14 @@ it's own value and noise generators, using a simple grammar as evident below:
 
 **Supported Value Generators:**
 
-- **Constant**: `constant(value)`.
-- **Linear**: `linear(min, step)`.
-- **Gaussian**: `gaussian(value, maxValue, sigma)`.
+- **Constant**: `constant(value)`. Constant value
+- **Linear**: `linear(min, step)`. Linear function
+- **Saw**: `saw(min, max, step)`. Saw function.
+- **Gaussian**: `gaussian(value, maxValue, sigma)`. Gaussian function
+- **Replay**: `replay([values], times)`. Replay from a list of values. The `times` parameter can be used to force replay iterations to a specific value. If `times=-1` then values will
+be replayed infinitely.
+
+
 
 
 **Supported Noise Generators:**
@@ -282,7 +287,7 @@ Automation:
         (
             (thermometer.temperature > 32) AND 
             (humidity.humidity > 30)
-        ) AND (aircondition.on NOT true)
+        ) AND (aircondition.on == true)
     enabled: true
     continuous: false
     actions:
@@ -364,8 +369,8 @@ Entity:
 Automation:
     name: start_aircondition
     condition:
-        (corridor.temperature > 30) AND
-        (kitchen.temperature > 30)
+        (corridor_temperature.temperature > 30) AND
+        (kitchen_temperature.temperature > 30)
     actions:
         - aircondition.temperature:  25.0
         - aircondition.mode:  "cool"
@@ -416,9 +421,18 @@ when defining a Condition.
 
 ```yml
 condition:
-    (mean(weather_station.temperature, 10) > 28) AND
-    (std(weather_station.temperature, 10) > 1)
+    (mean(bedroom_temp_sensor.temperature, 10) > 28) AND
+    (std(bedroom_temp_sensor.temperature, 10) > 1)
 
+condition:
+    bedroom_humidity_sensor.humidity in range(30, 60)
+
+condition:
+    bedroom_temp_sensor.temperature in range(24, 26) AND
+    bedroom_humidity_sensor.humidity in range(30, 60)
+
+condition:
+    var(mean(bedroom_temp_sensor.temperature, 10), 10) >= 0.1
 ```
 
 #### Writing Conditions
@@ -477,6 +491,13 @@ The freq property can only be set only for sensor and robot Entities.
 
 SmAuto implements a language interpreter, to parse and validate the model against the meta-model and the logical rules, and to execute the input model. The interpreter dynamically constructs the classes (in Python) in-memory and executes the automation tasks described by the input model, using the Python interpreter. For this purpose, a command-line interface is provided to work with validation and dynamic execution of models, as long as for generating a visual graph for each automation (image file). Of course, for the graph generation and model execution processes, the validation process is initially executed and are terminated in case of syntactic and logical errors in the input model.
 
+The executor process takes as input the model, after success validation, and initially constructs the classes in-memory. The next step is to augment the model classes with platform-specific code, that includes the following core functionalities:
+
+- Augment the Entity class, to connect entities to the message broker and create relevant interfaces (publisher or subscriber), depending on it's type (Sense or Act). The Entity class monitors the state of the smart object by subscribing to the relevant topic and creates a local mirror of it's state. In case of actuator entities (Entity Act), it also constructs a publisher to send commands when actions are triggered by the automation. This augmentation implements the communication layer.
+- Transform the condition of each automation, expressed in SmAuto, into Python source code, that actually implements a lambda function. The injected lambda function is called at each "tick" of the executor.
+- Augment the Automation class and include platform-specific code that implements the execution logic. Each Automation has an internal state machine that defines four (4) states and the transitions as it appears in Figure \ref{XX}.
+\end{itemize}
+
 To execute the automations defined within an SmAuto (.smauto) model use the CLI.
 
 ```bash
@@ -485,12 +506,6 @@ smauto interpret simple_model.smauto
 
 ## Generate Virtual Entities
 
-The executor process takes as input the model, after success validation, and initially constructs the classes in-memory. The next step is to augment the model classes with platform-specific code, that includes the following core functionalities:
-
-- Augment the Entity class, to connect entities to the message broker and create relevant interfaces (publisher or subscriber), depending on it's type (Sense or Act). The Entity class monitors the state of the smart object by subscribing to the relevant topic and creates a local mirror of it's state. In case of actuator entities (Entity Act), it also constructs a publisher to send commands when actions are triggered by the automation. This augmentation implements the communication layer.
-- Transform the condition of each automation, expressed in SmAuto, into Python source code, that actually implements a lambda function. The injected lambda function is called at each "tick" of the executor.
-- Augment the Automation class and include platform-specific code that implements the execution logic. Each Automation has an internal state machine that defines four (4) states and the transitions as it appears in Figure \ref{XX}.
-\end{itemize}
 
 To generate the virtual versions of entities defined within an smauto model, use the CLI.
 

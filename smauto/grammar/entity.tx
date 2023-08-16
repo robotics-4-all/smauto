@@ -1,4 +1,5 @@
 import broker
+import types
 
 Entity:
     'Entity:'
@@ -22,6 +23,7 @@ Attribute:
     NumericAttribute    |
     BoolAttribute       |
     StringAttribute     |
+    TimeAttribute       |
     ListAttribute       |
     DictAttribute
 ;
@@ -59,10 +61,15 @@ DictAttribute:
         ('->' generator=DictValueGen)?
 ;
 
+TimeAttribute:
+    name=ID ':' 'time' ('=' default=Time)?
+;
+
 
 NumericValueGen:
     ConstantFun     |
     LinearFun       |
+    SawFun			|
     GaussianFun     |
     ReplayFun       |
     ReplayFileFun
@@ -86,6 +93,12 @@ LinearFun:
     'linear' '(' start=NUMBER ',' step=NUMBER ')'
 ;
 
+SawFun:
+    'saw' '(' min=NUMBER ',' max=NUMBER ',' step=NUMBER ')'
+;
+
+// το concept είναι ότι θες να δίνεις συγκεκριμένα patterns ή έχεις κρατήσει
+// τιμές από πραγματικούς αισθητήρες και θες να τις αναπαράγεις
 ReplayFun:
     'replay' '(' '[' values*=BASETYPE[','] ']' ',' times=INT ')'
 ;

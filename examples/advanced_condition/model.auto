@@ -1,0 +1,52 @@
+Metadata:
+    name: SimpleHomeAutomation
+    version: "0.1.0"
+    description: "Simple home automation model."
+    author: "klpanagi"
+    email: "klpanagi@gmail.com"
+
+MQTT:
+    name: home_broker
+    host: "localhost"
+    port: 1883
+    credentials:
+        username: ""
+        password: ""
+
+Entity:
+    name: aircondition
+    type: actuator
+    topic: "home.aircondition"
+    broker: home_broker
+    attributes:
+        - power: bool
+
+Entity:
+    name: temperature_sensor
+    type: sensor
+    topic: "home.temperature"
+    broker: home_broker
+    attributes:
+        - temperature: float -> linear(20, 1)
+
+Automation:
+    name: mean_example
+    condition:
+        mean(temperature_sensor.temperature, 4) >= 30
+    enabled: true
+    continuous: false
+    actions:
+        - aircondition.power: true
+    starts:
+        - mean_example
+
+Automation:
+    name: min_example
+    condition:
+        min(temperature_sensor.temperature, 4) >= 30
+    enabled: true
+    continuous: false
+    actions:
+        - aircondition.power: true
+    starts:
+        - min_example

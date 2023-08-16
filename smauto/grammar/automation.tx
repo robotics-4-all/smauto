@@ -1,4 +1,6 @@
 import entity
+import condition
+import types
 
 // === Overall Automation ===
 Automation:
@@ -7,12 +9,13 @@ Automation:
         ('name:' name=ID)
         ('condition:' condition=Condition)
         ('actions:' actions*=Action)?
+        ('freq:' freq=INT)?
         ('enabled:' enabled=BOOL)?
         ('continuous:' continuous=BOOL)?
         ('checkOnce:' checkOnce=BOOL)?
-        ('after:' '-' after*=[Automation:FQN|+pm:automations]['-'])?
         ('starts:' '-' starts*=[Automation:FQN|+pm:automations]['-'])?
         ('stops:' '-' stops*=[Automation:FQN|+pm:automations]['-'])?
+        ('after:' '-' after*=[Automation:FQN|+pm:automations]['-'])?
         )#
 ;
 
@@ -20,217 +23,6 @@ AutomationDependency:
     automation=[Automation:FQN|+pm:automations] ('on' exitStatus=BOOL)?
 ;
 
-// === Conditions ===
-// Condition: AdvancedCondition | PrimitiveCondition | ConditionGroup ;
-Condition: ConditionGroup | PrimitiveCondition | AdvancedCondition;
-
-ConditionGroup:
-    '(' r1=Condition ')' operator=LogicalOperator '(' r2=Condition ')'
-    //(cond=Condition operator=LogicalOperator)*
-;
-
-PrimitiveCondition:
-    BoolCondition       |
-    NumericCondition    |
-    StringCondition     |
-    ListCondition       |
-    DictCondition
-;
-
-AdvancedCondition: InRangeCondition | MathExpression;
-
-InRangeCondition:
-    attribute=[NumericAttribute:FQN|+pm:entities.attributes]  'in range'
-        '[' min=NUMBER ',' max=NUMBER ']'
-;
-
-MathExpression:
-	'math' '(' op=MathTerm (op=PlusOrMinus op=MathTerm)* ')'
-;
-
-PlusOrMinus: '+' | '-';
-MulOrDiv: '*' | '/' ;
-
-MathTerm: op=MathFactor (op=MulOrDiv op=MathFactor)*;
-
-MathFactor: (sign=PlusOrMinus)?  op=MathOperand;
-
-MathOperand: op=NUMBER | op=[NumericAttribute:FQN|+pm:entities.attributes] |
-	('(' op=MathExpression ')');
-
-// String Conditions
-StringCondition:
-    StringR | StringL | StringDouble
-;
-
-StringR:
-    (operand1=[StringAttribute:FQN|+pm:entities.attributes]
-     operator=StringOperator
-     operand2=STRING)
-;
-
-StringL:
-    (operand1=STRING
-     operator=StringOperator
-     operand2=[StringAttribute:FQN|+pm:entities.attributes])
-;
-
-StringDouble:
-    (operand1=[StringAttribute:FQN|+pm:entities.attributes]
-     operator=StringOperator
-     operand2=[StringAttribute:FQN|+pm:entities.attributes])
-;
-
-// Numeric Conditions
-AugmentedNumericAttr:
-    StdAttr         |
-    MeanAttr        |
-    MultiplyAttr    |
-    NoneFilterAttr
-;
-
-StdAttr:
-    'std' '(' attribute=[NumericAttribute:FQN|+pm:entities.attributes] ',' size=INT ')'
-;
-
-MeanAttr:
-    'mean' '(' attribute=[NumericAttribute:FQN|+pm:entities.attributes]  ',' size=INT ')'
-;
-
-MultiplyAttr:
-    'mul' '(' attributes*=[NumericAttribute:FQN|+pm:entities.attributes][','] ')'
-;
-
-NoneFilterAttr:
-    attribute=[NumericAttribute:FQN|+pm:entities.attributes]
-;
-
-NumericCondition:
-    NumericR | NumericL | NumericDouble
-;
-
-NumericR:
-    (operand1=AugmentedNumericAttr
-     operator=NumericOperator
-     operand2=NUMBER)
-;
-
-NumericL:
-    (operand1=NUMBER
-     operator=NumericOperator
-     operand2=AugmentedNumericAttr)
-;
-
-NumericDouble:
-    (operand1=AugmentedNumericAttr
-     operator=NumericOperator
-     operand2=AugmentedNumericAttr)
-;
-
-// Boolean Conditions
-BoolCondition:
-    BoolR | BoolL | BoolDouble
-;
-
-BoolR:
-    (operand1=[BoolAttribute:FQN|+pm:entities.attributes]
-     operator=BooleanValueOperator
-     operand2=BOOL)
-;
-
-BoolL:
-    (operand1=BOOL
-     operator=BooleanValueOperator
-     operand2=[BoolAttribute:FQN|+pm:entities.attributes])
-;
-
-BoolDouble:
-    (operand1=[BoolAttribute:FQN|+pm:entities.attributes]
-     operator=BooleanValueOperator
-     operand2=[BoolAttribute:FQN|+pm:entities.attributes])
-;
-
-// List Conditions
-ListCondition:
-    ListR | ListL | ListDouble
-;
-
-List:
-    '[' items*=ListElements[','] ']'
-;
-
-//TODO: Add Dict to enable nested Dictionaries in Lists
-ListElements:
-    NUMBER | STRING | BOOL | List | Dict
-;
-
-ListR:
-    (operand1=[ListAttribute:FQN|+pm:entities.attributes]
-     operator=ListOperator
-     operand2=List)
-;
-
-ListL:
-    (operand1=List
-     operator=ListOperator
-     operand2=[ListAttribute:FQN|+pm:entities.attributes])
-;
-
-ListDouble:
-    (operand1=[ListAttribute:FQN|+pm:entities.attributes]
-     operator=ListOperator
-     operand2=[ListAttribute:FQN|+pm:entities.attributes])
-;
-
-// Dictionary Conditions
-DictCondition:
-    DictR | DictL | DictDouble
-;
-
-DictItem:
-    name=STRING ':' value=DictTypes
-;
-
-//TODO: Add Dict, List into DictTypes to enable nested Lists and Dictionaries in Dictionaries
-DictTypes:
-    NUMBER | STRING | BOOL | Dict | List
-;
-
-Dict:
-    '{' items*=DictItem[','] '}'
-;
-
-DictR:
-    (operand1=[DictAttribute:FQN|+pm:entities.attributes]
-     operator=DictOperator
-     operand2=Dict)
-;
-
-DictL:
-    (operand1=Dict
-     operator=DictOperator
-     operand2=[DictAttribute:FQN|+pm:entities.attributes])
-;
-
-DictDouble:
-    (operand1=[DictAttribute:FQN|+pm:entities.attributes]
-     operator=DictOperator
-     operand2=[DictAttribute:FQN|+pm:entities.attributes])
-;
-
-
-// Operators
-StringOperator: '~' | '!~' | '==' | '!=' | 'is' 'is not' 'has';
-
-NumericOperator: '>' | '<' | '==' | '!=' | 'is' | 'is not';
-
-LogicalOperator: 'AND' | 'OR' | 'NOT' | 'XOR' | 'NOR' | 'XNOR' | 'NAND';
-
-BooleanValueOperator: '==' | '!=' | 'is' | 'is not';
-
-ListOperator: '==' | '!=';
-
-DictOperator: '==' | '!=';
 
 // === Actions ===
 Action:

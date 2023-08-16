@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+
+import time
+import random
+
+from enum import Enum
+from dataclasses import dataclass
+import time
+import numpy as np
+from typing import Optional
+
+{% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
+from commlib.transports.mqtt import ConnectionParameters
+from rich import print, console, pretty
+{% endif %}
+from commlib.msg import PubSubMessage
+from commlib.utils import Rate
+from commlib.node import Node
+
+pretty.install()
+console = console.Console()
+
+
+class {{ entity.camel_name }}Msg(PubSubMessage):
+    {% for a in entity.attributes %}
+    {% if a.type == "str" %}
+        {{ a.name }}: {{ a.type }} = '{{ a.value }}'
+    {% else %}
+        {{ a.name }}: {{ a.type }} = {{ a.value }}
+    {% endif %}
+    {% endfor %}
+
+
+class {{ entity.camel_name }}Node(Node):
+    def __init__(self, *args, **kwargs):
+        self.tick_hz = 1
+        self.topic = '{{ entity.topic }}'
+        conn_params = ConnectionParameters(
+            host='{{ entity.broker.host }}',
+            port={{ entity.broker.port }},
+            username='{{ entity.broker.credentials.username }}',
+            password='{{ entity.broker.credentials.password }}',
+        )
+        super().__init__(
+            node_name='entities.{{ entity.name.lower() }}',
+            connection_params=conn_params,
+            *args, **kwargs
+        )
+        self.sub = self.create_subscriber(
+            msg_type={{ entity.camel_name }}Msg,
+            topic=self.topic,
+            on_message=self._on_message
+        )
+
+    def start(self):
+        self.run()
+        rate = Rate(self.tick_hz)
+        while True:
+            rate.sleep()
+
+    def _on_message(self, msg):
+        print(f'[*] State change command received: {msg}')
+
+
+if __name__ == '__main__':
+    node = {{ entity.camel_name }}Node()
+    node.start()
