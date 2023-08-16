@@ -28,7 +28,7 @@ Entity:
 Automation:
     name: motion_detected_self_start
     condition:
-        system_clock.time >= 01:05
+        system_clock.time >= 03:06
     enabled: true
     continuous: false
     actions:

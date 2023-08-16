@@ -63,7 +63,7 @@ class Condition(object):
         elif type(node) == Dict:
             return node
         elif type(node) == Time:
-            return int(str(f'{node.hours}{node.minutes}{node.seconds}'))
+            return node.to_int()
         # Node is an Attribute, print its full name including Entity
         elif textx_isinstance(
             node,
@@ -161,10 +161,12 @@ class Condition(object):
         if self.cond_lambda not in (None, ''):
             # Evaluate condition providing the textX model as global context for evaluation
             try:
+                entities = self.parent.parent.entities_dict
+                # print(entities['system_clock'].attributes_dict['time'].value.to_int())
                 if eval(
                     self.cond_lambda,
                     {
-                        'entities': self.parent.parent.entities_dict
+                        'entities': entities
                     },
                     {
                         'std': statistics.stdev,
@@ -178,6 +180,7 @@ class Condition(object):
                 else:
                     return False, f"{self.parent.name}: not triggered."
             except Exception as e:
+                print(e)
                 return False, f"{self.parent.name}: not triggered."
         else:
             return False, f"{self.parent.name}: condition not built."

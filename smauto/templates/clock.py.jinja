@@ -10,18 +10,22 @@ import numpy as np
 from typing import Optional
 
 from commlib.transports.mqtt import ConnectionParameters
-from rich import print, console, pretty
-from commlib.msg import PubSubMessage
+from rich import print
+from commlib.msg import PubSubMessage, BaseModel
 from commlib.utils import Rate
 from commlib.node import Node
 from datetime import datetime
 
 
-class ClockMsg(PubSubMessage):
+class Time(BaseModel):
     hour: int = 0
     minute: int = 0
     second: int = 0
     time_str: str = ''
+
+
+class ClockMsg(PubSubMessage):
+    time: Time
 
 
 class SystemClock(Node):
@@ -43,12 +47,13 @@ class SystemClock(Node):
             msg_type=ClockMsg,
             topic=self.topic
         )
+        self.rate = Rate(self.pub_freq)
 
     def start(self):
         self.run()
         while True:
             self.send_msg()
-            time.sleep(1)
+            self.rate.sleep()
 
     def send_msg(self):
         now = datetime.now()
@@ -56,12 +61,12 @@ class SystemClock(Node):
         hour = int(now.hour)
         minute = int(now.minute)
         second = int(now.second)
-        msg = ClockMsg(
+        msg = ClockMsg(time=Time(
             hour=hour,
             minute=minute,
             second=second,
             time_str=t_str
-        )
+        ))
         self.pub.publish(msg)
 
 

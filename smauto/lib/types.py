@@ -47,17 +47,18 @@ class Dict:
 
 
 class Time:
-    def __init__(self, parent, hours, minutes, seconds):
+    def __init__(self, parent, hour, minute, second):
         self.parent = parent
-        hours = 0 if hours is None else hours
-        minutes = 0 if minutes is None else minutes
-        seconds = 0 if seconds is None else seconds
-        self.hours = hours
-        self.minutes = minutes
-        self.seconds = seconds
+        hour = 0 if hour is None else hour
+        minute = 0 if minute is None else minute
+        second = 0 if second is None else second
+        self.hour = hour
+        self.minute = minute
+        self.second = second
 
     def to_int(self):
-        return int(str(f'{self.hours}{self.minutes}{self.seconds}'))
+        val = self.second + int(self.minute<<8) + int(self.hour<<16)
+        return val
 
 
 class Date:

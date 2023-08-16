@@ -117,6 +117,7 @@ class Entity:
         """
         # Update state
         self.state = new_state
+        # print(new_state)
         # Update attributes based on state
         self.update_attributes(self.attributes_dict, new_state)
         self.update_buffers(self.attributes_buff, new_state)
@@ -142,9 +143,12 @@ class Entity:
         """
         # Update attributes
         for attribute, value in state_dict.items():
-
             # If value is a dictionary, also update the Dict's subattributes/items
-            if type(value) is dict:
+            if root[attribute].__class__.__name__ == 'TimeAttribute':
+                setattr(root[attribute].value, 'hour', value['hour'])
+                setattr(root[attribute].value, 'minute', value['minute'])
+                setattr(root[attribute].value, 'second', value['second'])
+            elif type(value) is dict:
                 Entity.update_attributes(root[attribute].value, value)
             else:
                 root[attribute].value = value

@@ -110,22 +110,22 @@ def class_provider(name):
 
 
 def time_obj_processor(t):
-    if t.hours > 24 or t.hours < 0:
+    if t.hour > 24 or t.hour < 0:
         raise TextXSemanticError('Time.hours must be in range [0, 24]')
-    if t.minutes > 60 or t.hours < 0:
+    if t.minute > 60 or t.minute < 0:
         raise TextXSemanticError('Time.minutes must be in range [0, 60]')
-    if t.seconds > 60 or t.hours < 0:
+    if t.second > 60 or t.second < 0:
         raise TextXSemanticError('Time.seconds must be in range [0, 60]')
 
 
 def process_time_class(model):
     types_time = get_children_of_type('Time', model)
     for t in types_time:
-        if t.hours > 24 or t.hours < 0:
+        if t.hour > 24 or t.hour < 0:
             raise TextXSemanticError('Time.hours must be in range [0, 24]')
-        if t.minutes > 60 or t.hours < 0:
+        if t.minute > 60 or t.minute < 0:
             raise TextXSemanticError('Time.minutes must be in range [0, 60]')
-        if t.seconds > 60 or t.hours < 0:
+        if t.second > 60 or t.second < 0:
             raise TextXSemanticError('Time.seconds must be in range [0, 60]')
 
 
