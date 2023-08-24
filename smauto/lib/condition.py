@@ -142,7 +142,6 @@ class Condition(object):
         # If we are in a ConditionGroup node, recursively visit the left and right sides
         if textx_isinstance(
             cond_node, metamodel.namespaces['condition']['ConditionGroup']):
-
             # Visit left node
             Condition.process_node_condition(cond_node.r1)
             # Visit right node

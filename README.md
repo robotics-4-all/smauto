@@ -191,6 +191,7 @@ Supported data types for Attributes:
 - float: Floating point numerical values
 - bool: Boolean (true/false) values
 - str: String values
+- time: Time values (e.g. `01:25`)
 - list: List / Array
 - dict: Dictionary
 
@@ -435,6 +436,15 @@ condition:
     var(mean(bedroom_temp_sensor.temperature, 10), 10) >= 0.1
 ```
 
+
+**Supported Functions:**
+
+- mean
+- std
+- var
+- min
+- max
+
 #### Writing Conditions
 
 Bellow you will find some example conditions.
@@ -442,14 +452,16 @@ Bellow you will find some example conditions.
 ```
 (bedroom_humidity.humidity < 0.3) AND (bedroom_humidifier.state == 0)
 
-((bedroom_human_detector.position != []) AND (bedroom_thermometer.temperature < 27.5)) AND (bedroom_thermostat.state == 0)
+((bedroom_human_detector.position != []) AND 
+    (bedroom_thermometer.temperature < 27.5)
+) AND (bedroom_thermostat.state == 0)
 ```
 
 ### Actions
 
 Actions are essentially messages to actuators in your setup such as
 air conditioners, lights or speakers. Each action takes a single line and
-follows the following format:
+has the following format:
 
 ```yaml
 - entity_name.attribute_name: value
