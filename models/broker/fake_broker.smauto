@@ -2,7 +2,7 @@ MQTT:
     name: fake_broker
     host: "localhost"
     port: 1883
-    credentials:
+    auth:
         username: ""
         password: ""
 

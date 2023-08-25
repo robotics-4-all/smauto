@@ -9,7 +9,7 @@ MQTT:
     name: issel_cloud_platform
     host: "localhost"
     port: 1883
-    credentials:
+    auth:
         username: ""
         password: ""
 

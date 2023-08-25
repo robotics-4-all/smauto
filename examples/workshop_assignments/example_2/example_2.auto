@@ -9,7 +9,7 @@ MQTT:
     name: issel_cloud_platform
     host: "snf-889260.vm.okeanos.grnet.gr"
     port: 1893
-    credentials:
+    auth:
         username: "porolog"
         password: "fiware"
 

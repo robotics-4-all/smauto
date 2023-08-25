@@ -15,7 +15,7 @@ AMQPBroker:
         'port:' port=INT
         'vhost:' vhost=STRING
         ('exchange:' exchange=STRING)?
-        'credentials:' credentials=BrokerAuth
+        'auth:' credentials=BrokerAuth
     )#
 ;
 
@@ -25,7 +25,7 @@ MQTTBroker:
         'name:' name=ID
         'host:' host=STRING
         'port:' port=INT
-        'credentials:' credentials=BrokerAuth
+        'auth:' credentials=BrokerAuth
     )#
 ;
 
@@ -36,6 +36,6 @@ RedisBroker:
         'host:' host=STRING
         'port:' port=INT
         ('db:' db=INT)?
-        'credentials:' credentials=BrokerAuth
+        'auth:' credentials=BrokerAuth
     )#
 ;
