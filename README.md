@@ -101,7 +101,7 @@ MQTT:
     name: home_broker
     host: "localhost"
     port: 1883
-    credentials:
+    auth:
         username: "george"
         password: "georgesPassword"
 
@@ -258,7 +258,7 @@ MQTT:
     name: upstairs_broker
     host: "localhost"
     port: 1883
-    credentials:
+    auth:
         username: "my_username"
         password: "my_password"
 ```
@@ -268,7 +268,7 @@ MQTT:
 - **port**: Broker Port number
 - **vhost**: Vhost parameter. Only for AMQP brokers
 - **exchange**: (Optional) Exchange parameter. Only for AMQP brokers.
-- **credentials**:
+- **auth**:
     - **username**: Username used for authentication
     - **password**: Password used for authentication
 - **db**: (Optional) Database number parameter. Only for Redis brokers.
