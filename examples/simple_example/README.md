@@ -7,7 +7,7 @@ mqtt:
     name: home_broker
     host: "localhost"
     port: 1883
-    credentials:
+    auth:
         username: "username"
         password: "password"
 
