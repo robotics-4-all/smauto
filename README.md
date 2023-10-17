@@ -107,26 +107,28 @@ MQTT:
 
 Entity:
     name: weather_station
+    type: sensor
     topic: "porch.weather_station"
     broker: home_broker
     attributes:
         - temperature: float
         - humidity: int
-          
+
 Entity:
     name: aircondition
+    type: actuator
     topic: "bedroom.aircondition"
     broker: home_broker
     attributes:
         - temperature: float
-        - mode: string
+        - mode: str
         - on: bool
-  
+
 Automation:
     name: start_aircondition
     condition:
-        (weather_station.temperature > 32) AND 
-        (aircondition.on NOT true)
+        (weather_station.temperature > 32) AND
+        (aircondition.on is true)
     enabled: true
     continuous: false
     actions:
