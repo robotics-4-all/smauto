@@ -6,4 +6,6 @@ services:
     command: uvicorn smauto.api:api --host 0.0.0.0 --port 8080
     ports:
       - 8080:8080
+    environment:
+      - API_KEY=HFktrUY0u29G3keUeHCmEqwn
 

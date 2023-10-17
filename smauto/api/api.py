@@ -15,8 +15,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from smauto.transformations import model_to_vnodes
 from fastapi.security import APIKeyHeader
 
+API_KEY = os.getenv("API_KEY", "HFktrUY0u29G3keUeHCmEqwn")
+
 api_keys = [
-    "SKATA"
+    API_KEY
 ]
 
 api = FastAPI()
