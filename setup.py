@@ -6,9 +6,9 @@ import os
 import sys
 from setuptools import setup, find_packages
 
-this_dir = os.path.abspath(os.path.dirname(__file__))
+THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
-VERSIONFILE = os.path.join(this_dir, "smauto", "__init__.py")
+VERSIONFILE = os.path.join(THIS_DIR, "smauto", "__init__.py")
 VERSION = None
 for line in open(VERSIONFILE, "r").readlines():
     if line.startswith('__version__'):
@@ -16,6 +16,11 @@ for line in open(VERSIONFILE, "r").readlines():
 
 if not VERSION:
     raise RuntimeError('No version defined in smauto.__init__.py')
+
+
+with open('requirements.txt') as f:
+    required = f.read().splitlines()
+
 
 if sys.argv[-1].startswith('publish'):
     if os.system("pip list | grep wheel"):
@@ -34,8 +39,10 @@ if sys.argv[-1].startswith('publish'):
         print("  git push --tags")
     sys.exit()
 
+
 with open('README.md') as readme_file:
     readme = readme_file.read()
+
 
 setup(
     author="Konstantinos Panayiotou",
@@ -60,6 +67,7 @@ setup(
     keywords='smauto',
     name='smauto',
     packages=find_packages(include=['smauto', 'smauto.*']),
+    install_requires=required,
     test_suite='tests',
     url='https://github.com/robotics-4-all/smauto-dsl',
     version=VERSION,

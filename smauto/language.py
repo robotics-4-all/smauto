@@ -74,7 +74,7 @@ ENTITY_BUILDINS = {
         freq=1,
         topic='system.clock',
         broker=MQTTBroker(None, name='fake', host='localhost',
-                          port=1883, credentials=None),
+                          port=1883, auth=None),
         attributes=[
             TimeAttribute(None, 'time', None)
         ]
@@ -86,7 +86,7 @@ MQTT:
     name: fake_broker
     host: "localhost"
     port: 1883
-    credentials:
+    auth:
         username: ""
         password: ""
 """

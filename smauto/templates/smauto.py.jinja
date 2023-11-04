@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+
+import time
+import random
+
+from enum import Enum
+from dataclasses import dataclass
+import time
+import numpy as np
+from typing import Optional
+
+{% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
+from commlib.transports.mqtt import ConnectionParameters
+{% elif entity.broker.__class__.__name__ == 'AMQPBroker' %}
+from commlib.transports.amqp import ConnectionParameters
+{% elif entity.broker.__class__.__name__ == 'RedisBroker' %}
+from commlib.transports.redis import ConnectionParameters
+{% endif %}
+from rich import print, console, pretty
+from commlib.msg import PubSubMessage
+from commlib.utils import Rate
+from commlib.node import Node
+
+pretty.install()
+console = console.Console()
+
+
+{% for entity in entities %}
+class {{ entity.camel_name }}Msg(PubSubMessage):
+    {% for a in entity.attributes %}
+    {% if a.type == "str" %}
+        {{ a.name }}: {{ a.type }} = '{{ a.value }}'
+    {% else %}
+        {{ a.name }}: {{ a.type }} = {{ a.value }}
+    {% endif %}
+    {% endfor %}
+{% endfor %}
+
+
+class Entity(Node):
+    def __init__(self, auto, name, freq, topic, conn_params, attributes):
+        self.name = name
+        self.camel_name = self.to_camel_case(name)
+        self.freq = freq if freq not in (None, 0) else 1
+        # MQTT topic for Entity
+        self.topic = topic
+        # Entity state
+        self.state = {}
+        self.conn_params = conn_params
+        # Entity's Attributes
+        self.attributes = attributes
+        # Attributes Dictionary
+        self.attributes_dict = {attribute.name: attribute for attribute in self.attributes}
+        self.attributes_buff = {attribute.name: None for attribute in self.attributes}
+
+        super().__init__(
+            node_name=self.camel_name,
+            connection_params=self.conn_params,
+            *args, **kwargs
+        )
+
+    def get_buffer(self, attr_name):
+        if len(self.attributes_buff[attr_name]) != \
+            self.attributes_buff[attr_name].maxlen:
+            return [0] * self.attributes_buff[attr_name].maxlen
+        else:
+            return self.attributes_buff[attr_name]
+
+    def init_attr_buffer(self, attr_name, size):
+        self.attributes_buff[attr_name] = deque(maxlen=size)
+        # self.attributes_buff[attr_name].extend([0] * size)
+
+    def to_camel_case(self, snake_str):
+        return "".join(x.capitalize() for x in snake_str.lower().split("_"))
+
+    def update_state(self, new_state):
+        """
+        Function for updating Entity state. Meant to be used as a callback function by the Entity's subscriber object
+        (commlib-py).
+        :param new_state: Dictionary containing the Entity's state
+        :return:
+        """
+        # Update state
+        self.state = new_state
+        # print(new_state)
+        # Update attributes based on state
+        self.update_attributes(self.attributes_dict, new_state)
+        self.update_buffers(self.attributes_buff, new_state)
+
+    def update_buffers(self, state_msg):
+        """
+        Recursive function used by update_state() mainly to updated
+            dictionaries/objects and normal Attributes.
+        """
+        # Update attributes
+        for attribute, value in state_msg.model_dump():
+            if self.attributes_buff[attribute] is not None:
+                self.attributes_buff[attribute].append(value)
+
+    def update_attributes(self, state_msg):
+        """
+        Recursive function used by update_state() mainly to updated
+            dictionaries/objects and normal Attributes.
+        """
+        self.attributes_dict = state_msg.model_dump()
+
+    def start(self):
+        # Create and start communications subscriber on Entity's topic
+        self.state_sub = self.create_subscriber(
+            topic=self.topic,
+            on_message=self.update_state
+        )
+        self.state_sub.run()
+
+
+class EntitySense(Entity):
+    def __init__(self, *args, **kwarg):
+        super().__init__(*args, **kwargs)
+
+
+class EntityAct(Node):
+    def __init__(self, *args, **kwarg):
+        super().__init__(*args, **kwargs)
+
+
+if __name__ == '__main__':
+    pass

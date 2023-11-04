@@ -1,16 +1,16 @@
-import broker
+import communication
 import types
 
 Entity:
-    'Entity:'
+    'Entity' name=ID
         (
-			('name:' name=ID)?
 			('type:' etype=EntityType)
 			('topic:' topic=STRING)
 			('freq:' freq=NUMBER)?
-			('broker:' broker=[Broker])
+			('broker:' broker=[MessageBroker])
 			('attributes:' '-' attributes*=Attribute['-'])
 		)#
+    'end'
 ;
 
 EntityType:

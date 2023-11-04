@@ -1,15 +1,16 @@
-Metadata:
-    name: SystemClock
+Metadata
+    project: SystemClock
     version: "0.1.0"
     description: "SystemClock Entity"
     author: "klpanagi"
     email: "klpanagi@gmail.com"
+end
 
 
-Entity:
-    name: system_clock
+Entity system_clock
     type: sensor
     topic: "system.clock"
     broker: fake_broker
     attributes:
         - time: time
+end
