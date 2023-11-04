@@ -7,13 +7,6 @@ from pydantic import BaseModel
 from collections import deque
 import statistics
 
-{# {% if entity.broker.__class__.__name__ == 'MQTTBroker' %} #}
-{# from commlib.transports.mqtt import ConnectionParameters #}
-{# {% elif entity.broker.__class__.__name__ == 'AMQPBroker' %} #}
-{# from commlib.transports.amqp import ConnectionParameters #}
-{# {% elif entity.broker.__class__.__name__ == 'RedisBroker' %} #}
-{# from commlib.transports.redis import ConnectionParameters #}
-{# {% endif %} #}
 from rich import print, console, pretty
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
@@ -44,20 +37,17 @@ class Attribute:
         self.value = value
 
 
-{% for entity in entities %}
-class {{ entity.camel_name }}Msg(PubSubMessage):
-    {% for a in entity.attributes %}
-    {% if a.type == "str" %}
-        {{ a.name }}: {{ a.type }} = '{{ a.value }}'
-    {% elif a.type == "Time" %}
-        {{ a.name }}: Time
-    {% else %}
-        {{ a.name }}: {{ a.type }} = {{ a.value }}
-    {% endif %}
-    {% endfor %}
+class BedroomLampMsg(PubSubMessage):
+        power: bool = False
 
 
-{% endfor %}
+class MotionDetectorMsg(PubSubMessage):
+        detected: bool = False
+        posX: int = 0
+        pos: list = []
+        mode: str = ''
+
+
 
 class Entity(Node):
     def __init__(self, name, topic, conn_params,
@@ -173,49 +163,37 @@ def create_entity(sense, name, topic, conn_params, attributes, msg_type):
 
 def create_entities():
     entities = []
-{% for e in entities %}
-    {% if e.broker.__class__.__name__ == 'MQTTBroker' %}
     from commlib.transports.mqtt import ConnectionParameters
     conn_params = ConnectionParameters(
-        host='{{ e.broker.host }}',
-        port={{ e.broker.port }},
-        username='{{ e.broker.username }}',
-        password='{{ e.broker.password }}',
+        host='localhost',
+        port=1883,
+        username='',
+        password='',
     )
-    {% elif e.broker.__class__.__name__ == 'AMQPBroker' %}
-    from commlib.transports.amqp import ConnectionParameters
-    conn_params = ConnectionParameters(
-        host='{{ e.broker.host }}',
-        port={{ e.broker.port }},
-        username='{{ e.broker.username }}',
-        password='{{ e.broker.password }}',
-    )
-    {% elif e.broker.__class__.__name__ == 'RedisBroker' %}
-    from commlib.transports.redis import ConnectionParameters
-    conn_params = ConnectionParameters(
-        host='{{ e.broker.host }}',
-        port={{ e.broker.port }},
-        username='{{ e.broker.username }}',
-        password='{{ e.broker.password }}',
-    )
-    {% endif %}
     attrs = {
-    {% for attr in e.attributes %}
-        '{{ attr.name }}': {{ attr.type }},
-    {% endfor %}
+        'power': bool,
     }
-    {% if e.etype == 'sensor' %}
     entities.append(
-        create_entity(True, '{{ e.name }}', '{{ e.topic }}',
-                      conn_params, attrs, msg_type={{ e.camel_name }}Msg)
+        create_entity(False, 'bedroom_lamp', 'bedroom.lamp',
+                      conn_params, attrs, msg_type=BedroomLampMsg)
     )
-    {% else %}
+    from commlib.transports.mqtt import ConnectionParameters
+    conn_params = ConnectionParameters(
+        host='localhost',
+        port=1883,
+        username='',
+        password='',
+    )
+    attrs = {
+        'detected': bool,
+        'posX': int,
+        'pos': list,
+        'mode': str,
+    }
     entities.append(
-        create_entity(False, '{{ e.name }}', '{{ e.topic }}',
-                      conn_params, attrs, msg_type={{ e.camel_name }}Msg)
+        create_entity(True, 'motion_detector', 'bedroom.motion_detector',
+                      conn_params, attrs, msg_type=MotionDetectorMsg)
     )
-    {% endif %}
-{% endfor %}
     return entities
 
 
@@ -274,10 +252,6 @@ class Automation(Node):
         self.state = AutomationState.IDLE
         self.conn_params = conn_params
         self.entities = entities
-        {# super().__init__( #}
-        {#     node_name=self.name, #}
-        {#     connection_params=self.conn_params #}
-        {# ) #}
 
     def evaluate_condition(self):
         if self.enabled:
@@ -385,28 +359,42 @@ class Action:
 
 def create_automations(entities):
     autos = []
-    {% for auto in automations %}
     autos.append(Automation(
-        name='{{ auto.name }}',
+        name='motion_detected_1',
         condition=Condition(
-            expression={{ auto.condition.cond_lambda.replace('.value', '')}},
+            expression=(entities['motion_detector'].attributes_dict['pos'] == [10, 0]),
         ),
         actions=[
-        {% for action in auto.actions %}
-            Action('{{ action.attribute.name }}', {{ action.value }}, entities['{{ action.attribute.parent.name }}'])
-        {% endfor %}
+            Action('power', True, entities['bedroom_lamp'])
         ],
-        freq={{ auto.freq }},
-        enabled={{ auto.enabled }},
-        continuous={{ auto.continuous }},
-        checkOnce={{ auto.checkOnce }},
-        after={{ auto.after }},
-        starts={{ auto.starts }},
-        stops={{ auto.stops }},
+        freq=1,
+        enabled=True,
+        continuous=True,
+        checkOnce=False,
+        after=[],
+        starts=[],
+        stops=[],
         conn_params=None,
         entities=entities
     ))
-    {% endfor %}
+    autos.append(Automation(
+        name='motion_detected_2',
+        condition=Condition(
+            expression=((entities['motion_detector'].attributes_dict['detected'] == True) and (entities['motion_detector'].attributes_dict['posX'] == 10)),
+        ),
+        actions=[
+            Action('power', True, entities['bedroom_lamp'])
+        ],
+        freq=1,
+        enabled=True,
+        continuous=True,
+        checkOnce=False,
+        after=[],
+        starts=[],
+        stops=[],
+        conn_params=None,
+        entities=entities
+    ))
 
 
 if __name__ == '__main__':

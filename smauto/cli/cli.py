@@ -51,7 +51,6 @@ def graph(ctx, model_path):
 @click.argument('model_path')
 def generate_py(ctx, model_path):
     pycode = smauto_m2t(model_path)
-    print(pycode)
     return
     for vn in vnodes:
         filepath = f'{vn[0].name}.py'
