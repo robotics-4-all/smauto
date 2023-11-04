@@ -7,15 +7,15 @@ from enum import Enum
 from dataclasses import dataclass
 import time
 import numpy as np
-from typing import Optional
+from typing import Optional, Dict
 
-{% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
-from commlib.transports.mqtt import ConnectionParameters
-{% elif entity.broker.__class__.__name__ == 'AMQPBroker' %}
-from commlib.transports.amqp import ConnectionParameters
-{% elif entity.broker.__class__.__name__ == 'RedisBroker' %}
-from commlib.transports.redis import ConnectionParameters
-{% endif %}
+{# {% if entity.broker.__class__.__name__ == 'MQTTBroker' %} #}
+{# from commlib.transports.mqtt import ConnectionParameters #}
+{# {% elif entity.broker.__class__.__name__ == 'AMQPBroker' %} #}
+{# from commlib.transports.amqp import ConnectionParameters #}
+{# {% elif entity.broker.__class__.__name__ == 'RedisBroker' %} #}
+{# from commlib.transports.redis import ConnectionParameters #}
+{# {% endif %} #}
 from rich import print, console, pretty
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
@@ -25,23 +25,30 @@ pretty.install()
 console = console.Console()
 
 
+class Time(BaseModel):
+    hour: int = 0
+    minute: int = 0
+    second: int = 0
+    time_str: str = ''
+
+
 {% for entity in entities %}
 class {{ entity.camel_name }}Msg(PubSubMessage):
     {% for a in entity.attributes %}
     {% if a.type == "str" %}
         {{ a.name }}: {{ a.type }} = '{{ a.value }}'
+    {% elif a.type == "Time" %}
     {% else %}
-        {{ a.name }}: {{ a.type }} = {{ a.value }}
+        {{ a.name }}: Time
     {% endif %}
     {% endfor %}
 {% endfor %}
 
 
 class Entity(Node):
-    def __init__(self, auto, name, freq, topic, conn_params, attributes):
+    def __init__(self, auto, name, topic, conn_params, attributes):
         self.name = name
         self.camel_name = self.to_camel_case(name)
-        self.freq = freq if freq not in (None, 0) else 1
         # MQTT topic for Entity
         self.topic = topic
         # Entity state

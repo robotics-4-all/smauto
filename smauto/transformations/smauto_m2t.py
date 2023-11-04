@@ -1,3 +1,4 @@
+import os
 from os.path import basename
 import jinja2
 from rich import print, pretty
@@ -24,16 +25,11 @@ def build_system_clock(entity):
     return clock_tpl.render(context)
 
 
-def build_entity_code(entity):
-    _type = entity.etype
+def build_smauto_code(model):
     context = {
-        'entity': entity
+        'entities': model.entities
     }
-    if _type == 'sensor':
-        modelf = sensor_tpl.render(context)
-    elif _type == 'actuator':
-        modelf = actuator_tpl.render(context)
-    return modelf
+    return smauto_tpl.render(context)
 
 
 def select_clock_broker(model):
@@ -48,12 +44,32 @@ def select_clock_broker(model):
     return brokers[0]
 
 
-def smauto_m2t(model_path: str):
+def make_executable(path):
+    mode = os.stat(path).st_mode
+    mode |= (mode & 0o444) >> 2    # copy R bits to X
+    os.chmod(path, mode)
+
+
+def write_to_file(code, fpath):
+    with open(fpath, 'w') as fp:
+        fp.write(code)
+        make_executable(fpath)
+
+
+def smauto_m2t(model_path: str, outdir: str = ''):
     model = build_model(model_path)
+    if len(model.automations) < 1:
+        print('[ERROR]: Model does not include any Automations')
+        return
+    systeme = []
     for m in model._tx_model_repository.all_models:
         if m.metadata:
             if m.metadata.name == 'SystemClock':
-                m.entities[0].broker = broker
                 ent = m.entities[0]
                 ecode = build_system_clock(ent)
-                print(ecode)
+                filename = f'{ent.name}.py'
+                systeme.append((filename, ecode))
+    scode = build_smauto_code(model)
+    write_to_file(scode, f'{model.metadata.name}.py')
+    return scode
+
