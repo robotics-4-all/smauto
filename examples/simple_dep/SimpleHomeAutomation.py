@@ -6,6 +6,7 @@ from typing import Optional, Dict
 from pydantic import BaseModel
 from collections import deque
 import statistics
+from concurrent.futures import ThreadPoolExecutor, wait
 
 from rich import print, console, pretty
 from commlib.msg import PubSubMessage
@@ -197,16 +198,20 @@ class Automation(Node):
         self.state = AutomationState.IDLE
         self.conn_params = conn_params
         self.entities = entities
+        self.autos_map = {}
+
+    def set_autos(self, autos_map):
+        self.autos_map = autos_map
 
     def evaluate_condition(self):
         if self.enabled:
             return self.condition.evaluate(self.entities)
         else:
-            return False, f"{self.name}: Automation disabled."
+            return False
 
     def print(self):
         after = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.after])
+            [f"      - {self.autos_map[dep]}" for dep in self.after])
         starts = f'\n'.join(
             [f"      - {dep.name}" for dep in self.starts])
         stops = f'\n'.join(
@@ -257,8 +262,8 @@ class Automation(Node):
             # Wait for dependend automations to finish
             while self.state == AutomationState.IDLE:
                 wait_for = [
-                    dep.name for dep in self.after
-                    if dep.state == AutomationState.RUNNING
+                    dep for dep in self.after
+                    if self.autos_map[dep].state == AutomationState.RUNNING
                 ]
                 if len(wait_for) == 0:
                     self.state = AutomationState.RUNNING
@@ -269,7 +274,7 @@ class Automation(Node):
                 time.sleep(1)
             while self.state == AutomationState.RUNNING:
                 try:
-                    triggered, msg = self.evaluate_condition()
+                    triggered = self.evaluate_condition()
                     if triggered:
                         print(f"[bold yellow][*] Automation <{self.name}> "
                             f"Triggered![/bold yellow]"
@@ -280,10 +285,10 @@ class Automation(Node):
                         # If automation triggered run its actions
                         self.trigger_actions()
                         self.state = AutomationState.EXITED_SUCCESS
-                        for automation in self.starts:
-                            automation.enable()
-                        for automation in self.stops:
-                            automation.disable()
+                        for auto in self.starts:
+                            self.autos_map[auto].enable()
+                        for auto in self.stops:
+                            self.autos_map[auto].disable()
                     if self.checkOnce:
                         self.disable()
                         self.state = AutomationState.EXITED_SUCCESS
@@ -308,7 +313,8 @@ class Executor():
         self.entities_map = self.build_entities_map(self.entities)
         self.autos = self.create_automations(self.entities_map)
         self.autos_map = self.build_autos_map(self.autos)
-        print(self.autos_map)
+        for auto in self.autos:
+            auto.set_autos(self.autos_map)
 
     def build_autos_map(self, autos):
         a_map = {auto.name: auto for auto in autos}
@@ -323,7 +329,7 @@ class Executor():
         autos.append(Automation(
             name='motion_detected_1',
             condition=Condition(
-                expression=(entities['motion_detector'].attributes_dict['pos'] == [10, 0]),
+                expression="(entities['motion_detector'].attributes_dict['pos'] == [10, 0])"
             ),
             actions=[
                 Action('power', True, entities['bedroom_lamp'])
@@ -332,16 +338,19 @@ class Executor():
             enabled=True,
             continuous=True,
             checkOnce=False,
-            after=[],
-            starts=[],
-            stops=[],
+            after=[
+            ],
+            starts=[
+            ],
+            stops=[
+            ],
             conn_params=None,
             entities=entities
         ))
         autos.append(Automation(
             name='motion_detected_2',
             condition=Condition(
-                expression=((entities['motion_detector'].attributes_dict['detected'] == True) and (entities['motion_detector'].attributes_dict['posX'] == 10)),
+                expression="((entities['motion_detector'].attributes_dict['detected'] == True) and (entities['motion_detector'].attributes_dict['posX'] == 10))"
             ),
             actions=[
                 Action('power', True, entities['bedroom_lamp'])
@@ -350,9 +359,13 @@ class Executor():
             enabled=True,
             continuous=True,
             checkOnce=False,
-            after=[],
-            starts=[],
-            stops=[],
+            after=[
+                'motion_detected_1',
+            ],
+            starts=[
+            ],
+            stops=[
+            ],
             conn_params=None,
             entities=entities
         ))
@@ -422,7 +435,41 @@ class Executor():
         for e in self.entities:
             e.run()
 
+    def start_automations(self, max_workers: int = 60):
+        automations = self.autos
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            works = []
+            for automation in automations:
+                automation.executor = ThreadPoolExecutor()
+                work = executor.submit(
+                    automation.start
+                ).add_done_callback(Executor._worker_clb)
+                works.append(work)
+            # done, not_done = wait(works)
+        print('[bold magenta][*] All automations completed!![/bold magenta]')
+
+    @staticmethod
+    def _worker_clb(f):
+        e = f.exception()
+        if e is None:
+            return
+        trace = []
+        tb = e.__traceback__
+        while tb is not None:
+            trace.append({
+                "filename": tb.tb_frame.f_code.co_filename,
+                "name": tb.tb_frame.f_code.co_name,
+                "lineno": tb.tb_lineno
+            })
+            tb = tb.tb_next
+        print(str({
+            'type': type(e).__name__,
+            'message': str(e),
+            'trace': trace
+        }))
+
 
 if __name__ == '__main__':
     executor = Executor()
     executor.start_entities()
+    executor.start_automations()

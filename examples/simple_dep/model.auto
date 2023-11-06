@@ -1,0 +1,57 @@
+Metadata
+    project: SimpleHomeAutomation
+    version: "0.1.0"
+    description: "Simple home automation model."
+    author: "klpanagi"
+    email: "klpanagi@gmail.com"
+end
+
+Broker<MQTT> cloud_platform_issel
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity bedroom_lamp
+    type: actuator
+    topic: "bedroom.lamp"
+    broker: cloud_platform_issel
+    attributes:
+        - power: bool
+end
+
+Entity motion_detector
+    type: sensor
+    topic: "bedroom.motion_detector"
+    broker: cloud_platform_issel
+    attributes:
+        - detected: bool
+        - posX: int
+        - pos: list
+        - mode: str
+end
+
+
+Automation motion_detected_1
+    condition:
+        motion_detector.pos == [10, 0]
+    enabled: true
+    continuous: true
+    actions:
+        - bedroom_lamp.power: true
+end
+
+
+Automation motion_detected_2
+    condition:
+        (motion_detector.detected == true) AND
+        (motion_detector.posX == 10)
+    enabled: true
+    continuous: true
+    actions:
+        - bedroom_lamp.power: true
+    after:
+        - motion_detected_1
+end
