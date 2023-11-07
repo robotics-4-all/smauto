@@ -202,7 +202,7 @@ class Automation(Node):
         if self.enabled:
             return self.condition.evaluate(self.entities)
         else:
-            return False, f"{self.name}: Automation disabled."
+            return False
 
     def print(self):
         after = f'\n'.join(

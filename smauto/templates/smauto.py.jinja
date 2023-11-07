@@ -221,7 +221,7 @@ class Automation(Node):
         if self.enabled:
             return self.condition.evaluate(self.entities)
         else:
-            return False, f"{self.name}: Automation disabled."
+            return False
 
     def print(self):
         after = f'\n'.join(
@@ -288,7 +288,7 @@ class Automation(Node):
                 time.sleep(1)
             while self.state == AutomationState.RUNNING:
                 try:
-                    triggered, msg = self.evaluate_condition()
+                    triggered = self.evaluate_condition()
                     if triggered:
                         print(f"[bold yellow][*] Automation <{self.name}> "
                             f"Triggered![/bold yellow]"
