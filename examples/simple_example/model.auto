@@ -6,6 +6,7 @@ Metadata
     email: "klpanagi@gmail.com"
 end
 
+// Communication Brokers ------->
 Broker<MQTT> cloud_platform_issel
     host: "localhost"
     port: 1883
@@ -14,6 +15,7 @@ Broker<MQTT> cloud_platform_issel
         password: ""
 end
 
+// Entities ------->
 Entity bedroom_lamp
     type: actuator
     topic: "bedroom.lamp"
@@ -33,8 +35,9 @@ Entity motion_detector
         - mode: str
 end
 
-
+// Automations ------->
 Automation motion_detected_1
+    description: "This is an example automation"
     condition:
         motion_detector.pos == [10, 0]
     enabled: true
@@ -42,7 +45,6 @@ Automation motion_detected_1
     actions:
         - bedroom_lamp.power: true
 end
-
 
 Automation motion_detected_2
     condition:

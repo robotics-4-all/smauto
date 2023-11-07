@@ -6,6 +6,7 @@ Entity:
         (
 			('type:' etype=EntityType)
 			('topic:' topic=STRING)
+            ('description:' description=STRING)?
 			('freq:' freq=NUMBER)?
 			('broker:' broker=[MessageBroker])
 			('attributes:' '-' attributes*=Attribute['-'])

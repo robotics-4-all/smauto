@@ -40,7 +40,8 @@ class Entity:
 
     """
 
-    def __init__(self, parent, name, etype, freq, topic, broker, attributes):
+    def __init__(self, parent, name, etype, freq, topic, broker,
+                 attributes, description=""):
         """
         Creates and returns an Entity object
         :param name: Entity name. e.g: 'temperature_sensor'
@@ -65,6 +66,7 @@ class Entity:
         self.broker = broker
         # Entity's Attributes
         self.attributes = attributes
+        self.description = description
         # Attributes Dictionary
         self.attributes_dict = {attribute.name: attribute for attribute in self.attributes}
         self.attributes_buff = {attribute.name: None for attribute in self.attributes}

@@ -33,4 +33,6 @@ NIDREF: NID+['.']('.*')?;
 Import: 'import' name=STRING;
 
 // Comments
-Comment: /\#.*?$/;
+Comment: CommentLine | CommentBlock ;
+CommentLine: /\/\/.*?$/;
+CommentBlock: /\/\*(.|\n)*?\*\//;
