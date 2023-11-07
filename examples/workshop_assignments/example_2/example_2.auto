@@ -1,20 +1,20 @@
-Metadata:
-    name: HackathonExampleA
+Metadata
+    project: HackathonExampleA
     version: "0.1.0"
     description: "Model of example 1 of the 2023 ISSEL hackathon"
     author: "klpanagi"
     email: "klpanagi@gmail.com"
+end
 
-MQTT:
-    name: issel_cloud_platform
+Broker<MQTT> issel_cloud_platform
     host: "snf-889260.vm.okeanos.grnet.gr"
     port: 1893
     auth:
-        username: "porolog"
-        password: "fiware"
+        username: ""
+        password: ""
+end
 
-Entity:
-    name: env_sensor
+Entity env_sensor
     type: sensor
     freq: 10
     topic: "bedroom.env"
@@ -23,3 +23,4 @@ Entity:
         - temperature: float -> gaussian(10, 20, 5) with noise gaussian(1,1)
         - humidity: float -> linear(1, 0.2) with noise uniform (0, 1)
         - pressure: float -> replay([0.2, 0.2, 0.2, 0.3, 0.25, 0.25, 0.25, 0.2], -1)
+end

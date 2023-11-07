@@ -1,21 +1,21 @@
-Metadata:
-    name: SytemClockUsageExample
+Metadata
+    project: SytemClockUsageExample
     version: "0.1.0"
     description: "Example of using the buildin SystemClock entity."
     author: "klpanagi"
     email: "klpanagi@gmail.com"
+end
 
 
-MQTT:
-    name: home_broker
+Broker<MQTT> home_broker
     host: "localhost"
     port: 1883
     auth:
         username: ""
         password: ""
+end
 
-Entity:
-    name: bedroom_lamp
+Entity bedroom_lamp
     type: actuator
     topic: "bedroom.lamp"
     broker: fake_broker
@@ -24,9 +24,9 @@ Entity:
         - colorR: int
         - colorG: int
         - colorB: int
+end
 
-Automation:
-    name: motion_detected_self_start
+Automation motion_detected_self_start
     condition:
         system_clock.time >= 03:06
     enabled: true
@@ -35,3 +35,4 @@ Automation:
         - bedroom_lamp.power: true
     starts:
         - motion_detected_self_start
+end

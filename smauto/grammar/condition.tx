@@ -2,8 +2,8 @@ import entity
 import types
 
 // === Conditions ===
-// Condition: AdvancedCondition | PrimitiveCondition | ConditionGroup ;
-Condition: ConditionGroup | PrimitiveCondition | AdvancedCondition;
+Condition: AdvancedCondition | PrimitiveCondition | ConditionGroup ;
+//Condition: ConditionGroup | PrimitiveCondition | AdvancedCondition;
 
 ConditionGroup:
     '(' r1=Condition ')' operator=LogicalOperator '(' r2=Condition ')'

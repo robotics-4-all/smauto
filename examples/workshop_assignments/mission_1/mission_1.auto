@@ -1,41 +1,41 @@
-Metadata:
-    name: HackathonMissionA
+Metadata
+    project: HackathonMissionA
     version: "0.1.0"
     description: "Model of mission 1 of the 2023 ISSEL hackathon"
     author: "klpanagi"
     email: "klpanagi@gmail.com"
+end
 
-MQTT:
-    name: issel_cloud_platform
-    host: "localhost"
-    port: 1883
+Broker<MQTT> issel_cloud_platform
+    host: "snf-889260.vm.okeanos.grnet.gr"
+    port: 1893
     auth:
         username: ""
         password: ""
+end
 
-# Actuators
-# -------------------------------------------
+// Actuators
+// -------------------------------------------
 
-Entity:
-    name: humidifier
+Entity humidifier
     type: actuator
     topic: "kitchen.humidifier"
     broker: issel_cloud_platform
     attributes:
         - power: bool
         - timer: int
+end
 
-Entity:
-    name: thermostat
+Entity thermostat
     type: actuator
     topic: "kitchen.thermostat"
     broker: issel_cloud_platform
     attributes:
         - power: bool
         - temperature: float
+end
 
-Entity:
-    name: lamp
+Entity lamp
     type: actuator
     topic: "kitchen.lamp"
     broker: issel_cloud_platform
@@ -45,9 +45,9 @@ Entity:
         - colorG: int
         - colorB: int
         - color: str
+end
 
-Entity:
-    name: aircondition
+Entity aircondition
     type: actuator
     topic: "bedroom.aircondition"
     broker: issel_cloud_platform
@@ -56,46 +56,46 @@ Entity:
         - temperature: float
         - swing: bool
         - mode: str
+end
 
-Entity:
-    name: alarm
+Entity alarm
     type: actuator
     topic: "alarm"
     broker: issel_cloud_platform
     attributes:
         - state: int = 0
+end
 
-# Sensors
-# ------------------------------------------
+// Sensors
+// ------------------------------------------
 
-Entity:
-    name: humidity_sensor
+Entity humidity_sensor
     type: sensor
     topic: "kitchen.humidity"
     broker: issel_cloud_platform
     attributes:
         - humidity: float -> linear(0, 0.1) with noise gaussian(0, 0.05)
+end
 
-Entity:
-    name: temperature_sensor
+Entity temperature_sensor
     type: sensor
     freq: 10
     topic: "bedroom.temperature"
     broker: issel_cloud_platform
     attributes:
         - temperature: float -> linear(20, 1) with noise gaussian(0, 0.5)
+end
 
-Entity:
-    name: gas_sensor
+Entity gas_sensor
     type: sensor
     freq: 10
     topic: "kitchen.gas"
     broker: issel_cloud_platform
     attributes:
         - gas: float -> linear(0, 0.1) with noise gaussian(0, 0.1)
+end
 
-Entity:
-    name: motion_detector
+Entity motion_detector
     type: sensor
     freq: 10
     topic: "kitchen.motion_detector"
@@ -104,4 +104,4 @@ Entity:
         - detected: bool
         - positionX: float -> gaussian(10, 100, 2) with noise gaussian(0, 2)
         - positionY: float -> gaussian(20, 120, 2) with noise gaussian(0, 2)
-
+end
