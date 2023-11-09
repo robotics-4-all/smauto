@@ -259,6 +259,7 @@ async def gen_autos(gen_auto_model: GenAutosInputModel = Body(...),
         resp['message'] = str(e)
         raise HTTPException(status_code=400,
                             detail=f"Automations generation error: {e}")
+    return resp
 
 
 class GenVentInputModel(BaseModel):
