@@ -73,5 +73,9 @@ def smauto_m2t(model_path: str, outdir: str = ''):
     for auto in model.automations:
         auto.condition.build()
     scode = build_smauto_code(model)
-    write_to_file(scode, f'{model.metadata.name}.py')
+    if outdir not in ('', None):
+        write_to_file(
+            scode,
+            os.path.join(outdir, f'{model.metadata.name}.py')
+        )
     return scode
