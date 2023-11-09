@@ -304,8 +304,8 @@ class GenMergedInputModel(BaseModel):
 
 
 @api.post("/generate/merged")
-async def gen_ventities(in_model: GenMergedInputModel = Body(...),
-                        api_key: str = Security(get_api_key)):
+async def gen_merged(in_model: GenMergedInputModel = Body(...),
+                     api_key: str = Security(get_api_key)):
     resp = {
         'status': 200,
         'message': '',
