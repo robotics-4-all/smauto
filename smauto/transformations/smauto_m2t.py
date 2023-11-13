@@ -60,8 +60,7 @@ def write_to_file(code, fpath):
 def smauto_m2t(model_path: str, outdir: str = ''):
     model = build_model(model_path)
     if len(model.automations) < 1:
-        print('[ERROR]: Model does not include any Automations')
-        return
+        raise ValueError('Model does not include any Automations')
     systeme = []
     for m in model._tx_model_repository.all_models:
         if m.metadata:
