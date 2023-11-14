@@ -16,7 +16,7 @@ SmAutoModel:
 Metadata:
     'Metadata'
     (
-        ('project:' name=ID)
+        ('name:' name=ID)
         ('version:' version=STRING)
         ('author:' author=STRING)?
         ('email:' email=STRING)?

@@ -13,8 +13,7 @@ jinja_env = jinja2.Environment(
     lstrip_blocks=True
 )
 
-sensor_tpl = jinja_env.get_template('sensor.py.jinja')
-actuator_tpl = jinja_env.get_template('actuator.py.jinja')
+vent_tpl = jinja_env.get_template('ventity_merged.py.jinja')
 clock_tpl = jinja_env.get_template('clock.py.jinja')
 
 
@@ -25,19 +24,13 @@ def build_system_clock(entity):
     return clock_tpl.render(context)
 
 
-def build_entity_code(entity):
-    _type = entity.etype
+def build_source_code(sensors, actuators, hubrids):
     context = {
-        'entity': entity
+        'sensors': sensors,
+        'actuators': actuators,
+        'hybrid': hubrids
     }
-    if _type == 'sensor':
-        modelf = sensor_tpl.render(context)
-    elif _type == 'actuator':
-        modelf = actuator_tpl.render(context)
-    elif _type == 'hybrid':
-        raise NotImplementedError('Hybid Entities not yet supported')
-    else:
-        raise NotImplementedError(f'{_type} Entities not yet supported')
+    modelf = vent_tpl.render(context)
     return modelf
 
 
@@ -53,7 +46,7 @@ def select_clock_broker(model):
     return brokers[0]
 
 
-def model_to_vnodes(model_path: str):
+def model_to_vent(model_path: str):
     model = build_model(model_path)
     vnodes = []
     broker = select_clock_broker(model)
@@ -64,8 +57,17 @@ def model_to_vnodes(model_path: str):
                 ent = m.entities[0]
                 ecode = build_system_clock(ent)
                 vnodes.append((ent, ecode))
+    sensors = []
+    actuators = []
+    hybrids = []
     for e in model.entities:
-        ecode = build_entity_code(e)
-        # print(ecode)
-        vnodes.append((e, ecode))
+        if e.etype == 'sensor':
+            sensors.append(e)
+        elif e.etype == 'actuator':
+            actuators.append(e)
+        elif e.etype == 'hybrid':
+            hybrids.append(e)
+    ecode = build_source_code(sensors, actuators, hybrids)
+    print(ecode)
+        # vnodes.append((e, ecode))
     return vnodes

@@ -1,5 +1,5 @@
 Metadata
-    project: SytemClockUsageExample
+    name: SytemClockUsageExample
     version: "0.1.0"
     description: "Example of using the buildin SystemClock entity."
     author: "klpanagi"

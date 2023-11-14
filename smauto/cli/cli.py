@@ -51,13 +51,11 @@ def graph(ctx, model_path):
 @click.argument('model_path')
 def generate_py(ctx, model_path):
     pycode = smauto_m2t(model_path)
-    return
-    for vn in vnodes:
-        filepath = f'{vn[0].name}.py'
-        with open(filepath, 'w') as fp:
-            fp.write(vn[1])
-            make_executable(filepath)
-        print(f'[CLI] Compiled virtual Entity: [bold]{filepath}')
+    model = build_model(model_path)
+    filepath = f'{model.metadata.name}.py'
+    with open(filepath, 'w') as fp:
+        fp.write(pycode)
+        make_executable(filepath)
 
 
 @cli.command('genv',

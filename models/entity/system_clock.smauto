@@ -1,5 +1,5 @@
 Metadata
-    project: SystemClock
+    name: SystemClock
     version: "0.1.0"
     description: "SystemClock Entity"
     author: "klpanagi"
