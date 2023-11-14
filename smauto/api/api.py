@@ -55,34 +55,17 @@ class SmAutoModel(BaseModel):
     text: str
 
 
-@api.post("/validate/file")
-async def validate_file(file: UploadFile = File(...),
-                        api_key: str = Security(get_api_key)):
-    print(f'Validation for request: file=<{file.filename}>,' + \
-          f' descriptor=<{file.file}>')
-    resp = {
-        'status': 200,
-        'message': ''
-    }
-    fd = file.file
-    u_id = uuid.uuid4().hex[0:8]
-    fpath = os.path.join(
-        TMP_DIR,
-        f'model_for_validation-{u_id}.auto'
-    )
-    with open(fpath, 'w') as f:
-        f.write(fd.read().decode('utf8'))
-    try:
-        model = build_model(fpath)
-        print('Model validation success!!')
-        resp['message'] = 'Model validation success'
-    except Exception as e:
-        print('Exception while validating model. Validation failed!!')
-        print(e)
-        resp['status'] = 404
-        resp['message'] = str(e)
-        raise HTTPException(status_code=400, detail=f"Validation error: {e}")
-    return resp
+class GenMergedInputModel(BaseModel):
+    model: str
+
+
+class GenAutosInputModel(BaseModel):
+    model: str
+
+
+class GenVentInputModel(BaseModel):
+    model: str
+
 
 
 @api.post("/validate")
@@ -103,6 +86,36 @@ async def validate(model: SmAutoModel,
     )
     with open(fpath, 'w') as f:
         f.write(text)
+    try:
+        model = build_model(fpath)
+        print('Model validation success!!')
+        resp['message'] = 'Model validation success'
+    except Exception as e:
+        print('Exception while validating model. Validation failed!!')
+        print(e)
+        resp['status'] = 404
+        resp['message'] = str(e)
+        raise HTTPException(status_code=400, detail=f"Validation error: {e}")
+    return resp
+
+
+@api.post("/validate/file")
+async def validate_file(file: UploadFile = File(...),
+                        api_key: str = Security(get_api_key)):
+    print(f'Validation for request: file=<{file.filename}>,' + \
+          f' descriptor=<{file.file}>')
+    resp = {
+        'status': 200,
+        'message': ''
+    }
+    fd = file.file
+    u_id = uuid.uuid4().hex[0:8]
+    fpath = os.path.join(
+        TMP_DIR,
+        f'model_for_validation-{u_id}.auto'
+    )
+    with open(fpath, 'w') as f:
+        f.write(fd.read().decode('utf8'))
     try:
         model = build_model(fpath)
         print('Model validation success!!')
@@ -179,6 +192,42 @@ async def interpret(model_file: UploadFile = File(...),
     return resp
 
 
+@api.post("/generate/autos")
+async def gen_autos(gen_auto_model: GenAutosInputModel = Body(...),
+                    api_key: str = Security(get_api_key)):
+    print(gen_auto_model)
+    resp = {
+        'status': 200,
+        'message': '',
+        'code': ''
+    }
+    model =  gen_auto_model.model
+    u_id = uuid.uuid4().hex[0:8]
+    model_path = os.path.join(
+        TMP_DIR,
+        f'model-{u_id}.auto'
+    )
+    gen_path = os.path.join(
+        TMP_DIR,
+        f'gen-{u_id}'
+    )
+    if not os.path.exists(gen_path):
+        os.mkdir(gen_path)
+    with open(model_path, 'w') as f:
+        f.write(model)
+    try:
+        autos_code = smauto_m2t(model_path)
+        resp['message'] = 'SmAuto.Automations Transformation success'
+        resp['code'] = autos_code
+    except Exception as e:
+        print(e)
+        resp['status'] = 404
+        resp['message'] = str(e)
+        raise HTTPException(status_code=400,
+                            detail=f"Automations generation error: {e}")
+    return resp
+
+
 @api.post("/generate/autos/file")
 async def gen_autos_file(model_file: UploadFile = File(...),
                          api_key: str = Security(get_api_key)):
@@ -218,50 +267,6 @@ async def gen_autos_file(model_file: UploadFile = File(...),
                             detail=f"Automations generation error: {e}")
 
 
-class GenAutosInputModel(BaseModel):
-    model: str
-
-
-@api.post("/generate/autos")
-async def gen_autos(gen_auto_model: GenAutosInputModel = Body(...),
-                    api_key: str = Security(get_api_key)):
-    print(gen_auto_model)
-    resp = {
-        'status': 200,
-        'message': '',
-        'code': ''
-    }
-    model =  gen_auto_model.model
-    u_id = uuid.uuid4().hex[0:8]
-    model_path = os.path.join(
-        TMP_DIR,
-        f'model-{u_id}.auto'
-    )
-    gen_path = os.path.join(
-        TMP_DIR,
-        f'gen-{u_id}'
-    )
-    if not os.path.exists(gen_path):
-        os.mkdir(gen_path)
-    with open(model_path, 'w') as f:
-        f.write(model)
-    try:
-        autos_code = smauto_m2t(model_path)
-        resp['message'] = 'SmAuto.Automations Transformation success'
-        resp['code'] = autos_code
-    except Exception as e:
-        print(e)
-        resp['status'] = 404
-        resp['message'] = str(e)
-        raise HTTPException(status_code=400,
-                            detail=f"Automations generation error: {e}")
-    return resp
-
-
-class GenVentInputModel(BaseModel):
-    model: str
-
-
 @api.post("/generate/ventities")
 async def gen_ventities(gen_vent_model: GenVentInputModel = Body(...),
                         api_key: str = Security(get_api_key)):
@@ -295,81 +300,6 @@ async def gen_ventities(gen_vent_model: GenVentInputModel = Body(...),
             status_code=400,
             detail=f"Automations generation error: {e}"
         )
-    return resp
-
-class GenMergedInputModel(BaseModel):
-    model: str
-
-
-@api.post("/generate/ventities/merged")
-async def gen_merged(in_model: GenMergedInputModel = Body(...),
-                     api_key: str = Security(get_api_key)):
-    resp = {
-        'status': 200,
-        'message': '',
-        'code': ''
-    }
-    model =  in_model.model
-    u_id = uuid.uuid4().hex[0:8]
-    model_path = os.path.join(
-        TMP_DIR,
-        f'model-{u_id}.auto'
-    )
-    gen_path = os.path.join(
-        TMP_DIR,
-        f'gen-{u_id}'
-    )
-    if not os.path.exists(gen_path):
-        os.mkdir(gen_path)
-    with open(model_path, 'w') as f:
-        f.write(model)
-    try:
-        vent_code = model_to_vent(model_path)
-        resp['code'] = vent_code
-    except Exception as e:
-        print(e)
-        resp['status'] = 404
-        resp['message'] = str(e)
-        raise HTTPException(status_code=400,
-                            detail=f"Automations generation error: {e}")
-    return resp
-
-
-@api.post("/generate/ventities/merged/file")
-async def gen_merged(model_file: UploadFile = File(...),
-                     api_key: str = Security(get_api_key)):
-    resp = {
-        'status': 200,
-        'message': '',
-        'code': ''
-    }
-    fd = model_file.file
-    u_id = uuid.uuid4().hex[0:8]
-    model_path = os.path.join(
-        TMP_DIR,
-        f'model-{u_id}.auto'
-    )
-    tarball_path = os.path.join(
-        TMP_DIR,
-        f'graph-{u_id}.tar.gz'
-    )
-    gen_path = os.path.join(
-        TMP_DIR,
-        f'gen-{u_id}'
-    )
-    if not os.path.exists(gen_path):
-        os.mkdir(gen_path)
-    with open(model_path, 'w') as f:
-        f.write(fd.read().decode('utf8'))
-    try:
-        vent_code = model_to_vent(model_path)
-        resp['code'] = vent_code
-    except Exception as e:
-        print(e)
-        resp['status'] = 404
-        resp['message'] = str(e)
-        raise HTTPException(status_code=400,
-                            detail=f"Automations generation error: {e}")
     return resp
 
 
@@ -417,6 +347,78 @@ async def gen_ventities_file(model_file: UploadFile = File(...),
         print(e)
         raise HTTPException(status_code=400,
                             detail=f"VEntity generation error: {e}")
+
+
+@api.post("/generate/ventities/merged")
+async def gen_merged(in_model: GenMergedInputModel = Body(...),
+                     api_key: str = Security(get_api_key)):
+    resp = {
+        'status': 200,
+        'message': '',
+        'code': ''
+    }
+    model =  in_model.model
+    u_id = uuid.uuid4().hex[0:8]
+    model_path = os.path.join(
+        TMP_DIR,
+        f'model-{u_id}.auto'
+    )
+    gen_path = os.path.join(
+        TMP_DIR,
+        f'gen-{u_id}'
+    )
+    if not os.path.exists(gen_path):
+        os.mkdir(gen_path)
+    with open(model_path, 'w') as f:
+        f.write(model)
+    try:
+        vent_code = model_to_vent(model_path)
+        resp['code'] = vent_code
+    except Exception as e:
+        print(e)
+        resp['status'] = 404
+        resp['message'] = str(e)
+        raise HTTPException(status_code=400,
+                            detail=f"Automations generation error: {e}")
+    return resp
+
+
+@api.post("/generate/ventities/merged/file")
+async def gen_merged_file(model_file: UploadFile = File(...),
+                          api_key: str = Security(get_api_key)):
+    resp = {
+        'status': 200,
+        'message': '',
+        'code': ''
+    }
+    fd = model_file.file
+    u_id = uuid.uuid4().hex[0:8]
+    model_path = os.path.join(
+        TMP_DIR,
+        f'model-{u_id}.auto'
+    )
+    tarball_path = os.path.join(
+        TMP_DIR,
+        f'graph-{u_id}.tar.gz'
+    )
+    gen_path = os.path.join(
+        TMP_DIR,
+        f'gen-{u_id}'
+    )
+    if not os.path.exists(gen_path):
+        os.mkdir(gen_path)
+    with open(model_path, 'w') as f:
+        f.write(fd.read().decode('utf8'))
+    try:
+        vent_code = model_to_vent(model_path)
+        resp['code'] = vent_code
+    except Exception as e:
+        print(e)
+        resp['status'] = 404
+        resp['message'] = str(e)
+        raise HTTPException(status_code=400,
+                            detail=f"Automations generation error: {e}")
+    return resp
 
 
 def run_interpreter(model_path: str):
