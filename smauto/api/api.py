@@ -3,20 +3,19 @@ import os
 import base64
 import subprocess
 import shutil
-from typing import Dict
-
 import tarfile
-
 from pydantic import BaseModel
 
-from smauto.language import build_model
 from fastapi import (
     FastAPI, File, UploadFile, status, HTTPException, Security, Body
 )
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from smauto.transformations import model_to_vnodes, smauto_m2t
 from fastapi.security import APIKeyHeader
+
+from smauto.language import build_model
+from smauto.transformations import model_to_vnodes, smauto_m2t, model_to_vent
+
 API_KEY = os.getenv("API_KEY", "API_KEY")
 
 api_keys = [
@@ -209,13 +208,10 @@ async def gen_autos_file(model_file: UploadFile = File(...),
         with open(filepath, 'w') as fp:
             fp.write(autos_code)
             make_executable(filepath)
-        # make_tarball(tarball_path, gen_path)
-        # shutil.rmtree(gen_path)
-        # print(f'Sending tarball {tarball_path}')
         return FileResponse(filepath,
                             filename=os.path.basename(filepath),
-                            )
                             # media_type='application/x-tar')
+                            )
     except Exception as e:
         print(e)
         raise HTTPException(status_code=400,
@@ -289,22 +285,23 @@ async def gen_ventities(gen_vent_model: GenVentInputModel = Body(...),
     with open(model_path, 'w') as f:
         f.write(model)
     try:
-        # vnodes = model_to_vnodes(model_path)
-        resp['message'] = 'TODO Bro!'
-        resp['code'] = "if (fire):\n     git.commit\n    git.push\n"
+        vnodes = model_to_vnodes(model_path)
+        resp['code'] = vnodes
     except Exception as e:
         print(e)
         resp['status'] = 404
         resp['message'] = str(e)
-        raise HTTPException(status_code=400,
-                            detail=f"Automations generation error: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Automations generation error: {e}"
+        )
     return resp
 
 class GenMergedInputModel(BaseModel):
     model: str
 
 
-@api.post("/generate/merged")
+@api.post("/generate/ventities/merged")
 async def gen_merged(in_model: GenMergedInputModel = Body(...),
                      api_key: str = Security(get_api_key)):
     resp = {
@@ -327,9 +324,46 @@ async def gen_merged(in_model: GenMergedInputModel = Body(...),
     with open(model_path, 'w') as f:
         f.write(model)
     try:
-        # vnodes = model_to_vnodes(model_path)
-        resp['message'] = 'TODO Bro!'
-        resp['code'] = "if (fire):\n     git.commit\n    git.push\n"
+        vent_code = model_to_vent(model_path)
+        resp['code'] = vent_code
+    except Exception as e:
+        print(e)
+        resp['status'] = 404
+        resp['message'] = str(e)
+        raise HTTPException(status_code=400,
+                            detail=f"Automations generation error: {e}")
+    return resp
+
+
+@api.post("/generate/ventities/merged/file")
+async def gen_merged(model_file: UploadFile = File(...),
+                     api_key: str = Security(get_api_key)):
+    resp = {
+        'status': 200,
+        'message': '',
+        'code': ''
+    }
+    fd = model_file.file
+    u_id = uuid.uuid4().hex[0:8]
+    model_path = os.path.join(
+        TMP_DIR,
+        f'model-{u_id}.auto'
+    )
+    tarball_path = os.path.join(
+        TMP_DIR,
+        f'graph-{u_id}.tar.gz'
+    )
+    gen_path = os.path.join(
+        TMP_DIR,
+        f'gen-{u_id}'
+    )
+    if not os.path.exists(gen_path):
+        os.mkdir(gen_path)
+    with open(model_path, 'w') as f:
+        f.write(fd.read().decode('utf8'))
+    try:
+        vent_code = model_to_vent(model_path)
+        resp['code'] = vent_code
     except Exception as e:
         print(e)
         resp['status'] = 404

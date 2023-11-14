@@ -67,9 +67,9 @@ def generate_py(ctx, model_path):
 @click.option('--merged', '-m', is_flag=True,
               help="Merge virtual entities into a single output file")
 def generate_vent(ctx, model_path: str, merged: bool):
+    model = build_model(model_path)
     if merged:
         vent_code = model_to_vent(model_path)
-        model = build_model(model_path)
         filepath = f'{model.metadata.name.lower()}_entities.py'
         with open(filepath, 'w') as fp:
             fp.write(vent_code)
