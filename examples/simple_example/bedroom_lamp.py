@@ -9,10 +9,8 @@ import time
 import numpy as np
 from typing import Optional
 
-{% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
 from commlib.transports.mqtt import ConnectionParameters
 from rich import print, console, pretty
-{% endif %}
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
 from commlib.node import Node
@@ -21,33 +19,27 @@ pretty.install()
 console = console.Console()
 
 
-class {{ entity.camel_name }}Msg(PubSubMessage):
-    {% for a in entity.attributes %}
-    {% if a.type == "str" %}
-        {{ a.name }}: {{ a.type }} = '{{ a.value }}'
-    {% else %}
-        {{ a.name }}: {{ a.type }} = {{ a.value }}
-    {% endif %}
-    {% endfor %}
+class BedroomLampMsg(PubSubMessage):
+        power: bool = False
 
 
-class {{ entity.camel_name }}Node(Node):
+class BedroomLampNode(Node):
     def __init__(self, *args, **kwargs):
         self.tick_hz = 1
-        self.topic = '{{ entity.topic }}'
+        self.topic = 'bedroom.lamp'
         conn_params = ConnectionParameters(
-            host='{{ entity.broker.host }}',
-            port={{ entity.broker.port }},
-            username='{{ entity.broker.auth.username }}',
-            password='{{ entity.broker.auth.password }}',
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
         )
         super().__init__(
-            node_name='entities.{{ entity.name.lower() }}',
+            node_name='entities.bedroom_lamp',
             connection_params=conn_params,
             *args, **kwargs
         )
         self.sub = self.create_subscriber(
-            msg_type={{ entity.camel_name }}Msg,
+            msg_type=BedroomLampMsg,
             topic=self.topic,
             on_message=self._on_message
         )
@@ -63,5 +55,5 @@ class {{ entity.camel_name }}Node(Node):
 
 
 if __name__ == '__main__':
-    node = {{ entity.camel_name }}Node()
+    node = BedroomLampNode()
     node.start()

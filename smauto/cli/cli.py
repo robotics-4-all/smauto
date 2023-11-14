@@ -6,6 +6,7 @@ from smauto.interpreter import ModelExecutor
 from smauto.generator import generate_automation_graph_from_file
 from smauto.language import build_model
 from smauto.transformations import model_to_vnodes, smauto_m2t
+from smauto.transformations import model_to_vent
 
 pretty.install()
 
@@ -56,31 +57,27 @@ def generate_py(ctx, model_path):
     with open(filepath, 'w') as fp:
         fp.write(pycode)
         make_executable(filepath)
+    print(f'[CLI] Compiled Automations: [bold]{filepath}')
 
 
 @cli.command('genv',
              help='Entities to Code - Generate executable virtual entities')
 @click.pass_context
 @click.argument('model_path')
-def generate(ctx, model_path):
-    vnodes = model_to_vnodes(model_path)
-    # return
-    for vn in vnodes:
-        filepath = f'{vn[0].name}.py'
-        with open(filepath, 'w') as fp:
-            fp.write(vn[1])
-            make_executable(filepath)
-        print(f'[CLI] Compiled virtual Entity: [bold]{filepath}')
-
-
-@cli.command('server',
-             help='Run the REST Api Server')
-@click.pass_context
-def api_server(ctx):
-    from smauto.api.api import api
-    print('[CLI] DEPRECATED!!!')
-    print('[CLI] Run the api using uvicorn!')
-    print('[CLI] uvicorn smauto.api:api --host 0.0.0.0 --port 8080')
+@click.option('--merged', '-m', is_flag=True,
+              help="Merge virtual entities into a single output file")
+def generate(ctx, model_path: str, merged: bool):
+    if merged:
+        vent_code = model_to_vent(model_path)
+        print(vent_code)
+    else:
+        vnodes = model_to_vnodes(model_path)
+        for vn in vnodes:
+            filepath = f'{vn[0].name}.py'
+            with open(filepath, 'w') as fp:
+                fp.write(vn[1])
+                make_executable(filepath)
+            print(f'[CLI] Compiled virtual Entity: [bold]{filepath}')
 
 
 def main():
