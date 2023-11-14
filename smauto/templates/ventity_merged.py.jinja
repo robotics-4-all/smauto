@@ -5,21 +5,13 @@ import random
 
 from enum import Enum
 from dataclasses import dataclass
+from pydantic import BaseModel
 import time
 import numpy as np
 from typing import Optional
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
-{% for broker in brokers %}
-{% if broker.__class__.__name__ == 'MQTTBroker' %}
-from commlib.transports.mqtt import ConnectionParameters as mqttConn
-{% elif broker.__class__.__name__ == 'AMQPBroker' %}
-from commlib.transports.amqp import ConnectionParameters as amqpConn
-{% elif broker.__class__.__name__ == 'RedisBroker' %}
-from commlib.transports.redis import ConnectionParameters as redisConn
-{% elif broker.__class__.__name__ == 'KafkaBroker' %}
-from commlib.transports.kafka import ConnectionParameters as kafkaConn
-{% endif %}
-{% endfor %}
 from rich import print, console, pretty
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
@@ -190,6 +182,112 @@ class ValueGenerator:
                 if time.time() - start < minutes * 60.0:
                     break
 
+
+{% if system_clock %}
+class Time(BaseModel):
+    hour: int = 0
+    minute: int = 0
+    second: int = 0
+    time_str: str = ''
+
+
+class ClockMsg(PubSubMessage):
+    time: Time
+
+
+class SystemClock(Node):
+    def __init__(self, *args, **kwargs):
+        self.pub_freq = {{ system_clock.freq }}
+        self.topic = '{{ system_clock.topic }}'
+		{% if system_clock.broker.__class__.__name__ == 'MQTTBroker' %}
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='{{ system_clock.broker.host }}',
+            port={{ system_clock.broker.port }},
+            username='{{ system_clock.broker.auth.username }}',
+            password='{{ system_clock.broker.auth.password }}',
+        )
+		{% elif system_clock.broker.__class__.__name__ == 'AMQPBroker' %}
+        from commlib.transports.amqp import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='{{ system_clock.broker.host }}',
+            port={{ system_clock.broker.port }},
+			vhost='{{ system_clock.broker.vhost }}',
+            username='{{ system_clock.broker.auth.username }}',
+            password='{{ system_clock.broker.auth.password }}',
+        )
+		{% elif system_clock.broker.__class__.__name__ == 'RedisBroker' %}
+        from commlib.transports.redis import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='{{ system_clock.broker.host }}',
+            port={{ system_clock.broker.port }},
+            db={{ system_clock.broker.vhost }},
+            username='{{ system_clock.broker.auth.username }}',
+            password='{{ system_clock.broker.auth.password }}',
+        )
+		{% elif system_clock.broker.__class__.__name__ == 'KafkaBroker' %}
+        from commlib.transports.kafka import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='{{ system_clock.broker.host }}',
+            port={{ system_clock.broker.port }},
+            username='{{ system_clock.broker.auth.username }}',
+            password='{{ system_clock.broker.auth.password }}',
+        )
+		{% endif %}
+        super().__init__(
+            node_name='{{ system_clock.name }}',
+            connection_params=conn_params,
+            *args, **kwargs
+        )
+        self.pub = self.create_publisher(
+            msg_type=ClockMsg,
+            topic=self.topic
+        )
+        self.rate = Rate(self.pub_freq)
+
+    def start(self):
+        self.run()
+        while True:
+            self.send_msg()
+            self.rate.sleep()
+
+    def send_msg(self):
+        now = datetime.now()
+        t_str = now.strftime("%H:%M:%S")
+        hour = int(now.hour)
+        minute = int(now.minute)
+        second = int(now.second)
+        msg = ClockMsg(time=Time(
+            hour=hour,
+            minute=minute,
+            second=second,
+            time_str=t_str
+        ))
+        self.pub.publish(msg)
+{% endif %}
+
+
+# ThreadPoolExecutor worker callback
+def _worker_clb(f):
+    e = f.exception()
+    if e is None:
+        return
+    trace = []
+    tb = e.__traceback__
+    while tb is not None:
+        trace.append({
+            "filename": tb.tb_frame.f_code.co_filename,
+            "name": tb.tb_frame.f_code.co_name,
+            "lineno": tb.tb_lineno
+        })
+        tb = tb.tb_next
+    print({
+        'type': type(e).__name__,
+        'message': str(e),
+        'trace': trace
+    })
+
+
 {% for entity in sensors %}
 class {{ entity.camel_name }}Msg(PubSubMessage):
     {% for a in entity.attributes %}
@@ -205,12 +303,42 @@ class {{ entity.camel_name }}Node(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = {{ entity.freq }}
         self.topic = '{{ entity.topic }}'
+        self.name = '{{ entity.name }}'
+		{% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
+        from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
             host='{{ entity.broker.host }}',
             port={{ entity.broker.port }},
             username='{{ entity.broker.auth.username }}',
             password='{{ entity.broker.auth.password }}',
         )
+		{% elif entity.broker.__class__.__name__ == 'AMQPBroker' %}
+		from commlib.transports.amqp import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='{{ entity.broker.host }}',
+            port={{ entity.broker.port }},
+			vhost='{{ entity.broker.vhost }}',
+            username='{{ entity.broker.auth.username }}',
+            password='{{ entity.broker.auth.password }}',
+        )
+		{% elif entity.broker.__class__.__name__ == 'RedisBroker' %}
+		from commlib.transports.redis import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='{{ entity.broker.host }}',
+            port={{ entity.broker.port }},
+            db={{ entity.broker.vhost }},
+            username='{{ entity.broker.auth.username }}',
+            password='{{ entity.broker.auth.password }}',
+        )
+		{% elif entity.broker.__class__.__name__ == 'KafkaBroker' %}
+		from commlib.transports.kafka import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='{{ entity.broker.host }}',
+            port={{ entity.broker.port }},
+            username='{{ entity.broker.auth.username }}',
+            password='{{ entity.broker.auth.password }}',
+        )
+		{% endif %}
         super().__init__(
             node_name='entities.{{ entity.name.lower() }}',
             connection_params=conn_params,
@@ -293,10 +421,17 @@ class {{ entity.camel_name }}Node(Node):
         )
         return generator
 
-
-    def start(self):
+    def start(self, executor=None):
         generator = self.init_gen_components()
-        generator.start()
+        if executor:
+            work = executor.submit(
+                generator.start
+            ).add_done_callback(_worker_clb)
+            print(f'[*] Initiated Entity {self.name}')
+            return work
+        else:
+            generator.start()
+            return self
 
 {% endfor %}
 
@@ -315,12 +450,42 @@ class {{ entity.camel_name }}Node(Node):
     def __init__(self, *args, **kwargs):
         self.tick_hz = 1
         self.topic = '{{ entity.topic }}'
+        self.name = '{{ entity.name }}'
+		{% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
+        from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
             host='{{ entity.broker.host }}',
             port={{ entity.broker.port }},
             username='{{ entity.broker.auth.username }}',
             password='{{ entity.broker.auth.password }}',
         )
+		{% elif entity.broker.__class__.__name__ == 'AMQPBroker' %}
+        from commlib.transports.amqp import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='{{ entity.broker.host }}',
+            port={{ entity.broker.port }},
+			vhost='{{ entity.broker.vhost }}',
+            username='{{ entity.broker.auth.username }}',
+            password='{{ entity.broker.auth.password }}',
+        )
+		{% elif entity.broker.__class__.__name__ == 'RedisBroker' %}
+        from commlib.transports.redis import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='{{ entity.broker.host }}',
+            port={{ entity.broker.port }},
+            db={{ entity.broker.vhost }},
+            username='{{ entity.broker.auth.username }}',
+            password='{{ entity.broker.auth.password }}',
+        )
+		{% elif entity.broker.__class__.__name__ == 'KafkaBroker' %}
+        from commlib.transports.kafka import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='{{ entity.broker.host }}',
+            port={{ entity.broker.port }},
+            username='{{ entity.broker.auth.username }}',
+            password='{{ entity.broker.auth.password }}',
+        )
+		{% endif %}
         super().__init__(
             node_name='entities.{{ entity.name.lower() }}',
             connection_params=conn_params,
@@ -332,11 +497,10 @@ class {{ entity.camel_name }}Node(Node):
             on_message=self._on_message
         )
 
-    def start(self):
+    def start(self, executor=None):
         self.run()
-        rate = Rate(self.tick_hz)
-        while True:
-            rate.sleep()
+        print(f'[*] Initiated Entity {self.name}')
+        return self
 
     def _on_message(self, msg):
         print(f'[*] State change command received: {msg}')
@@ -345,6 +509,20 @@ class {{ entity.camel_name }}Node(Node):
 
 
 if __name__ == '__main__':
-    {# node = {{ entity.camel_name }}Node() #}
-    {# node.start() #}
-    pass
+    sensors = []
+    actuators = []
+    workers = []
+    max_workers = 100
+	{% for entity in actuators %}
+    actuators.append({{ entity.camel_name }}Node())
+	{% endfor %}
+	{% for entity in sensors %}
+    sensors.append({{ entity.camel_name }}Node())
+	{% endfor %}
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for node in sensors:
+            work = node.start(executor)
+            workers.append(work)
+        for node in actuators:
+            node.start()

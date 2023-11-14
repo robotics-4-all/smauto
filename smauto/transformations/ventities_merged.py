@@ -24,11 +24,12 @@ def build_system_clock(entity):
     return clock_tpl.render(context)
 
 
-def build_source_code(sensors, actuators, hubrids):
+def build_source_code(sensors, actuators, hubrids, system_clock):
     context = {
         'sensors': sensors,
         'actuators': actuators,
-        'hybrid': hubrids
+        'hybrid': hubrids,
+        'system_clock': system_clock
     }
     modelf = vent_tpl.render(context)
     return modelf
@@ -48,15 +49,14 @@ def select_clock_broker(model):
 
 def model_to_vent(model_path: str):
     model = build_model(model_path)
-    vnodes = []
     broker = select_clock_broker(model)
+    system_clock = None
     for m in model._tx_model_repository.all_models:
         if m.metadata:
             if m.metadata.name == 'SystemClock':
                 m.entities[0].broker = broker
                 ent = m.entities[0]
-                ecode = build_system_clock(ent)
-                vnodes.append((ent, ecode))
+                system_clock = ent
     sensors = []
     actuators = []
     hybrids = []
@@ -67,7 +67,5 @@ def model_to_vent(model_path: str):
             actuators.append(e)
         elif e.etype == 'hybrid':
             hybrids.append(e)
-    ecode = build_source_code(sensors, actuators, hybrids)
-    print(ecode)
-        # vnodes.append((e, ecode))
-    return vnodes
+    ecode = build_source_code(sensors, actuators, hybrids, system_clock)
+    return ecode

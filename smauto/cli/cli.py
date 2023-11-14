@@ -66,10 +66,15 @@ def generate_py(ctx, model_path):
 @click.argument('model_path')
 @click.option('--merged', '-m', is_flag=True,
               help="Merge virtual entities into a single output file")
-def generate(ctx, model_path: str, merged: bool):
+def generate_vent(ctx, model_path: str, merged: bool):
     if merged:
         vent_code = model_to_vent(model_path)
-        print(vent_code)
+        model = build_model(model_path)
+        filepath = f'{model.metadata.name.lower()}_entities.py'
+        with open(filepath, 'w') as fp:
+            fp.write(vent_code)
+            make_executable(filepath)
+            print(f'[CLI] Compiled virtual Entities: [bold]{filepath}')
     else:
         vnodes = model_to_vnodes(model_path)
         for vn in vnodes:
