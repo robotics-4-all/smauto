@@ -223,6 +223,7 @@ class SystemClock(Node):
 
     def start(self):
         self.run()
+        print(f'[*] Initiated System Clock @ {self.topic}')
         while True:
             self.send_msg()
             self.rate.sleep()
@@ -322,7 +323,7 @@ class TemperatureSensorNode(Node):
             work = executor.submit(
                 generator.start
             ).add_done_callback(_worker_clb)
-            print(f'[*] Initiated Entity {self.name}')
+            print(f'[*] Initiated Entity {self.name} @ {self.topic}')
             return work
         else:
             generator.start()
@@ -358,7 +359,7 @@ class AirconditionNode(Node):
 
     def start(self, executor=None):
         self.run()
-        print(f'[*] Initiated Entity {self.name}')
+        print(f'[*] Initiated Entity {self.name} @ {self.topic}')
         return self
 
     def _on_message(self, msg):
@@ -373,8 +374,12 @@ if __name__ == '__main__':
     max_workers = 100
     actuators.append(AirconditionNode())
     sensors.append(TemperatureSensorNode())
+    sclock = SystemClock()
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        sclock_work = executor.submit(
+            sclock.start
+        ).add_done_callback(_worker_clb)
         for node in sensors:
             work = node.start(executor)
             workers.append(work)
