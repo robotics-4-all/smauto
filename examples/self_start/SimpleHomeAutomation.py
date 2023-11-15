@@ -40,12 +40,15 @@ class Attribute:
 
 class BedroomLampMsg(PubSubMessage):
         power: bool = False
+        colorR: int = 0
+        colorG: int = 0
+        colorB: int = 0
 
 
 class MotionDetectorMsg(PubSubMessage):
         detected: bool = False
         posX: int = 0
-        pos: list = []
+        posY: int = 0
         mode: str = ''
 
 
@@ -56,12 +59,12 @@ class Entity(Node):
         self.name = name
         self.camel_name = self.to_camel_case(name)
         self.topic = topic
-        self.state = {}
         self.conn_params = conn_params
         self.attributes = attributes
         self.msg_type = msg_type
         self.attributes_dict = {key: val for key, val in self.attributes.items()}
         self.attributes_buff = {key: [] for key, _ in self.attributes.items()}
+        self.dstate = self.msg_type()
 
         super().__init__(
             node_name=self.camel_name,
@@ -91,8 +94,8 @@ class Entity(Node):
         :return:
         """
         # Update state
-        self.state = new_state
-        print(new_state)
+        self.dstate = new_state
+        print(f'Entity {self.name} state change: {self.dstate} -> {new_state}')
         # Update attributes based on state
         self.update_attributes(new_state)
         self.update_buffers(new_state)
@@ -103,7 +106,7 @@ class Entity(Node):
             dictionaries/objects and normal Attributes.
         """
         # Update attributes
-        for attribute, value in state_msg.model_dump():
+        for attribute, value in state_msg.dict().items():
             if self.attributes_buff[attribute] is not None:
                 self.attributes_buff[attribute].append(value)
 
@@ -112,7 +115,7 @@ class Entity(Node):
         Recursive function used by update_state() mainly to updated
             dictionaries/objects and normal Attributes.
         """
-        self.attributes_dict = state_msg.model_dump()
+        self.attributes_dict = state_msg.dict()
 
     def start(self):
         # Create and start communications subscriber on Entity's topic
@@ -211,11 +214,11 @@ class Automation(Node):
 
     def print(self):
         after = f'\n'.join(
-            [f"      - {self.autos_map[dep]}" for dep in self.after])
+            [f"  - {self.autos_map[dep].name}" for dep in self.after])
         starts = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.starts])
+            [f"  - {self.autos_map[dep].name}" for dep in self.starts])
         stops = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.stops])
+            [f"  - {self.autos_map[dep].name}" for dep in self.stops])
         print(
             f"[*] Automation <{self.name}>\n"
             f"    Condition: {self.condition.expression}\n"
@@ -239,8 +242,9 @@ class Automation(Node):
             value = action.value
             entity = action.entity
             if entity in messages.keys():
-                messages[entity] = entity.state
-            messages[entity].update({action.attribute: value})
+                messages[entity].update({action.attribute: value})
+            else:
+                messages[entity] = entity.dstate
         for entity, message in messages.items():
             entity.change_state(message)
 
@@ -280,7 +284,7 @@ class Automation(Node):
                             f"Triggered![/bold yellow]"
                         )
                         print(f"[bold blue][*] Condition met: "
-                            f"{self.condition.cond_lambda}"
+                            f"{self.condition.expression}"
                         )
                         # If automation triggered run its actions
                         self.trigger_actions()
@@ -327,42 +331,21 @@ class Executor():
     def create_automations(self, entities):
         autos = []
         autos.append(Automation(
-            name='motion_detected_1',
+            name='motion_detected_self_start',
             condition=Condition(
-                expression="(entities['motion_detector'].attributes_dict['pos'] == [10, 0])"
+                expression="((entities['motion_detector'].attributes_dict['detected'] == True) and (entities['motion_detector'].attributes_dict['posX'] >= 5))"
             ),
             actions=[
                 Action('power', True, entities['bedroom_lamp'])
             ],
             freq=1,
             enabled=True,
-            continuous=True,
+            continuous=False,
             checkOnce=False,
             after=[
             ],
             starts=[
-            ],
-            stops=[
-            ],
-            conn_params=None,
-            entities=entities
-        ))
-        autos.append(Automation(
-            name='motion_detected_2',
-            condition=Condition(
-                expression="((entities['motion_detector'].attributes_dict['detected'] == True) and (entities['motion_detector'].attributes_dict['posX'] == 10))"
-            ),
-            actions=[
-                Action('power', True, entities['bedroom_lamp'])
-            ],
-            freq=1,
-            enabled=True,
-            continuous=True,
-            checkOnce=False,
-            after=[
-                'motion_detected_1',
-            ],
-            starts=[
+                'motion_detected_self_start',
             ],
             stops=[
             ],
@@ -403,6 +386,9 @@ class Executor():
         )
         attrs = {
             'power': bool,
+            'colorR': int,
+            'colorG': int,
+            'colorB': int,
         }
         entities.append(
             self.create_entity(
@@ -420,7 +406,7 @@ class Executor():
         attrs = {
             'detected': bool,
             'posX': int,
-            'pos': list,
+            'posY': int,
             'mode': str,
         }
         entities.append(

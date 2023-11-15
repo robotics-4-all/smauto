@@ -38,15 +38,12 @@ class Attribute:
         self.value = value
 
 
-class BedroomLampMsg(PubSubMessage):
+class AirconditionMsg(PubSubMessage):
         power: bool = False
 
 
-class MotionDetectorMsg(PubSubMessage):
-        detected: bool = False
-        posX: int = 0
-        pos: list = []
-        mode: str = ''
+class TemperatureSensorMsg(PubSubMessage):
+        temperature: float = 0.0
 
 
 
@@ -327,20 +324,21 @@ class Executor():
     def create_automations(self, entities):
         autos = []
         autos.append(Automation(
-            name='motion_detected_1',
+            name='mean_example',
             condition=Condition(
-                expression="(entities['motion_detector'].attributes_dict['pos'] == [10, 0])"
+                expression="(mean(entities['temperature_sensor'].get_buffer('temperature')) >= 30)"
             ),
             actions=[
-                Action('power', True, entities['bedroom_lamp'])
+                Action('power', True, entities['aircondition'])
             ],
             freq=1,
             enabled=True,
-            continuous=True,
+            continuous=False,
             checkOnce=False,
             after=[
             ],
             starts=[
+                'mean_example',
             ],
             stops=[
             ],
@@ -348,21 +346,21 @@ class Executor():
             entities=entities
         ))
         autos.append(Automation(
-            name='motion_detected_2',
+            name='min_example',
             condition=Condition(
-                expression="((entities['motion_detector'].attributes_dict['detected'] == True) and (entities['motion_detector'].attributes_dict['posX'] == 10))"
+                expression="(min(entities['temperature_sensor'].get_buffer('temperature')) >= 30)"
             ),
             actions=[
-                Action('power', True, entities['bedroom_lamp'])
+                Action('power', True, entities['aircondition'])
             ],
             freq=1,
             enabled=True,
-            continuous=True,
+            continuous=False,
             checkOnce=False,
             after=[
-                'motion_detected_1',
             ],
             starts=[
+                'min_example',
             ],
             stops=[
             ],
@@ -406,8 +404,8 @@ class Executor():
         }
         entities.append(
             self.create_entity(
-                False, 'bedroom_lamp', 'bedroom.lamp',
-                conn_params, attrs, msg_type=BedroomLampMsg
+                False, 'aircondition', 'home.aircondition',
+                conn_params, attrs, msg_type=AirconditionMsg
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
@@ -418,15 +416,12 @@ class Executor():
             password='',
         )
         attrs = {
-            'detected': bool,
-            'posX': int,
-            'pos': list,
-            'mode': str,
+            'temperature': float,
         }
         entities.append(
             self.create_entity(
-                True, 'motion_detector', 'bedroom.motion_detector',
-                conn_params, attrs, msg_type=MotionDetectorMsg
+                True, 'temperature_sensor', 'home.temperature',
+                conn_params, attrs, msg_type=TemperatureSensorMsg
             )
         )
         return entities
