@@ -29,6 +29,7 @@ def build_smauto_code(model):
     context = {
         'entities': model.entities,
         'automations': model.automations,
+        'system_clock': model.system_clock
     }
     return smauto_tpl.render(context)
 
@@ -66,6 +67,8 @@ def smauto_m2t(model_path: str, outdir: str = ''):
         if m.metadata:
             if m.metadata.name == 'SystemClock':
                 ent = m.entities[0]
+                model.system_clock = ent
+                model.entities.append(ent)
                 ecode = build_system_clock(ent)
                 filename = f'{ent.name}.py'
                 systeme.append((filename, ecode))

@@ -8,13 +8,6 @@ from collections import deque
 import statistics
 from concurrent.futures import ThreadPoolExecutor, wait
 
-{# {% if entity.broker.__class__.__name__ == 'MQTTBroker' %} #}
-{# from commlib.transports.mqtt import ConnectionParameters #}
-{# {% elif entity.broker.__class__.__name__ == 'AMQPBroker' %} #}
-{# from commlib.transports.amqp import ConnectionParameters #}
-{# {% elif entity.broker.__class__.__name__ == 'RedisBroker' %} #}
-{# from commlib.transports.redis import ConnectionParameters #}
-{# {% endif %} #}
 from rich import print, console, pretty
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
@@ -45,20 +38,17 @@ class Attribute:
         self.value = value
 
 
-{% for entity in entities %}
-class {{ entity.camel_name }}Msg(PubSubMessage):
-    {% for a in entity.attributes %}
-    {% if a.type == "str" %}
-        {{ a.name }}: {{ a.type }} = '{{ a.value }}'
-    {% elif a.type == "time" %}
-        {{ a.name }}: Optional[Time] = Time()
-    {% else %}
-        {{ a.name }}: {{ a.type }} = {{ a.value }}
-    {% endif %}
-    {% endfor %}
+class BedroomLampMsg(PubSubMessage):
+        power: bool = False
+        colorR: int = 0
+        colorG: int = 0
+        colorB: int = 0
 
 
-{% endfor %}
+class SystemClockMsg(PubSubMessage):
+        time: Optional[Time] = Time()
+
+
 
 class Entity(Node):
     def __init__(self, name, topic, conn_params,
@@ -220,10 +210,6 @@ class Automation(Node):
         self.conn_params = conn_params
         self.entities = entities
         self.autos_map = {}
-        {# super().__init__( #}
-        {#     node_name=self.name, #}
-        {#     connection_params=self.conn_params #}
-        {# ) #}
 
     def set_autos(self, autos_map):
         self.autos_map = autos_map
@@ -352,40 +338,28 @@ class Executor():
 
     def create_automations(self, entities):
         autos = []
-        {% for auto in automations %}
         autos.append(Automation(
-            name='{{ auto.name }}',
+            name='motion_detected_self_start',
             condition=Condition(
-                expression="{{ auto.condition.cond_lambda.replace('.value', '') }}"
+                expression="(entities['system_clock'].attributes_dict['time'].to_int() >= 198144)"
             ),
             actions=[
-            {% for action in auto.actions %}
-                Action('{{ action.attribute.name }}', {{ action.value }}, entities['{{ action.attribute.parent.name }}'])
-            {% endfor %}
+                Action('power', True, entities['bedroom_lamp'])
             ],
-            freq={{ auto.freq }},
-            enabled={{ auto.enabled }},
-            continuous={{ auto.continuous }},
-            checkOnce={{ auto.checkOnce }},
+            freq=1,
+            enabled=True,
+            continuous=False,
+            checkOnce=False,
             after=[
-            {% for after in auto.after %}
-                '{{ after.name }}',
-            {% endfor %}
             ],
             starts=[
-            {% for starts in auto.starts %}
-                '{{ starts.name }}',
-            {% endfor %}
+                'motion_detected_self_start',
             ],
             stops=[
-            {% for stops in auto.stops %}
-                '{{ stops.name }}',
-            {% endfor %}
             ],
             conn_params=None,
             entities=entities
         ))
-        {% endfor %}
         return autos
 
     def create_entity(self, sense, name, topic, conn_params,
@@ -413,59 +387,43 @@ class Executor():
 
     def create_entities(self):
         entities = []
-    {% for e in entities %}
-        {% if e.broker.__class__.__name__ == 'MQTTBroker' %}
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='{{ e.broker.host }}',
-            port={{ e.broker.port }},
-            username='{{ e.broker.username }}',
-            password='{{ e.broker.password }}',
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
         )
-        {% elif e.broker.__class__.__name__ == 'AMQPBroker' %}
-        from commlib.transports.amqp import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='{{ e.broker.host }}',
-            port={{ e.broker.port }},
-            username='{{ e.broker.username }}',
-            password='{{ e.broker.password }}',
-        )
-        {% elif e.broker.__class__.__name__ == 'RedisBroker' %}
-        from commlib.transports.redis import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='{{ e.broker.host }}',
-            port={{ e.broker.port }},
-            username='{{ e.broker.username }}',
-            password='{{ e.broker.password }}',
-        )
-        {% endif %}
         attrs = {
-        {% for attr in e.attributes %}
-        {% if attr.type == "time" %}
-            '{{ attr.name }}': Time(),
-        {% else %}
-            '{{ attr.name }}': {{ attr.type }},
-        {% endif %}
-        {% endfor %}
+            'power': bool,
+            'colorR': int,
+            'colorG': int,
+            'colorB': int,
         }
-        {% if e.etype == 'sensor' %}
         entities.append(
             self.create_entity(
-                True, '{{ e.name }}', '{{ e.topic }}',
-                conn_params, attrs, msg_type={{ e.camel_name }}Msg,
-                attr_buff={{ e.attr_buffs }}
+                False, 'bedroom_lamp', 'bedroom.lamp',
+                conn_params, attrs, msg_type=BedroomLampMsg,
+                attr_buff=[]
             )
         )
-        {% else %}
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
+        )
+        attrs = {
+            'time': Time(),
+        }
         entities.append(
             self.create_entity(
-                False, '{{ e.name }}', '{{ e.topic }}',
-                conn_params, attrs, msg_type={{ e.camel_name }}Msg,
-                attr_buff={{ e.attr_buffs }}
+                True, 'system_clock', 'system.clock',
+                conn_params, attrs, msg_type=SystemClockMsg,
+                attr_buff=[]
             )
         )
-        {% endif %}
-    {% endfor %}
         return entities
 
     def start_entities(self):
