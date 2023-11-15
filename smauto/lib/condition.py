@@ -92,6 +92,7 @@ class Condition(object):
             if parent.__class__.__name__ in ('StdAttr', 'MeanAttr', 'VarAttr',
                                              'MinAttr', 'MaxAttr'):  # Have buffer
                 entity_ref.init_attr_buffer(attr_ref.name, parent.size)
+                entity_ref.attr_buffs.append((attr_ref.name, parent.size))
                 val = f"entities['{entity_ref.name}']." + \
                     f"get_buffer('{attr_ref.name}')"
             else:

@@ -62,7 +62,8 @@ class {{ entity.camel_name }}Msg(PubSubMessage):
 
 class Entity(Node):
     def __init__(self, name, topic, conn_params,
-                 attributes, msg_type, *args, **kwargs):
+                 attributes, msg_type, attr_buff=[],
+                 *args, **kwargs):
         self.name = name
         self.camel_name = self.to_camel_case(name)
         self.topic = topic
@@ -72,6 +73,10 @@ class Entity(Node):
         self.attributes_dict = {key: val for key, val in self.attributes.items()}
         self.attributes_buff = {key: [] for key, _ in self.attributes.items()}
         self.dstate = self.msg_type()
+        self._attr_buff = attr_buff
+
+        for attr in self._attr_buff:
+            self.init_attr_buffer(attr[0], attr[1])
 
         super().__init__(
             node_name=self.camel_name,
@@ -378,14 +383,15 @@ class Executor():
         return autos
 
     def create_entity(self, sense, name, topic, conn_params,
-                      attributes, msg_type):
+                      attributes, msg_type, attr_buff=[]):
         if sense:
             entity = EntitySense(
                 name=name,
                 topic=topic,
                 conn_params=conn_params,
                 attributes=attributes,
-                msg_type=msg_type
+                msg_type=msg_type,
+                attr_buff=attr_buff
             )
         else:
             entity = EntityAct(
@@ -393,7 +399,8 @@ class Executor():
                 topic=topic,
                 conn_params=conn_params,
                 attributes=attributes,
-                msg_type=msg_type
+                msg_type=msg_type,
+                attr_buff=attr_buff
             )
         return entity
 
@@ -435,14 +442,16 @@ class Executor():
         entities.append(
             self.create_entity(
                 True, '{{ e.name }}', '{{ e.topic }}',
-                conn_params, attrs, msg_type={{ e.camel_name }}Msg
+                conn_params, attrs, msg_type={{ e.camel_name }}Msg,
+                attr_buff={{ e.attr_buffs }}
             )
         )
         {% else %}
         entities.append(
             self.create_entity(
                 False, '{{ e.name }}', '{{ e.topic }}',
-                conn_params, attrs, msg_type={{ e.camel_name }}Msg
+                conn_params, attrs, msg_type={{ e.camel_name }}Msg,
+                attr_buff={{ e.attr_buffs }}
             )
         )
         {% endif %}

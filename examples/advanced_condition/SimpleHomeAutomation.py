@@ -49,16 +49,21 @@ class TemperatureSensorMsg(PubSubMessage):
 
 class Entity(Node):
     def __init__(self, name, topic, conn_params,
-                 attributes, msg_type, *args, **kwargs):
+                 attributes, msg_type, attr_buff=[],
+                 *args, **kwargs):
         self.name = name
         self.camel_name = self.to_camel_case(name)
         self.topic = topic
-        self.state = {}
         self.conn_params = conn_params
         self.attributes = attributes
         self.msg_type = msg_type
         self.attributes_dict = {key: val for key, val in self.attributes.items()}
         self.attributes_buff = {key: [] for key, _ in self.attributes.items()}
+        self.dstate = self.msg_type()
+        self._attr_buff = attr_buff
+
+        for attr in self._attr_buff:
+            self.init_attr_buffer(attr[0], attr[1])
 
         super().__init__(
             node_name=self.camel_name,
@@ -88,8 +93,8 @@ class Entity(Node):
         :return:
         """
         # Update state
-        self.state = new_state
-        print(new_state)
+        self.dstate = new_state
+        print(f'Entity {self.name} state change: {self.dstate} -> {new_state}')
         # Update attributes based on state
         self.update_attributes(new_state)
         self.update_buffers(new_state)
@@ -100,7 +105,7 @@ class Entity(Node):
             dictionaries/objects and normal Attributes.
         """
         # Update attributes
-        for attribute, value in state_msg.model_dump():
+        for attribute, value in state_msg.dict().items():
             if self.attributes_buff[attribute] is not None:
                 self.attributes_buff[attribute].append(value)
 
@@ -109,7 +114,7 @@ class Entity(Node):
         Recursive function used by update_state() mainly to updated
             dictionaries/objects and normal Attributes.
         """
-        self.attributes_dict = state_msg.model_dump()
+        self.attributes_dict = state_msg.dict()
 
     def start(self):
         # Create and start communications subscriber on Entity's topic
@@ -208,11 +213,11 @@ class Automation(Node):
 
     def print(self):
         after = f'\n'.join(
-            [f"      - {self.autos_map[dep]}" for dep in self.after])
+            [f"  - {self.autos_map[dep].name}" for dep in self.after])
         starts = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.starts])
+            [f"  - {self.autos_map[dep].name}" for dep in self.starts])
         stops = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.stops])
+            [f"  - {self.autos_map[dep].name}" for dep in self.stops])
         print(
             f"[*] Automation <{self.name}>\n"
             f"    Condition: {self.condition.expression}\n"
@@ -236,8 +241,9 @@ class Automation(Node):
             value = action.value
             entity = action.entity
             if entity in messages.keys():
-                messages[entity] = entity.state
-            messages[entity].update({action.attribute: value})
+                messages[entity].update({action.attribute: value})
+            else:
+                messages[entity] = entity.dstate
         for entity, message in messages.items():
             entity.change_state(message)
 
@@ -277,7 +283,7 @@ class Automation(Node):
                             f"Triggered![/bold yellow]"
                         )
                         print(f"[bold blue][*] Condition met: "
-                            f"{self.condition.cond_lambda}"
+                            f"{self.condition.expression}"
                         )
                         # If automation triggered run its actions
                         self.trigger_actions()
@@ -370,14 +376,15 @@ class Executor():
         return autos
 
     def create_entity(self, sense, name, topic, conn_params,
-                      attributes, msg_type):
+                      attributes, msg_type, attr_buff=[]):
         if sense:
             entity = EntitySense(
                 name=name,
                 topic=topic,
                 conn_params=conn_params,
                 attributes=attributes,
-                msg_type=msg_type
+                msg_type=msg_type,
+                attr_buff=attr_buff
             )
         else:
             entity = EntityAct(
@@ -385,7 +392,8 @@ class Executor():
                 topic=topic,
                 conn_params=conn_params,
                 attributes=attributes,
-                msg_type=msg_type
+                msg_type=msg_type,
+                attr_buff=attr_buff
             )
         return entity
 
@@ -405,7 +413,8 @@ class Executor():
         entities.append(
             self.create_entity(
                 False, 'aircondition', 'home.aircondition',
-                conn_params, attrs, msg_type=AirconditionMsg
+                conn_params, attrs, msg_type=AirconditionMsg,
+                attr_buff=[]
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
@@ -421,7 +430,8 @@ class Executor():
         entities.append(
             self.create_entity(
                 True, 'temperature_sensor', 'home.temperature',
-                conn_params, attrs, msg_type=TemperatureSensorMsg
+                conn_params, attrs, msg_type=TemperatureSensorMsg,
+                attr_buff=[('temperature', 4), ('temperature', 4)]
             )
         )
         return entities

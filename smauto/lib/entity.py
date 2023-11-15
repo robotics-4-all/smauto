@@ -67,6 +67,7 @@ class Entity:
         # Entity's Attributes
         self.attributes = attributes
         self.description = description
+        self.attr_buffs = []
         # Attributes Dictionary
         self.attributes_dict = {attribute.name: attribute for attribute in self.attributes}
         self.attributes_buff = {attribute.name: None for attribute in self.attributes}
