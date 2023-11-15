@@ -31,11 +31,12 @@ Entity motion_detector
     attributes:
         - detected: bool
         - posX: int
-        - pos: list
+        - posY: int
         - mode: str
 end
 
 // Automations ------->
+/*
 Automation motion_detected_1
     description: "This is an example automation"
     condition:
@@ -45,11 +46,21 @@ Automation motion_detected_1
     actions:
         - bedroom_lamp.power: true
 end
+*/
+
+Automation motion_detected_1
+    description: "This is an example automation"
+    condition:
+        (motion_detector.posX == 5) AND (motion_detector.posY == 0)
+    enabled: true
+    continuous: true
+    actions:
+        - bedroom_lamp.power: true
+end
 
 Automation motion_detected_2
     condition:
-        (motion_detector.detected == true) AND
-        (motion_detector.posX == 10)
+        motion_detector.detected is false
     enabled: true
     continuous: true
     actions:

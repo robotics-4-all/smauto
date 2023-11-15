@@ -11,9 +11,9 @@ ConditionGroup:
 ;
 
 PrimitiveCondition:
-    BoolCondition       |
     TimeCondition       |
     NumericCondition    |
+    BoolCondition       |
     StringCondition     |
     ListCondition       |
     DictCondition
@@ -157,13 +157,13 @@ SimpleTimeAttr:
 
 // SharedOperator: '==' | '!=' | 'is' | 'is not';
 
-StringOperator: '~' | '!~' | '==' | '!=' | 'is not' | 'is' | 'has' | 'in' | 'not in';
+StringOperator: '~' | '!~' | '==' | '!=' | 'has' | 'in' | 'not in';
 
-NumericOperator: '>=' | '>' | '<=' | '<' | '==' | '!=' | 'is not' | 'is';
+NumericOperator: '>=' | '>' | '<=' | '<' | '==' | '!=';
 
 LogicalOperator: 'AND' | 'OR' | 'NOT' | 'XOR' | 'NOR' | 'XNOR' | 'NAND';
 
-BooleanOperator: '==' | '!=' | 'is not' | 'is';
+BooleanOperator: 'is not' | 'is';
 
 ListOperator: '==' | '!=' | 'is' | 'is not' | 'in' | 'not in';
 
