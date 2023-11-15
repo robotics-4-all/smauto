@@ -97,7 +97,7 @@ class Entity(Node):
         """
         # Update state
         self.dstate = new_state
-        print(f'Entity {self.name} state change: {self.dstate} -> {new_state}')
+        print(f'[*] Entity {self.name} state change: {self.dstate} -> {new_state}')
         # Update attributes based on state
         self.update_attributes(new_state)
         self.update_buffers(new_state)

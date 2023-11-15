@@ -47,6 +47,7 @@ from smauto.lib.condition import (
     TimeCondition,
     StringCondition,
     DictCondition,
+    InRangeCondition,
     ListCondition
 )
 
@@ -56,7 +57,7 @@ CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 CUSTOM_CLASSES = [
     Automation, Entity, Condition, ConditionGroup, PrimitiveCondition,
     AdvancedCondition, NumericCondition, BoolCondition, StringCondition,
-    ListCondition, DictCondition, TimeCondition,
+    ListCondition, DictCondition, TimeCondition, InRangeCondition,
     Attribute, IntAttribute, FloatAttribute, TimeAttribute,
     StringAttribute, BoolAttribute, ListAttribute,
     DictAttribute, Broker, MQTTBroker, AMQPBroker,

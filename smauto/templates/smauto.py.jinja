@@ -107,7 +107,7 @@ class Entity(Node):
         """
         # Update state
         self.dstate = new_state
-        print(f'Entity {self.name} state change: {self.dstate} -> {new_state}')
+        print(f'[*] Entity {self.name} state change: {self.dstate} -> {new_state}')
         # Update attributes based on state
         self.update_attributes(new_state)
         self.update_buffers(new_state)
@@ -360,7 +360,11 @@ class Executor():
             ),
             actions=[
             {% for action in auto.actions %}
-                Action('{{ action.attribute.name }}', {{ action.value }}, entities['{{ action.attribute.parent.name }}'])
+                {% if action.attribute.type == "str" %}
+                Action('{{ action.attribute.name }}', '{{ action.value }}', entities['{{ action.attribute.parent.name }}']),
+                {% else %}
+                Action('{{ action.attribute.name }}', {{ action.value }}, entities['{{ action.attribute.parent.name }}']),
+                {% endif %}
             {% endfor %}
             ],
             freq={{ auto.freq }},
@@ -444,7 +448,7 @@ class Executor():
         {% if attr.type == "time" %}
             '{{ attr.name }}': Time(),
         {% else %}
-            '{{ attr.name }}': {{ attr.type }},
+            '{{ attr.name }}': {{ attr.type }}(),
         {% endif %}
         {% endfor %}
         }

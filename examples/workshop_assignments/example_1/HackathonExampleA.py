@@ -38,12 +38,32 @@ class Attribute:
         self.value = value
 
 
-class AirconditionMsg(PubSubMessage):
+class BedroomHumidifierMsg(PubSubMessage):
         power: bool = False
+        timer: int = 0
 
 
-class TemperatureSensorMsg(PubSubMessage):
+class BedroomHumiditySensorMsg(PubSubMessage):
+        humidity: float = 0.0
+
+
+class BedroomTemperatureSensorMsg(PubSubMessage):
         temperature: float = 0.0
+
+
+class KitchenGasSensorMsg(PubSubMessage):
+        gas: float = 0.0
+
+
+class BedroomAirconditionMsg(PubSubMessage):
+        power: bool = False
+        temperature: float = 0.0
+        swing: bool = False
+        mode: str = ''
+
+
+class AlarmMsg(PubSubMessage):
+        state: int = 0
 
 
 class SystemClockMsg(PubSubMessage):
@@ -340,12 +360,13 @@ class Executor():
     def create_automations(self, entities):
         autos = []
         autos.append(Automation(
-            name='mean_example',
+            name='start_humidifier',
             condition=Condition(
-                expression="(mean(entities['temperature_sensor'].get_buffer('temperature')) >= 30)"
+                expression="(entities['bedroom_humidity_sensor'].attributes_dict['humidity'] > 0.6)"
             ),
             actions=[
-                Action('power', True, entities['aircondition']),
+                Action('power', True, entities['bedroom_humidifier']),
+                Action('timer', -1, entities['bedroom_humidifier']),
             ],
             freq=1,
             enabled=True,
@@ -354,7 +375,7 @@ class Executor():
             after=[
             ],
             starts=[
-                'mean_example',
+                'stop_humidifier',
             ],
             stops=[
             ],
@@ -362,12 +383,36 @@ class Executor():
             entities=entities
         ))
         autos.append(Automation(
-            name='min_example',
+            name='stop_humidifier',
             condition=Condition(
-                expression="(min(entities['temperature_sensor'].get_buffer('temperature')) >= 30)"
+                expression="(entities['bedroom_humidity_sensor'].attributes_dict['humidity'] < 0.3)"
             ),
             actions=[
-                Action('power', True, entities['aircondition']),
+                Action('power', False, entities['bedroom_humidifier']),
+            ],
+            freq=1,
+            enabled=False,
+            continuous=False,
+            checkOnce=False,
+            after=[
+            ],
+            starts=[
+                'start_humidifier',
+            ],
+            stops=[
+            ],
+            conn_params=None,
+            entities=entities
+        ))
+        autos.append(Automation(
+            name='start_aircondition',
+            condition=Condition(
+                expression="((entities['bedroom_temperature_sensor'].attributes_dict['temperature'] > 28) and (entities['bedroom_humidity_sensor'].attributes_dict['humidity'] > 0.3 and entities['bedroom_humidity_sensor'].attributes_dict['humidity'] < 0.6))"
+            ),
+            actions=[
+                Action('temperature', 25.0, entities['bedroom_aircondition']),
+                Action('mode', 'cool', entities['bedroom_aircondition']),
+                Action('power', True, entities['bedroom_aircondition']),
             ],
             freq=1,
             enabled=True,
@@ -376,7 +421,27 @@ class Executor():
             after=[
             ],
             starts=[
-                'min_example',
+            ],
+            stops=[
+            ],
+            conn_params=None,
+            entities=entities
+        ))
+        autos.append(Automation(
+            name='set_alarm_on_gas',
+            condition=Condition(
+                expression="(std(entities['kitchen_gas_sensor'].get_buffer('gas')) > 0.1)"
+            ),
+            actions=[
+                Action('state', 1, entities['alarm']),
+            ],
+            freq=1,
+            enabled=True,
+            continuous=True,
+            checkOnce=False,
+            after=[
+            ],
+            starts=[
             ],
             stops=[
             ],
@@ -419,11 +484,29 @@ class Executor():
         )
         attrs = {
             'power': bool(),
+            'timer': int(),
         }
         entities.append(
             self.create_entity(
-                False, 'aircondition', 'home.aircondition',
-                conn_params, attrs, msg_type=AirconditionMsg,
+                False, 'bedroom_humidifier', 'bedroom.humidifier',
+                conn_params, attrs, msg_type=BedroomHumidifierMsg,
+                attr_buff=[]
+            )
+        )
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
+        )
+        attrs = {
+            'humidity': float(),
+        }
+        entities.append(
+            self.create_entity(
+                True, 'bedroom_humidity_sensor', 'bedroom.humidity',
+                conn_params, attrs, msg_type=BedroomHumiditySensorMsg,
                 attr_buff=[]
             )
         )
@@ -439,9 +522,63 @@ class Executor():
         }
         entities.append(
             self.create_entity(
-                True, 'temperature_sensor', 'home.temperature',
-                conn_params, attrs, msg_type=TemperatureSensorMsg,
-                attr_buff=[('temperature', 4), ('temperature', 4)]
+                True, 'bedroom_temperature_sensor', 'bedroom.temperature',
+                conn_params, attrs, msg_type=BedroomTemperatureSensorMsg,
+                attr_buff=[]
+            )
+        )
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
+        )
+        attrs = {
+            'gas': float(),
+        }
+        entities.append(
+            self.create_entity(
+                True, 'kitchen_gas_sensor', 'kitchen.gas',
+                conn_params, attrs, msg_type=KitchenGasSensorMsg,
+                attr_buff=[('gas', 10)]
+            )
+        )
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
+        )
+        attrs = {
+            'power': bool(),
+            'temperature': float(),
+            'swing': bool(),
+            'mode': str(),
+        }
+        entities.append(
+            self.create_entity(
+                False, 'bedroom_aircondition', 'bedroom.aircondition',
+                conn_params, attrs, msg_type=BedroomAirconditionMsg,
+                attr_buff=[]
+            )
+        )
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
+        )
+        attrs = {
+            'state': int(),
+        }
+        entities.append(
+            self.create_entity(
+                False, 'alarm', 'alarm',
+                conn_params, attrs, msg_type=AlarmMsg,
+                attr_buff=[]
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
