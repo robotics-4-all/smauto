@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+"""
+If you are going to execute this in google colab, uncomment the next line
+!pip install commlib-py>=0.11.0
+"""
+
 import time
 import random
 
@@ -422,6 +427,7 @@ class {{ entity.camel_name }}Node(Node):
         return generator
 
     def start(self, executor=None):
+        self.run()
         generator = self.init_gen_components()
         if executor:
             work = executor.submit(
