@@ -19,8 +19,6 @@ pretty.install()
 console = console.Console()
 
 
-
-
 class AirconditionMsg(PubSubMessage):
         power: bool = False
 

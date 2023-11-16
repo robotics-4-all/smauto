@@ -50,6 +50,7 @@ def select_clock_broker(model):
 def model_to_vent(model_path: str):
     model = build_model(model_path)
     broker = select_clock_broker(model)
+    print(broker.name)
     system_clock = None
     for m in model._tx_model_repository.all_models:
         if m.metadata:
