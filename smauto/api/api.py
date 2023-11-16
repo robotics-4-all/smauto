@@ -52,7 +52,7 @@ if not os.path.exists(TMP_DIR):
 
 class SmAutoModel(BaseModel):
     name: str
-    text: str
+    model: str
 
 
 class GenMergedInputModel(BaseModel):
@@ -71,7 +71,7 @@ class GenVentInputModel(BaseModel):
 @api.post("/validate")
 async def validate(model: SmAutoModel,
                    api_key: str = Security(get_api_key)):
-    text = model.text
+    text = model.model
     name = model.name
     if len(text) == 0:
         return 404
@@ -82,8 +82,7 @@ async def validate(model: SmAutoModel,
     u_id = uuid.uuid4().hex[0:8]
     fpath = os.path.join(
         TMP_DIR,
-        'model_for_validation-{}.auto'.format(u_id)
-    )
+        f'model_for_validation-{u_id}.auto'
     with open(fpath, 'w') as f:
         f.write(text)
     try:
