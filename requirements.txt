@@ -7,6 +7,3 @@ numpy==1.25.1
 fastapi>=0.100.0
 python-multipart
 uvicorn
-requests
-commlib-py>=0.10.7
-redis

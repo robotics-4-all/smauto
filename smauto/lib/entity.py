@@ -1,15 +1,7 @@
 from collections import deque
-from commlib.endpoints import endpoint_factory, EndpointType, TransportType
 
 from smauto.lib.broker import MQTTBroker, AMQPBroker, RedisBroker
 from smauto.lib.types import Time
-
-# Broker classes and their corresponding TransportType
-broker_tt = {
-    MQTTBroker: TransportType.MQTT,
-    AMQPBroker: TransportType.AMQP,
-    RedisBroker: TransportType.REDIS
-}
 
 
 # A class representing an entity communicating via an MQTT broker on a specific topic
@@ -94,21 +86,6 @@ class Entity:
     def to_camel_case(self, snake_str):
         return "".join(x.capitalize() for x in snake_str.lower().split("_"))
 
-    def start(self):
-        # Create and start communications subscriber on Entity's topic
-        self.subscriber = endpoint_factory(
-            EndpointType.Subscriber, broker_tt[type(self.broker)])(
-            topic=self.topic,
-            conn_params=self.broker.conn_params,
-            on_message=self.update_state
-        )
-        self.subscriber.run()
-
-        # Create communications publisher on Entity's topic
-        self.publisher = endpoint_factory(EndpointType.Publisher, broker_tt[type(self.broker)])(
-            topic=self.topic,
-            conn_params=self.broker.conn_params,
-        )
 
     # Callback function for updating Entity state and triggering automations evaluation
     def update_state(self, new_state):

@@ -1,6 +1,3 @@
-from commlib.transports.amqp import ConnectionParameters as AMQP_ConnectionParameters
-from commlib.transports.redis import ConnectionParameters as Redis_ConnectionParameters
-
 # An index of all current MQTT Brokers {'broker_name': broker_object}. Gets populated by Broker's __init()__.
 broker_index = {}
 
@@ -35,20 +32,6 @@ class Broker:
 class MQTTBroker(Broker):
     def __init__(self, parent, name, host, port, auth, ssl=False):
         super(MQTTBroker, self).__init__(parent, name, host, port, auth, ssl)
-        # lazy import
-        from commlib.transports.mqtt import ConnectionParameters
-        if self.auth is None:
-            username = ''
-            password = ''
-        else:
-            username = self.auth.username
-            password = self.auth.password
-        self.conn_params = ConnectionParameters(
-            host=self.host,
-            port=self.port,
-            username=username,
-            password=password,
-        )
 
 
 class AMQPBroker(Broker):
@@ -61,37 +44,8 @@ class AMQPBroker(Broker):
         self.topicExchange = topicExchange
         self.rpcExchange = rpcExchange
 
-        from commlib.transports.amqp import ConnectionParameters
-        # Create commlib-py Credentials and ConnectionParameters objects for AMQP
-        if self.auth is None:
-            username = ''
-            password = ''
-        else:
-            username = self.auth.username
-            password = self.auth.password
-        self.conn_params = ConnectionParameters(
-            host=self.host,
-            port=self.port,
-            username=username,
-            password=password,
-        )
 
 class RedisBroker(Broker):
     def __init__(self, parent, name, host, port, auth, db=0, ssl=False):
         super(RedisBroker, self).__init__(parent, name, host, port, auth, ssl)
         self.db = db
-
-        from commlib.transports.redis import ConnectionParameters
-        # Create commlib-py Credentials and ConnectionParameters objects for AMQP
-        if self.auth is None:
-            username = ''
-            password = ''
-        else:
-            username = self.auth.username
-            password = self.auth.password
-        self.conn_params = ConnectionParameters(
-            host=self.host,
-            port=self.port,
-            username=username,
-            password=password,
-        )
