@@ -83,6 +83,7 @@ async def validate(model: SmAutoModel,
     fpath = os.path.join(
         TMP_DIR,
         f'model_for_validation-{u_id}.auto'
+    )
     with open(fpath, 'w') as f:
         f.write(text)
     try:
