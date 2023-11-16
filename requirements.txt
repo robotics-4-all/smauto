@@ -3,7 +3,6 @@ textX
 rich==13.4.2
 aiofiles
 jinja2
-numpy==1.25.1
 fastapi>=0.100.0
 python-multipart
 uvicorn
