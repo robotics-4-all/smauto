@@ -6,6 +6,13 @@ Metadata
     email: "klpanagi@gmail.com"
 end
 
+RTMonitor
+    broker: issel_cloud_platform
+    namespace: "smauto.hackathod_a"
+    eventTopic: "event"
+    logsTopic: "logs"
+end
+
 Broker<MQTT> issel_cloud_platform
     host: "localhost"
     port: 1883

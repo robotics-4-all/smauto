@@ -27,10 +27,13 @@ Metadata:
     )#
 ;
 
-RTMonitor
+RTMonitor:
     'RTMonitor'
     (
         ('broker:' broker=[MessageBroker])
+		('namespace:' ns=STRING)?
+		('eventTopic:' eTopic=STRING)?
+		('logsTopic:' lTopic=STRING)?
     'end'
     )#
 ;

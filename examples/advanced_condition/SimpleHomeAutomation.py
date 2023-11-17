@@ -189,9 +189,34 @@ class Condition(object):
             return False
 
 
-class Automation(Node):
+class RTMonitor:
+    def __init__(self, comm_node, etopic, ltopic):
+        self.node = comm_node
+        epub = self.node.create_publisher(
+            topic=etopic,
+            msg_type=StateChangeMsg
+        )
+        lpub = self.node.create_publisher(
+            topic=ltopic,
+            msg_type=LogMsg
+        )
+        self._epub = epub
+        self._lpub = lpub
+        print(f'[RTMonitor]: events -> {etopic}, logs -> {ltopic}')
+
+    def send_event(self, event):
+        print(f'[RTMonitor] Sending StateChange Event: {event}')
+        self._epub.publish(event)
+
+    def send_log(self, log_msg):
+        print(f'[RTMonitor] Sending Log: {log_msg}')
+        self._lpub.publish(log_msg)
+
+
+class Automation():
     def __init__(self, name, condition, actions, freq, enabled, continuous,
-                 checkOnce, after, starts, stops, conn_params, entities):
+                 checkOnce, after, starts, stops, entities,
+                 rtm: RTMonitor = None):
         enabled = True if enabled is None else enabled
         continuous = True if continuous is None else continuous
         checkOnce = False if checkOnce is None else checkOnce
@@ -208,9 +233,9 @@ class Automation(Node):
         self.stops = stops
         self.time_between_activations = 5
         self.state = AutomationState.IDLE
-        self.conn_params = conn_params
         self.entities = entities
         self.autos_map = {}
+        self.rtm = rtm
 
     def set_autos(self, autos_map):
         self.autos_map = autos_map
@@ -228,8 +253,8 @@ class Automation(Node):
             [f"  - {self.autos_map[dep].name}" for dep in self.starts])
         stops = f'\n'.join(
             [f"  - {self.autos_map[dep].name}" for dep in self.stops])
-        print(
-            f"[*] Automation <{self.name}>\n"
+        self.log(
+            f"Automation <{self.name}>\n"
             f"    Condition: {self.condition.expression}\n"
             f"    Frequency: {self.freq} Hz\n"
             f"    Continuoues: {self.continuous}\n"
@@ -259,19 +284,29 @@ class Automation(Node):
 
     def enable(self):
         self.enabled = True
-        print(f"[bold yellow][*] Enabled Automation: {self.name}[/bold yellow]")
+        self.log(f"Enabled Automation: {self.name}")
 
     def disable(self):
         self.enabled = False
-        print(f"[bold yellow][*] Disabled Automation: {self.name}[/bold yellow]")
+        self.log(f"Disabled Automation: {self.name}")
+
+    def state_change(self, new_state: AutomationState, msg: str = ""):
+        self.state = new_state
+        msg = StateChangeMsg(state=new_state, msg=msg, automation=self.name)
+        self.rtm.send_event(msg)
+
+    def log(self, msg: str, level: str = 'INFO'):
+        log_msg = LogMsg(msg=msg, level=level)
+        self.rtm.send_log(log_msg)
+        print(f'[Automation: {self.name}]: {msg}')
 
     def start(self):
-        self.state = AutomationState.IDLE
+        self.state_change(AutomationState.IDLE)
         self.print()
-        print(f"[bold yellow][*] Executing Automation: {self.name}[/bold yellow]")
+        self.log(f"Starting Automation: {self.name}")
         while True:
             if len(self.after) == 0:
-                self.state = AutomationState.RUNNING
+                self.state_change(AutomationState.RUNNING)
             # Wait for dependend automations to finish
             while self.state == AutomationState.IDLE:
                 wait_for = [
@@ -279,38 +314,33 @@ class Automation(Node):
                     if self.autos_map[dep].state == AutomationState.RUNNING
                 ]
                 if len(wait_for) == 0:
-                    self.state = AutomationState.RUNNING
-                print(
-                    f'[bold magenta]\[{self.name}] Waiting for dependend '
-                    f'automations to finish:[/bold magenta] {wait_for}'
+                    self.state_change(AutomationState.RUNNING)
+                self.log(
+                    f'Waiting for dependend automations to finish: {wait_for}'
                 )
                 time.sleep(1)
             while self.state == AutomationState.RUNNING:
                 try:
                     triggered = self.evaluate_condition()
                     if triggered:
-                        print(f"[bold yellow][*] Automation <{self.name}> "
-                            f"Triggered![/bold yellow]"
-                        )
-                        print(f"[bold blue][*] Condition met: "
-                            f"{self.condition.expression}"
-                        )
+                        self.log(f"Automation <{self.name}> Triggered!")
+                        self.log(f"Condition met: {self.condition.expression}")
                         # If automation triggered run its actions
                         self.trigger_actions()
-                        self.state = AutomationState.EXITED_SUCCESS
+                        self.state_change(AutomationState.EXITED_SUCCESS)
                         for auto in self.starts:
                             self.autos_map[auto].enable()
                         for auto in self.stops:
                             self.autos_map[auto].disable()
                     if self.checkOnce:
                         self.disable()
-                        self.state = AutomationState.EXITED_SUCCESS
+                        self.state_change(AutomationState.EXITED_SUCCESS)
                     time.sleep(1 / self.freq)
                 except Exception as e:
-                    print(f'[ERROR] {e}')
+                    self.log(f'[ERROR] {str(e)}')
                     return
             # time.sleep(self.time_between_activations)
-            self.state = AutomationState.IDLE
+            self.state_change(AutomationState.IDLE)
 
 
 class Action:
@@ -320,14 +350,50 @@ class Action:
         self.entity = entity
 
 
-class Executor():
-    def __init__(self):
+class StateChangeMsg(PubSubMessage):
+    state: int
+    automation: str
+    msg: str = ""
+
+
+class LogMsg(PubSubMessage):
+    msg: str
+    level: str = "INFO"
+
+
+class Executor(Node):
+    def __init__(self, *args, **kwargs):
+        self.name = 'SimpleHomeAutomation'
+        self.namespace = 'smauto.simple_home_auto'
+        self.event_topic = 'event'
+        self.logs_topic = 'logs'
+        self._etopic = f'{self.namespace}.{self.event_topic}'
+        self._ltopic = f'{self.namespace}.{self.logs_topic}'
+        self._init_params()
+        super().__init__(
+            node_name=self.name,
+            debug=True,
+            connection_params=self.conn_params
+        )
+        self.rtm = RTMonitor(self, self._etopic, self._ltopic)
+        self.run()
+
         self.entities = self.create_entities()
         self.entities_map = self.build_entities_map(self.entities)
         self.autos = self.create_automations(self.entities_map)
         self.autos_map = self.build_autos_map(self.autos)
         for auto in self.autos:
             auto.set_autos(self.autos_map)
+
+    def _init_params(self):
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='locsys.issel.ee.auth.gr',
+            port=1883,
+            username='r4a',
+            password='r4a123$',
+        )
+        self.conn_params = conn_params
 
     def build_autos_map(self, autos):
         a_map = {auto.name: auto for auto in autos}
@@ -358,8 +424,8 @@ class Executor():
             ],
             stops=[
             ],
-            conn_params=None,
-            entities=entities
+            entities=entities,
+            rtm=self.rtm
         ))
         autos.append(Automation(
             name='min_example',
@@ -380,8 +446,8 @@ class Executor():
             ],
             stops=[
             ],
-            conn_params=None,
-            entities=entities
+            entities=entities,
+            rtm=self.rtm
         ))
         return autos
 
@@ -412,10 +478,10 @@ class Executor():
         entities = []
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='localhost',
+            host='locsys.issel.ee.auth.gr',
             port=1883,
-            username='',
-            password='',
+            username='r4a',
+            password='r4a123$',
         )
         attrs = {
             'power': bool(),
@@ -429,10 +495,10 @@ class Executor():
         )
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='localhost',
+            host='locsys.issel.ee.auth.gr',
             port=1883,
-            username='',
-            password='',
+            username='r4a',
+            password='r4a123$',
         )
         attrs = {
             'temperature': float(),

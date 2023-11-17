@@ -18,18 +18,21 @@ smauto_tpl = jinja_env.get_template('smauto.py.jinja')
 clock_tpl = jinja_env.get_template('clock.py.jinja')
 
 
-def build_system_clock(entity):
-    context = {
-        'entity': entity
-    }
-    return clock_tpl.render(context)
+def rtm_set_defaults(model):
+    if hasattr(model, 'monitor'):
+        model.monitor.ns = model.monitor.ns or "smauto"
+        model.monitor.eTopic = model.monitor.eTopic or "events"
+        model.monitor.lTopic = model.monitor.lTopic or "logs"
 
 
 def build_smauto_code(model):
+    rtm_set_defaults(model)
     context = {
         'entities': model.entities,
         'automations': model.automations,
-        'system_clock': model.system_clock
+        'system_clock': model.system_clock,
+        'rt_monitor': model.monitor,
+        'metadata': model.metadata
     }
     return smauto_tpl.render(context)
 
@@ -62,16 +65,12 @@ def smauto_m2t(model_path: str, outdir: str = ''):
     model = build_model(model_path)
     if len(model.automations) < 1:
         raise ValueError('Model does not include any Automations')
-    systeme = []
     for m in model._tx_model_repository.all_models:
         if m.metadata:
             if m.metadata.name == 'SystemClock':
                 ent = m.entities[0]
                 model.system_clock = ent
                 model.entities.append(ent)
-                ecode = build_system_clock(ent)
-                filename = f'{ent.name}.py'
-                systeme.append((filename, ecode))
     for auto in model.automations:
         auto.condition.build()
     scode = build_smauto_code(model)

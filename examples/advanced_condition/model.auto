@@ -6,18 +6,25 @@ Metadata
     email: "klpanagi@gmail.com"
 end
 
-Broker<MQTT> home_broker
-    host: "localhost"
+RTMonitor
+    broker: issel_cloud
+    namespace: "smauto.simple_home_auto"
+    eventTopic: "event"
+    logsTopic: "logs"
+end
+
+Broker<MQTT> issel_cloud
+    host: "locsys.issel.ee.auth.gr"
     port: 1883
     auth:
-        username: ""
-        password: ""
+        username: "r4a"
+        password: "r4a123$"
 end
 
 Entity aircondition
     type: actuator
     topic: "home.aircondition"
-    broker: home_broker
+    broker: issel_cloud
     attributes:
         - power: bool
 end
@@ -25,7 +32,7 @@ end
 Entity temperature_sensor
     type: sensor
     topic: "home.temperature"
-    broker: home_broker
+    broker: issel_cloud
     attributes:
         - temperature: float -> linear(20, 1)
 end
