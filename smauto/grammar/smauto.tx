@@ -2,10 +2,12 @@ import automation
 import communication
 import entity
 import types
+import utils
 
 SmAutoModel:
     imports*=Import
     (metadata=Metadata)?
+    (monitor=RTMonitor)?
     (
     brokers*=MessageBroker
     entities*=Entity
@@ -25,14 +27,10 @@ Metadata:
     )#
 ;
 
-// FQN: ID('.'ID)*;
-FQN: ID+['.'];
-FQNI: ID+['.']('.*')?;
-// Import: 'import' importURI=FQNI ('as' name=ID)?;
-NIDREF: NID+['.']('.*')?;
-Import: 'import' name=STRING;
-
-// Comments
-Comment: CommentLine | CommentBlock ;
-CommentLine: /\/\/.*?$/;
-CommentBlock: /\/\*(.|\n)*?\*\//;
+RTMonitor
+    'RTMonitor'
+    (
+        ('broker:' broker=[MessageBroker])
+    'end'
+    )#
+;

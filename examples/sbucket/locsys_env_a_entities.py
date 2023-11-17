@@ -208,7 +208,7 @@ class SystemClock(Node):
             host='locsys.issel.ee.auth.gr',
             port=1883,
             username='r4a',
-            password='r4a132$',
+            password='r4a123$',
         )
         super().__init__(
             node_name='system_clock',
@@ -264,15 +264,15 @@ def _worker_clb(f):
     })
 
 
-class RjljSnAmbientlight1Msg(PubSubMessage):
+class SnAmbientlight1Msg(PubSubMessage):
         luminosity: float = 0.0
 
 
-class RjljSnAmbientlight1Node(Node):
+class SnAmbientlight1Node(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = 3.0
-        self.topic = 'sensors.RJLj_sn_ambientLight_1'
-        self.name = 'RJLj_sn_ambientLight_1'
+        self.topic = 'sensors.sn_ambientLight_1'
+        self.name = 'sn_ambientLight_1'
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
             host='locsys.issel.ee.auth.gr',
@@ -281,12 +281,12 @@ class RjljSnAmbientlight1Node(Node):
             password='r4a123$',
         )
         super().__init__(
-            node_name='entities.rjlj_sn_ambientlight_1',
+            node_name='entities.sn_ambientlight_1',
             connection_params=conn_params,
             *args, **kwargs
         )
         self.pub = self.create_publisher(
-            msg_type=RjljSnAmbientlight1Msg,
+            msg_type=SnAmbientlight1Msg,
             topic=self.topic
         )
 
@@ -328,143 +328,15 @@ class RjljSnAmbientlight1Node(Node):
             generator.start()
             return self
 
-class RjljSnDistance4Msg(PubSubMessage):
-        range: float = 0.0
-
-
-class RjljSnDistance4Node(Node):
-    def __init__(self, *args, **kwargs):
-        self.pub_freq = 3.0
-        self.topic = 'sensors.RJLj_sn_distance_4'
-        self.name = 'RJLj_sn_distance_4'
-        from commlib.transports.mqtt import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='locsys.issel.ee.auth.gr',
-            port=1883,
-            username='r4a',
-            password='r4a123$',
-        )
-        super().__init__(
-            node_name='entities.rjlj_sn_distance_4',
-            connection_params=conn_params,
-            *args, **kwargs
-        )
-        self.pub = self.create_publisher(
-            msg_type=RjljSnDistance4Msg,
-            topic=self.topic
-        )
-
-    def init_gen_components(self):
-        components = []
-        range_properties = ValueGeneratorProperties.Constant(
-            value=1
-        )
-        _gen_type = ValueGeneratorType.Constant
-        range_noise = Noise(
-            _type=NoiseType.Zero,
-            properties=NoiseZero()
-        )
-        range_component = ValueComponent(
-            _type=_gen_type,
-            name="range",
-            properties = range_properties,
-            noise=range_noise
-        )
-        components.append(range_component)
-        generator = ValueGenerator(
-            self.topic,
-            self.pub_freq,
-            components,
-            self
-        )
-        return generator
-
-    def start(self, executor=None):
-        self.run()
-        generator = self.init_gen_components()
-        if executor:
-            work = executor.submit(
-                generator.start
-            ).add_done_callback(_worker_clb)
-            print(f'[*] Initiated Entity {self.name} @ {self.topic}')
-            return work
-        else:
-            generator.start()
-            return self
-
-class RjljSnDistance6Msg(PubSubMessage):
-        range: float = 0.0
-
-
-class RjljSnDistance6Node(Node):
-    def __init__(self, *args, **kwargs):
-        self.pub_freq = 3.0
-        self.topic = 'sensors.RJLj_sn_distance_6'
-        self.name = 'RJLj_sn_distance_6'
-        from commlib.transports.mqtt import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='locsys.issel.ee.auth.gr',
-            port=1883,
-            username='r4a',
-            password='r4a123$',
-        )
-        super().__init__(
-            node_name='entities.rjlj_sn_distance_6',
-            connection_params=conn_params,
-            *args, **kwargs
-        )
-        self.pub = self.create_publisher(
-            msg_type=RjljSnDistance6Msg,
-            topic=self.topic
-        )
-
-    def init_gen_components(self):
-        components = []
-        range_properties = ValueGeneratorProperties.Constant(
-            value=1
-        )
-        _gen_type = ValueGeneratorType.Constant
-        range_noise = Noise(
-            _type=NoiseType.Zero,
-            properties=NoiseZero()
-        )
-        range_component = ValueComponent(
-            _type=_gen_type,
-            name="range",
-            properties = range_properties,
-            noise=range_noise
-        )
-        components.append(range_component)
-        generator = ValueGenerator(
-            self.topic,
-            self.pub_freq,
-            components,
-            self
-        )
-        return generator
-
-    def start(self, executor=None):
-        self.run()
-        generator = self.init_gen_components()
-        if executor:
-            work = executor.submit(
-                generator.start
-            ).add_done_callback(_worker_clb)
-            print(f'[*] Initiated Entity {self.name} @ {self.topic}')
-            return work
-        else:
-            generator.start()
-            return self
-
-class RjljSnHumidity7Msg(PubSubMessage):
+class SnHumidity4Msg(PubSubMessage):
         humidity: float = 0.0
 
 
-class RjljSnHumidity7Node(Node):
+class SnHumidity4Node(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = 3.0
-        self.topic = 'sensors.RJLj_sn_humidity_7'
-        self.name = 'RJLj_sn_humidity_7'
+        self.topic = 'sensors.sn_humidity_4'
+        self.name = 'sn_humidity_4'
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
             host='locsys.issel.ee.auth.gr',
@@ -473,19 +345,19 @@ class RjljSnHumidity7Node(Node):
             password='r4a123$',
         )
         super().__init__(
-            node_name='entities.rjlj_sn_humidity_7',
+            node_name='entities.sn_humidity_4',
             connection_params=conn_params,
             *args, **kwargs
         )
         self.pub = self.create_publisher(
-            msg_type=RjljSnHumidity7Msg,
+            msg_type=SnHumidity4Msg,
             topic=self.topic
         )
 
     def init_gen_components(self):
         components = []
         humidity_properties = ValueGeneratorProperties.Constant(
-            value=60
+            value=0.6
         )
         _gen_type = ValueGeneratorType.Constant
         humidity_noise = Noise(
@@ -520,17 +392,16 @@ class RjljSnHumidity7Node(Node):
             generator.start()
             return self
 
-
-class RjljEfHumidifier2Msg(PubSubMessage):
+class SnLinearalarm3Msg(PubSubMessage):
         state: bool = False
-        percentage: int = 0
+        range: float = 0.0
 
 
-class RjljEfHumidifier2Node(Node):
+class SnLinearalarm3Node(Node):
     def __init__(self, *args, **kwargs):
-        self.tick_hz = 1
-        self.topic = 'actuators.RJLj_ef_humidifier_2'
-        self.name = 'RJLj_ef_humidifier_2'
+        self.pub_freq = 3.0
+        self.topic = 'sensors.sn_linearAlarm_3'
+        self.name = 'sn_linearAlarm_3'
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
             host='locsys.issel.ee.auth.gr',
@@ -539,33 +410,81 @@ class RjljEfHumidifier2Node(Node):
             password='r4a123$',
         )
         super().__init__(
-            node_name='entities.rjlj_ef_humidifier_2',
+            node_name='entities.sn_linearalarm_3',
             connection_params=conn_params,
             *args, **kwargs
         )
-        self.sub = self.create_subscriber(
-            msg_type=RjljEfHumidifier2Msg,
-            topic=self.topic,
-            on_message=self._on_message
+        self.pub = self.create_publisher(
+            msg_type=SnLinearalarm3Msg,
+            topic=self.topic
         )
+
+    def init_gen_components(self):
+        components = []
+        state_properties = ValueGeneratorProperties.Constant(
+            0
+        )
+        _gen_type = ValueGeneratorType.Constant
+        state_noise = Noise(
+            _type=NoiseType.Zero,
+            properties=NoiseZero()
+        )
+        state_component = ValueComponent(
+            _type=_gen_type,
+            name="state",
+            properties = state_properties,
+            noise=state_noise
+        )
+        components.append(state_component)
+        range_properties = ValueGeneratorProperties.Saw(
+            min=0,
+            max=10,
+            step=0.1
+        )
+        _gen_type = ValueGeneratorType.Saw
+        range_noise = Noise(
+            _type=NoiseType.Zero,
+            properties=NoiseZero()
+        )
+        range_component = ValueComponent(
+            _type=_gen_type,
+            name="range",
+            properties = range_properties,
+            noise=range_noise
+        )
+        components.append(range_component)
+        generator = ValueGenerator(
+            self.topic,
+            self.pub_freq,
+            components,
+            self
+        )
+        return generator
 
     def start(self, executor=None):
         self.run()
-        print(f'[*] Initiated Entity {self.name} @ {self.topic}')
-        return self
+        generator = self.init_gen_components()
+        if executor:
+            work = executor.submit(
+                generator.start
+            ).add_done_callback(_worker_clb)
+            print(f'[*] Initiated Entity {self.name} @ {self.topic}')
+            return work
+        else:
+            generator.start()
+            return self
 
-    def _on_message(self, msg):
-        print(f'[*] State change command received: {msg}')
-class RjljEfLight3Msg(PubSubMessage):
+
+class EfLight2Msg(PubSubMessage):
         state: bool = False
         brightness: int = 0
 
 
-class RjljEfLight3Node(Node):
+class EfLight2Node(Node):
     def __init__(self, *args, **kwargs):
         self.tick_hz = 1
-        self.topic = 'actuators.RJLj_ef_light_3'
-        self.name = 'RJLj_ef_light_3'
+        self.topic = 'actuators.ef_light_2'
+        self.name = 'ef_light_2'
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
             host='locsys.issel.ee.auth.gr',
@@ -574,46 +493,12 @@ class RjljEfLight3Node(Node):
             password='r4a123$',
         )
         super().__init__(
-            node_name='entities.rjlj_ef_light_3',
+            node_name='entities.ef_light_2',
             connection_params=conn_params,
             *args, **kwargs
         )
         self.sub = self.create_subscriber(
-            msg_type=RjljEfLight3Msg,
-            topic=self.topic,
-            on_message=self._on_message
-        )
-
-    def start(self, executor=None):
-        self.run()
-        print(f'[*] Initiated Entity {self.name} @ {self.topic}')
-        return self
-
-    def _on_message(self, msg):
-        print(f'[*] State change command received: {msg}')
-class RjljEfRelay5Msg(PubSubMessage):
-        state: bool = False
-
-
-class RjljEfRelay5Node(Node):
-    def __init__(self, *args, **kwargs):
-        self.tick_hz = 1
-        self.topic = 'actuators.RJLj_ef_relay_5'
-        self.name = 'RJLj_ef_relay_5'
-        from commlib.transports.mqtt import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='locsys.issel.ee.auth.gr',
-            port=1883,
-            username='r4a',
-            password='r4a123$',
-        )
-        super().__init__(
-            node_name='entities.rjlj_ef_relay_5',
-            connection_params=conn_params,
-            *args, **kwargs
-        )
-        self.sub = self.create_subscriber(
-            msg_type=RjljEfRelay5Msg,
+            msg_type=EfLight2Msg,
             topic=self.topic,
             on_message=self._on_message
         )
@@ -633,13 +518,10 @@ if __name__ == '__main__':
     actuators = []
     workers = []
     max_workers = 100
-    actuators.append(RjljEfHumidifier2Node())
-    actuators.append(RjljEfLight3Node())
-    actuators.append(RjljEfRelay5Node())
-    sensors.append(RjljSnAmbientlight1Node())
-    sensors.append(RjljSnDistance4Node())
-    sensors.append(RjljSnDistance6Node())
-    sensors.append(RjljSnHumidity7Node())
+    actuators.append(EfLight2Node())
+    sensors.append(SnAmbientlight1Node())
+    sensors.append(SnHumidity4Node())
+    sensors.append(SnLinearalarm3Node())
     sclock = SystemClock()
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:

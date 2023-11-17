@@ -1,5 +1,6 @@
 import communication
 import types
+import utils
 
 Entity:
     'Entity' name=ID
@@ -118,6 +119,3 @@ UniformNoise:
 GaussianNoise:
     'gaussian' '(' mu=NUMBER ',' sigma=NUMBER ')'
 ;
-
-
-NID: /(.*?)\n/;

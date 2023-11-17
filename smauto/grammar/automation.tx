@@ -1,6 +1,7 @@
 import entity
 import condition
 import types
+import utils
 
 // === Overall Automation ===
 Automation:
@@ -53,6 +54,3 @@ ListAction:
 DictAction:
     ('-' attribute=[DictAttribute:FQN|+pm:entities.attributes] ':' value=Dict)
 ;
-
-// === Fully Qualified Names Rule ===
-FQN: ID('.'ID)*;

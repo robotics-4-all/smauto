@@ -1,5 +1,6 @@
 import entity
 import types
+import utils
 
 // === Conditions ===
 Condition: AdvancedCondition | PrimitiveCondition | ConditionGroup ;
