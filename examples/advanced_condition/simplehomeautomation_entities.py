@@ -205,10 +205,10 @@ class SystemClock(Node):
         self.topic = 'system.clock'
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='localhost',
+            host='locsys.issel.ee.auth.gr',
             port=1883,
-            username='',
-            password='',
+            username='r4a',
+            password='r4a123$',
         )
         super().__init__(
             node_name='system_clock',
@@ -275,10 +275,10 @@ class TemperatureSensorNode(Node):
         self.name = 'temperature_sensor'
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='localhost',
+            host='locsys.issel.ee.auth.gr',
             port=1883,
-            username='',
-            password='',
+            username='r4a',
+            password='r4a123$',
         )
         super().__init__(
             node_name='entities.temperature_sensor',
@@ -341,10 +341,10 @@ class AirconditionNode(Node):
         self.name = 'aircondition'
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='localhost',
+            host='locsys.issel.ee.auth.gr',
             port=1883,
-            username='',
-            password='',
+            username='r4a',
+            password='r4a123$',
         )
         super().__init__(
             node_name='entities.aircondition',

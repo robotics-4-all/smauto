@@ -109,7 +109,7 @@ class Entity(Node):
             dictionaries/objects and normal Attributes.
         """
         # Update attributes
-        for attribute, value in state_msg.dict().items():
+        for attribute, value in state_msg.model_dump().items():
             if self.attributes_buff[attribute] is not None:
                 self.attributes_buff[attribute].append(value)
 
@@ -121,10 +121,10 @@ class Entity(Node):
         # Fast hack for pydantic changes
         if hasattr(state_msg, 'time'):
             t = state_msg.time
-            self.attributes_dict = state_msg.dict()
+            self.attributes_dict = state_msg.model_dump()
             self.attributes_dict['time'] = t
         else:
-            self.attributes_dict = state_msg.dict()
+            self.attributes_dict = state_msg.model_dump()
 
     def start(self):
         # Create and start communications subscriber on Entity's topic
