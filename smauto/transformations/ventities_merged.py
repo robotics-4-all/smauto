@@ -17,14 +17,8 @@ vent_tpl = jinja_env.get_template('ventity_merged.py.jinja')
 clock_tpl = jinja_env.get_template('clock.py.jinja')
 
 
-def build_system_clock(entity):
-    context = {
-        'entity': entity
-    }
-    return clock_tpl.render(context)
-
-
 def build_source_code(sensors, actuators, hubrids, system_clock):
+    print(system_clock.broker.host)
     context = {
         'sensors': sensors,
         'actuators': actuators,
@@ -50,7 +44,6 @@ def select_clock_broker(model):
 def model_to_vent(model_path: str):
     model = build_model(model_path)
     broker = select_clock_broker(model)
-    print(broker.name)
     system_clock = None
     for m in model._tx_model_repository.all_models:
         if m.metadata:

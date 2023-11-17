@@ -140,7 +140,7 @@ def get_metamodel(debug=False):
         classes=class_provider,
         auto_init_attributes=False,
         # textx_tools_support=True,
-        global_repository=GLOBAL_REPO,
+        # global_repository=GLOBAL_REPO,
         # global_repository=True,
         debug=debug
     )
@@ -166,8 +166,8 @@ def get_buildin_models(metamodel):
     return buildin_models
 
 
+
 def build_model(model_path):
-    # Parse model
     mm = get_metamodel(debug=False)
     model = mm.model_from_file(model_path)
     # entities = get_children_of_type('Entity', model)
