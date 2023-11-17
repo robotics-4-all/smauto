@@ -262,7 +262,7 @@ class Automation():
             [f"  - {self.autos_map[dep].name}" for dep in self.starts])
         stops = f'\n'.join(
             [f"  - {self.autos_map[dep].name}" for dep in self.stops])
-        self.log(
+        print(
             f"Automation <{self.name}>\n"
             f"    Condition: {self.condition.expression}\n"
             f"    Frequency: {self.freq} Hz\n"
