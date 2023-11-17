@@ -1,0 +1,7 @@
+Broker<MQTT> fake_broker
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end

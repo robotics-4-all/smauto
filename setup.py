@@ -63,7 +63,7 @@ setup(
     description="",
     license="MIT license",
     long_description=readme,
-    package_data={'': ['*.tx', '*.jinja']},
+    package_data={'': ['*.tx', '*.jinja', '*.smauto']},
     keywords='smauto',
     name='smauto',
     packages=find_packages(include=['smauto', 'smauto.*']),

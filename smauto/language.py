@@ -83,23 +83,23 @@ ENTITY_BUILDINS = {
 }
 
 FakeBroker = """
-MQTT:
-    name: fake_broker
+Broker<MQTT> fake_broker
     host: "localhost"
     port: 1883
     auth:
         username: ""
         password: ""
+end
 """
 
 SystemClock = """
-Entity:
-    name: system_clock
+Entity system_clock
     type: sensor
     topic: "system.clock"
     broker: fake_broker
     attributes:
         - time: time
+end
 """
 
 GLOBAL_REPO = GlobalModelRepository()
@@ -139,11 +139,11 @@ def get_metamodel(debug=False):
         CURRENT_FPATH.joinpath('grammar/smauto.tx'),
         classes=class_provider,
         auto_init_attributes=False,
+        # textx_tools_support=True,
         global_repository=GLOBAL_REPO,
+        # global_repository=True,
         debug=debug
     )
-    # metamodel.register_obj_processors(obj_processors)
-    metamodel.register_model_processor(model_proc)
 
     metamodel.register_scope_providers(
         {
