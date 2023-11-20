@@ -1,6 +1,6 @@
 # SmAuto DSL
 
-![SmartHomeImage](assets/images/smauto_logo.png)
+![SmAutoLogo](assets/images/smauto_logo.png)
 
 ## Description
 Smart environments are becoming quite popular in the home setting consisting of a broad range of connected devices. While offering a novel set of possibilities, this also contributes to the complexity of the environment, posing new challenges to allowing the full potential of a sensorized home to be made available to users.
@@ -21,7 +21,7 @@ code generator explicitely.
 - **REST Api**. The DSL implements a REST Api, that can be utilized to remotely call
 the validator, the interpreter and the code generator on demand. ALso usefull for
 integrating the language in bigger projects and cloud-based platforms.
-- **Dynamically compile and execute models**. Model classes are constructed at runtime
+- **Dynamically compile and execute models (DEPRECATED)**. Model classes are constructed at runtime
 and are enhanced with platform-specific code that implements the logic. This process is
 executed by the language interpreter.
 - **Generate Virtual Entities**. A code generator is provided that transforms
@@ -29,9 +29,12 @@ Entity model definitions into executable code with enhanced value generation wit
 optional noise functions applied on. This can be very usefull to automatically
 generate the source code of virtual entities which simulate the behaviour of physical
 sensors.
+- **Compile Models**. Models are transformed (Model-to-Text) into executable Python source code implementing the Automations logic.
 - **Generate Visualization graphs of Automations**. A generator is provided 
 which takes a model as input and generates an image
 of the automation graph.
+
+![SmAutoArchitecture](assets/images/SmAutoArchitecture.png)
 
 ## Installation
 
@@ -68,27 +71,22 @@ By default the image exposes port 8080 for the REST API.
 
 ## SmAuto Overview
 
-The Metamodel of SmAuto DSL can be found [here](assets/images/smauto.png).
+The Root Metamodel of the DSL is evident below.
+
+![SmAUtoRootMM](assets/images/SMAutoRootMM.png)
 
 The main concepts of the language are:
 
-- Broker
-- Entity
-- Automation
-- Condition
-- Action
+- **Broker**
+- **Entity**
+- **Automation**
+- **Condition**
+- **Action**
 
 An SmAuto model is composed of `one-or-more` brokers, `*` entities and
 `*` automations.
 
-Each one of the main concepts define an internal metamodel. Below are the metamodel
-diagrams of each of the Broker, Entity and Automation concepts.
-
-![BrokerMetamodel](assets/images/broker.png)
-
-![EntityMetamodel](assets/images/entity.png)
-
-
+Each one of the main concepts define an internal metamodel.
 An SmAuto Model contains information about the various devices in
 the smart environment (e.g: lights, thermostats, smart fridges etc.),
 the way they communicate and the automation tasks.
@@ -172,8 +170,6 @@ end
 ```
 
 
-- **name**: The name for the Entity. Should start with a letter, can contain only
-letters, numbers and underscores.
 - **topic**: The Topic in the Broker used by the Entity to send and receive
 messages. Note that / should be substituted with .
 (e.g: bedroom/aircondition -> bedroom.aircondition).
@@ -182,6 +178,8 @@ Entity uses to communicate.
 - **attributes**: Attributes have a name and a type. As can be seen in the above
 example, HA-Auto supports int, float, string, bool, list and dictionary types.
 Note that nested dictionaries are also supported.
+- **description (Optional)**: A description of the Entity
+- **freq (Optional)**: Used for Entities of type "**sensor**" to set the msg publishing rate
 
 Notice that each Entity has it's own reference to a Broker, thus the metamodel
 allows for communicating with Entities which are connected to different message
@@ -189,13 +187,13 @@ brokers. This allows for definining automation for multi-broker architectures.
 
 Supported data types for Attributes:
 
-- int: Integer numerical values
-- float: Floating point numerical values
-- bool: Boolean (true/false) values
-- str: String values
-- time: Time values (e.g. `01:25`)
-- list: List / Array
-- dict: Dictionary
+- **int**: Integer numerical values
+- **float**: Floating point numerical values
+- **bool**: Boolean (true/false) values
+- **str**: String values
+- **time**: Time values (e.g. `01:25`)
+- **list**: List / Array
+- **dict**: Dictionary
 
 #### Attribute value generation for virtual Entities
 
@@ -234,10 +232,8 @@ it's own value and noise generators, using a simple grammar as evident below:
 - **Linear**: `linear(min, step)`. Linear function
 - **Saw**: `saw(min, max, step)`. Saw function.
 - **Gaussian**: `gaussian(value, maxValue, sigma)`. Gaussian function
-- **Replay**: `replay([values], times)`. Replay from a list of values. The `times` parameter can be used to force replay iterations to a specific value. If `times=-1` then values will
-be replayed infinitely.
-
-
+- **Replay**: `replay([values], times)`. Replay from a list of values. The `times` parameter can be used to force replay iterations to a specific value. If `times=-1` then values will be replayed infinitely.
+- **ReplayFile**: `replayFile("FILE_PATH")`. Replay data from a file.
 
 
 **Supported Noise Generators:**
@@ -247,6 +243,8 @@ be replayed infinitely.
 
 Value generation and Noise are optional in the language and are features used
 by the Virtual Entity generator to transform Entity models into executable code.
+
+![SmAutoValueGenA](assets/images/Smauto_ValueGen_1.png)
 
 ### Brokers
 
@@ -268,18 +266,21 @@ end
 - **type**: The first line can be `MQTT`, `AMQP` or `Redis` according to the Broker type
 - **host**: Host IP address or hostname for the Broker
 - **port**: Broker Port number
-- **vhost**: Vhost parameter. Only for AMQP brokers
-- **exchange**: (Optional) Exchange parameter. Only for AMQP brokers.
-- **auth**:
+- **auth**: Authentication credentials. Unified for all communication brokers.
     - **username**: Username used for authentication
     - **password**: Password used for authentication
-- **db**: (Optional) Database number parameter. Only for Redis brokers.
-
+- **vhost (Optional)**: Vhost parameter. Only for AMQP brokers
+- **vhost (Optional)**: Vhost parameter. Only for AMQP brokers
+- **topicExchange (Optional)**: (Optional) Exchange parameter. Only for AMQP brokers.
+- **rpcExchange (FUTURE SUPPORT)**: Exchange parameter. Only for AMQP brokers.
+- **db (Optional)**: Database number parameter. Only for Redis brokers.
 
 ### Automations
 
 Automations allow the execution of a set of actions when a condition is met.
 Actions are performed by sending messages to Entities.
+
+![SmAutoExample1](assets/images/SmAutoExample1.png)
 
 You can define an Automation using the syntax in the following example:
 
@@ -320,8 +321,7 @@ Automation stop_humidifier
 end
 ```
 
-- **name**: The name for the Automation. Should start with a letter, can contain only letters, numbers and underscores.
-- **condition**: The condition used to determine if actions should be run. See **Writing Conditions** for more information.
+- **condition**: The condition used to determine if actions should be run.
 - **enabled**: Whether the Automation should be run or not.
 - **continuous**: Whether the Automation should automatically remain enabled once its actions have been executed.
 - **checkOnce**: The condition of the automation will run **ONLY ONCE** and
@@ -335,6 +335,8 @@ end
 - **stops**: stops other automation after termination of the current
   automation.
 
+![CheckOnceExample](assets/images/checkOnce_example_1.png)
+
 
 ### Conditions
 
@@ -346,6 +348,8 @@ it's Fully-Qualified Name (FQN) in dot (.) notation.
 ```
 entity_name.attribute_name
 ```
+
+![ConditionMM](assets/images/SmAutoConditionMM.png)
 
 Below is an example of a Condition that references several attributes of
 more-than-one Entities.
@@ -367,6 +371,16 @@ Entity kitchen_temperature
     freq: 10
     attributes:
         - temperature: float
+end
+
+Entity aircondition
+    type: actuator
+    topic: "bedroom.aircondition"
+    broker: home_broker
+    attributes:
+        - temperature: float
+        - mode: str
+        - on: bool
 end
 
 Automation start_aircondition
@@ -411,10 +425,10 @@ of the language.
 
 #### Operators
 
-- String Operators: `~`, `!~`, `==`, `!=`
-- Numeric Operators: `>`, `<`, `==`, `!=`
+- String Operators: `~`, `!~`, `==`, `!=`, `has`
+- Numeric Operators: `>`, `>=`, `<`, `<=`, `==`, `!=`
 - Logical Operators: `AND`, `OR`, `NOT`, `XOR`, `NOR`, `XNOR`, `NAND`
-- BooleanValueOperator: '==' , '!=' , 'is' , 'is not';
+- BooleanValueOperator: `is` , `is not`;
 - List and Dictionary Operators: `==`, `!=`
 
 #### Build-in attribute processing functions
@@ -422,7 +436,7 @@ of the language.
 The language provides buildi-in functions which can be applied to attribute references
 when defining a Condition.
 
-```yml
+```
 condition:
     (mean(bedroom_temp_sensor.temperature, 10) > 28) AND
     (std(bedroom_temp_sensor.temperature, 10) > 1)
@@ -441,11 +455,11 @@ condition:
 
 **Supported Functions:**
 
-- mean
-- std
-- var
-- min
-- max
+- **mean**: The mean of the attribute buffer
+- **std**: The standard deviation of the attribute buffer
+- **var**: The variance of the attribute buffer
+- **min**: The minimum value in the attribute buffer
+- **max**: The maximum value in the attribute buffer
 
 #### Writing Conditions
 
@@ -500,7 +514,24 @@ Only "actuator" and "robot" Attributes can have default values.
 The freq property can only be set only for sensor and robot Entities.
 ```
 
-## Dynamic Model Execution
+## Command-Line-Interface
+
+```bash
+➜ smauto --help         
+Usage: smauto [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  gen        Generate in Python
+  genv       Entities to Code - Generate executable virtual entities
+  graph      Graph generator - Generate automation visualization graphs
+  interpret  Interpreter - Dynamically execute models
+  validate   Model Validation
+```
+
+### Dynamic Model Execution (DEPRECATED - WILL REMOVE IN THE FUTURE)
 
 
 SmAuto implements a language interpreter, to parse and validate the model against the meta-model and the logical rules, and to execute the input model. The interpreter dynamically constructs the classes (in Python) in-memory and executes the automation tasks described by the input model, using the Python interpreter. For this purpose, a command-line interface is provided to work with validation and dynamic execution of models, as long as for generating a visual graph for each automation (image file). Of course, for the graph generation and model execution processes, the validation process is initially executed and are terminated in case of syntactic and logical errors in the input model.
@@ -518,25 +549,33 @@ To execute the automations defined within an SmAuto (.smauto) model use the CLI.
 smauto interpret simple_model.smauto
 ```
 
-## Generate Virtual Entities
+### Compile Virtual Entities
 
 
-To generate the virtual versions of entities defined within an smauto model, use the CLI.
-
-```bash
-smauto generate simple_model.smauto
-```
-
-## Generate Graphs of Automations
-
-The CLI provides a command for generating visualization graphs of input models. Generated graphs are used for the evaluation of conditions and actions of the defined automation, before performing model execution. The automated creation of graph images is performed in two steps; initially, a M2M transformation is performed on the input SmAuto model and the output is a PlantUML model in textual format. Afterwards, an M2T transformation takes place to transform the PlantUML model into the final image (see Figure \ref{fig:automation_graph}). The M2M transforms conditions into a graph, where the left-most leaf nodes include entity attributes and values, while the right-most leaf nodes represent the properties of actions, which are the entity to perform the action on and it's state (attribute values). Finally, intermediate nodes in the graph represent the operators of the condition.
-
-Below is the graph of the automation defined in [simple_model example](https://github.com/robotics-4-all/smauto-dsl/tree/main/examples/simple_model)
-
-![automation_start_aircondition](https://user-images.githubusercontent.com/4770702/211201286-def896ce-6ec1-4121-b705-33a3f9b0a20b.png)
-
-To generate the graph of automations defined within an smauto model, use the CLI.
+To compile SmAuto Entity models into Virtual Entities as explained above, use either the CLI or the REST API of the DSL. Furhermore, the compiler (code generator) can be configured to either generate a single Python executable for each Entity definition, or compile into a merged executable (use the `--merged/-m` flag) that includes all VEntities.
 
 ```bash
-smauto graph simple_model.smauto
+venv [I] ➜ smauto genv model.auto
+[CLI] Compiled virtual Entity: system_clock.py
+[CLI] Compiled virtual Entity: bedroom_lamp.py
+[CLI] Compiled virtual Entity: motion_detector.py
 ```
+
+```bash
+venv [I] ➜ smauto genv -m model.auto
+[CLI] Compiled virtual Entities: simplehomeautomation_entities.py
+```
+
+## Compile Automations
+
+
+To compile SmAuto models into executable Python programs which run the Automations, use either the CLI or the REST API of the DSL.
+
+```bash
+venv [I] ➜ smauto gen model.auto
+[CLI] Compiled Automations: SimpleHomeAutomation.py
+```
+
+## Generate Graphs of Automations (Under Development)
+
+The CLI provides a command for generating visualization graphs of input models. Generated graphs are used for the evaluation of conditions and actions of the defined automation, before performing model execution. The automated creation of graph images is performed in two steps; initially, a M2M transformation is performed on the input SmAuto model and the output is a PlantUML model in textual format. Afterwards, an M2T transformation takes place to transform the PlantUML model into the output diagram

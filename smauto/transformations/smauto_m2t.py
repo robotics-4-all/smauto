@@ -20,6 +20,8 @@ clock_tpl = jinja_env.get_template('clock.py.jinja')
 
 def rtm_set_defaults(model):
     if hasattr(model, 'monitor'):
+        if model.monitor is None:
+            return
         model.monitor.ns = model.monitor.ns or "smauto"
         model.monitor.eTopic = model.monitor.eTopic or "events"
         model.monitor.lTopic = model.monitor.lTopic or "logs"

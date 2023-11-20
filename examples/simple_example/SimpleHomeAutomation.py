@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from collections import deque
 import statistics
 from concurrent.futures import ThreadPoolExecutor, wait
-import traceback
 
 from rich import print, console, pretty
 from commlib.msg import PubSubMessage
@@ -30,7 +29,7 @@ class Time(BaseModel):
 
 
 class ClockMsg(PubSubMessage):
-    time: Time
+    time: Time = Time()
 
 
 class Attribute:
@@ -50,19 +49,28 @@ class MotionDetectorMsg(PubSubMessage):
         mode: str = ''
 
 
+class SystemClockMsg(PubSubMessage):
+        time: Optional[Time] = Time()
+
+
 
 class Entity(Node):
     def __init__(self, name, topic, conn_params,
-                 attributes, msg_type, *args, **kwargs):
+                 attributes, msg_type, attr_buff=[],
+                 *args, **kwargs):
         self.name = name
         self.camel_name = self.to_camel_case(name)
         self.topic = topic
-        self.dstate = MotionDetectorMsg()
         self.conn_params = conn_params
         self.attributes = attributes
         self.msg_type = msg_type
         self.attributes_dict = {key: val for key, val in self.attributes.items()}
         self.attributes_buff = {key: [] for key, _ in self.attributes.items()}
+        self.dstate = self.msg_type()
+        self._attr_buff = attr_buff
+
+        for attr in self._attr_buff:
+            self.init_attr_buffer(attr[0], attr[1])
 
         super().__init__(
             node_name=self.camel_name,
@@ -92,8 +100,8 @@ class Entity(Node):
         :return:
         """
         # Update state
-        print(f'Entity {self.name} state change: {self.dstate} -> {new_state}')
         self.dstate = new_state
+        print(f'[*] Entity {self.name} state change: {self.dstate} -> {new_state}')
         # Update attributes based on state
         self.update_attributes(new_state)
         self.update_buffers(new_state)
@@ -104,7 +112,7 @@ class Entity(Node):
             dictionaries/objects and normal Attributes.
         """
         # Update attributes
-        for attribute, value in state_msg.dict().items():
+        for attribute, value in state_msg.model_dump().items():
             if self.attributes_buff[attribute] is not None:
                 self.attributes_buff[attribute].append(value)
 
@@ -113,7 +121,13 @@ class Entity(Node):
         Recursive function used by update_state() mainly to updated
             dictionaries/objects and normal Attributes.
         """
-        self.attributes_dict = state_msg.dict()
+        # Fast hack for pydantic changes
+        if hasattr(state_msg, 'time'):
+            t = state_msg.time
+            self.attributes_dict = state_msg.model_dump()
+            self.attributes_dict['time'] = t
+        else:
+            self.attributes_dict = state_msg.model_dump()
 
     def start(self):
         # Create and start communications subscriber on Entity's topic
@@ -178,9 +192,34 @@ class Condition(object):
             return False
 
 
-class Automation(Node):
+class RTMonitor:
+    def __init__(self, comm_node, etopic, ltopic):
+        self.node = comm_node
+        epub = self.node.create_publisher(
+            topic=etopic,
+            msg_type=StateChangeMsg
+        )
+        lpub = self.node.create_publisher(
+            topic=ltopic,
+            msg_type=LogMsg
+        )
+        self._epub = epub
+        self._lpub = lpub
+        print(f'[RTMonitor]: events -> {etopic}, logs -> {ltopic}')
+
+    def send_event(self, event):
+        print(f'[RTMonitor] Sending StateChange Event: {event}')
+        self._epub.publish(event)
+
+    def send_log(self, log_msg):
+        print(f'[RTMonitor] Sending Log: {log_msg}')
+        self._lpub.publish(log_msg)
+
+
+class Automation():
     def __init__(self, name, condition, actions, freq, enabled, continuous,
-                 checkOnce, after, starts, stops, conn_params, entities):
+                 checkOnce, after, starts, stops, entities,
+                 rtm: RTMonitor = None):
         enabled = True if enabled is None else enabled
         continuous = True if continuous is None else continuous
         checkOnce = False if checkOnce is None else checkOnce
@@ -197,9 +236,9 @@ class Automation(Node):
         self.stops = stops
         self.time_between_activations = 5
         self.state = AutomationState.IDLE
-        self.conn_params = conn_params
         self.entities = entities
         self.autos_map = {}
+        self.rtm = rtm
 
     def set_autos(self, autos_map):
         self.autos_map = autos_map
@@ -212,13 +251,13 @@ class Automation(Node):
 
     def print(self):
         after = f'\n'.join(
-            [f"      - {self.autos_map[dep]}" for dep in self.after])
+            [f"  - {self.autos_map[dep].name}" for dep in self.after])
         starts = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.starts])
+            [f"  - {self.autos_map[dep].name}" for dep in self.starts])
         stops = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.stops])
+            [f"  - {self.autos_map[dep].name}" for dep in self.stops])
         print(
-            f"[*] Automation <{self.name}>\n"
+            f"Automation <{self.name}>\n"
             f"    Condition: {self.condition.expression}\n"
             f"    Frequency: {self.freq} Hz\n"
             f"    Continuoues: {self.continuous}\n"
@@ -242,26 +281,35 @@ class Automation(Node):
             if entity in messages.keys():
                 messages[entity].update({action.attribute: value})
             else:
-                print(entity.dstate)
                 messages[entity] = entity.dstate
         for entity, message in messages.items():
             entity.change_state(message)
 
     def enable(self):
         self.enabled = True
-        print(f"[bold yellow][*] Enabled Automation: {self.name}[/bold yellow]")
+        self.log(f"Enabled Automation: {self.name}")
 
     def disable(self):
         self.enabled = False
-        print(f"[bold yellow][*] Disabled Automation: {self.name}[/bold yellow]")
+        self.log(f"Disabled Automation: {self.name}")
+
+    def state_change(self, new_state: AutomationState, msg: str = ""):
+        self.state = new_state
+        msg = StateChangeMsg(state=new_state, msg=msg, automation=self.name)
+        self.rtm.send_event(msg)
+
+    def log(self, msg: str, level: str = 'INFO'):
+        log_msg = LogMsg(msg=msg, level=level)
+        self.rtm.send_log(log_msg)
+        print(f'[Automation: {self.name}]: {msg}')
 
     def start(self):
-        self.state = AutomationState.IDLE
+        self.state_change(AutomationState.IDLE)
         self.print()
-        print(f"[bold yellow][*] Executing Automation: {self.name}[/bold yellow]")
+        self.log(f"Starting Automation: {self.name}")
         while True:
             if len(self.after) == 0:
-                self.state = AutomationState.RUNNING
+                self.state_change(AutomationState.RUNNING)
             # Wait for dependend automations to finish
             while self.state == AutomationState.IDLE:
                 wait_for = [
@@ -269,39 +317,33 @@ class Automation(Node):
                     if self.autos_map[dep].state == AutomationState.RUNNING
                 ]
                 if len(wait_for) == 0:
-                    self.state = AutomationState.RUNNING
-                print(
-                    f'[bold magenta]\[{self.name}] Waiting for dependend '
-                    f'automations to finish:[/bold magenta] {wait_for}'
+                    self.state_change(AutomationState.RUNNING)
+                self.log(
+                    f'Waiting for dependend automations to finish: {wait_for}'
                 )
                 time.sleep(1)
             while self.state == AutomationState.RUNNING:
                 try:
                     triggered = self.evaluate_condition()
                     if triggered:
-                        print(f"[bold yellow][*] Automation <{self.name}> "
-                            f"Triggered![/bold yellow]"
-                        )
-                        print(f"[bold blue][*] Condition met: "
-                            f"{self.condition.expression}"
-                        )
+                        self.log(f"Automation <{self.name}> Triggered!")
+                        self.log(f"Condition met: {self.condition.expression}")
                         # If automation triggered run its actions
                         self.trigger_actions()
-                        self.state = AutomationState.EXITED_SUCCESS
+                        self.state_change(AutomationState.EXITED_SUCCESS)
                         for auto in self.starts:
                             self.autos_map[auto].enable()
                         for auto in self.stops:
                             self.autos_map[auto].disable()
                     if self.checkOnce:
                         self.disable()
-                        self.state = AutomationState.EXITED_SUCCESS
+                        self.state_change(AutomationState.EXITED_SUCCESS)
                     time.sleep(1 / self.freq)
                 except Exception as e:
-                    traceback.print_exc()
-                    print(f'[ERROR] {e}')
+                    self.log(f'[ERROR] {str(e)}')
                     return
             # time.sleep(self.time_between_activations)
-            self.state = AutomationState.IDLE
+            self.state_change(AutomationState.IDLE)
 
 
 class Action:
@@ -311,14 +353,43 @@ class Action:
         self.entity = entity
 
 
-class Executor():
-    def __init__(self):
+class StateChangeMsg(PubSubMessage):
+    state: int
+    automation: str
+    msg: str = ""
+
+
+class LogMsg(PubSubMessage):
+    msg: str
+    level: str = "INFO"
+
+
+class Executor(Node):
+    def __init__(self, *args, **kwargs):
+        self.name = 'SimpleHomeAutomation'
+        self.namespace = ''
+        self.event_topic = ''
+        self.logs_topic = ''
+        self._etopic = f'{self.namespace}.{self.event_topic}'
+        self._ltopic = f'{self.namespace}.{self.logs_topic}'
+        self._init_params()
+        super().__init__(
+            node_name=self.name,
+            debug=True,
+            connection_params=self.conn_params
+        )
+        self.rtm = RTMonitor(self, self._etopic, self._ltopic)
+        self.run()
+
         self.entities = self.create_entities()
         self.entities_map = self.build_entities_map(self.entities)
         self.autos = self.create_automations(self.entities_map)
         self.autos_map = self.build_autos_map(self.autos)
         for auto in self.autos:
             auto.set_autos(self.autos_map)
+
+    def _init_params(self):
+        self.conn_params = conn_params
 
     def build_autos_map(self, autos):
         a_map = {auto.name: auto for auto in autos}
@@ -336,7 +407,7 @@ class Executor():
                 expression="((entities['motion_detector'].attributes_dict['posX'] == 5) and (entities['motion_detector'].attributes_dict['posY'] == 0))"
             ),
             actions=[
-                Action('power', True, entities['bedroom_lamp'])
+                Action('power', True, entities['bedroom_lamp']),
             ],
             freq=1,
             enabled=True,
@@ -348,8 +419,8 @@ class Executor():
             ],
             stops=[
             ],
-            conn_params=None,
-            entities=entities
+            entities=entities,
+            rtm=self.rtm
         ))
         autos.append(Automation(
             name='motion_detected_2',
@@ -357,7 +428,7 @@ class Executor():
                 expression="(entities['motion_detector'].attributes_dict['detected'] == False)"
             ),
             actions=[
-                Action('power', True, entities['bedroom_lamp'])
+                Action('power', True, entities['bedroom_lamp']),
             ],
             freq=1,
             enabled=True,
@@ -369,20 +440,21 @@ class Executor():
             ],
             stops=[
             ],
-            conn_params=None,
-            entities=entities
+            entities=entities,
+            rtm=self.rtm
         ))
         return autos
 
     def create_entity(self, sense, name, topic, conn_params,
-                      attributes, msg_type):
+                      attributes, msg_type, attr_buff=[]):
         if sense:
             entity = EntitySense(
                 name=name,
                 topic=topic,
                 conn_params=conn_params,
                 attributes=attributes,
-                msg_type=msg_type
+                msg_type=msg_type,
+                attr_buff=attr_buff
             )
         else:
             entity = EntityAct(
@@ -390,7 +462,8 @@ class Executor():
                 topic=topic,
                 conn_params=conn_params,
                 attributes=attributes,
-                msg_type=msg_type
+                msg_type=msg_type,
+                attr_buff=attr_buff
             )
         return entity
 
@@ -405,12 +478,13 @@ class Executor():
             password='',
         )
         attrs = {
-            'power': bool,
+            'power': bool(),
         }
         entities.append(
             self.create_entity(
                 False, 'bedroom_lamp', 'bedroom.lamp',
-                conn_params, attrs, msg_type=BedroomLampMsg
+                conn_params, attrs, msg_type=BedroomLampMsg,
+                attr_buff=[]
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
@@ -421,15 +495,33 @@ class Executor():
             password='',
         )
         attrs = {
-            'detected': bool,
-            'posX': int,
-            'posY': int,
-            'mode': str,
+            'detected': bool(),
+            'posX': int(),
+            'posY': int(),
+            'mode': str(),
         }
         entities.append(
             self.create_entity(
                 True, 'motion_detector', 'bedroom.motion_detector',
-                conn_params, attrs, msg_type=MotionDetectorMsg
+                conn_params, attrs, msg_type=MotionDetectorMsg,
+                attr_buff=[]
+            )
+        )
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
+        )
+        attrs = {
+            'time': Time(),
+        }
+        entities.append(
+            self.create_entity(
+                True, 'system_clock', 'system.clock',
+                conn_params, attrs, msg_type=SystemClockMsg,
+                attr_buff=[]
             )
         )
         return entities
