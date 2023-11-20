@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+import os
+
+"""
+If you are going to execute this in google colab, uncomment the next line
+"""
+if os.getenv("COLAB_RELEASE_TAG"):
+    print('AAA')
+    # !pip install commlib-py>=0.11.0
+
 
 import time
 import random
@@ -413,7 +422,6 @@ class Executor(Node):
             ),
             actions=[
                 Action('state', True, entities['ef_light_2']),
-                Action('brightness', 50, entities['ef_light_2']),
             ],
             freq=1,
             enabled=True,
