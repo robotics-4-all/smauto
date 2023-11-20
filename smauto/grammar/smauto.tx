@@ -6,9 +6,9 @@ import utils
 
 SmAutoModel:
     imports*=Import
+    (
     (metadata=Metadata)?
     (monitor=RTMonitor)?
-    (
     brokers*=MessageBroker
     entities*=Entity
     automations*=Automation
