@@ -38,16 +38,13 @@ class Attribute:
         self.value = value
 
 
-class WeatherStationMsg(PubSubMessage):
-        temperature: float = 0.0
+class SnHumidity1Msg(PubSubMessage):
         humidity: float = 0.0
-        pressure: float = 0.0
 
 
-class AirconditionMsg(PubSubMessage):
-        temperature: float = 0.0
-        mode: str = ''
-        on: bool = False
+class EfLight2Msg(PubSubMessage):
+        state: bool = False
+        brightness: int = 0
 
 
 class SystemClockMsg(PubSubMessage):
@@ -280,7 +277,7 @@ class Automation():
             value = action.value
             entity = action.entity
             if entity in messages.keys():
-                messages[entity].update({action.attribute: value})
+                setattr(messages[entity], action.attribute, action.value)
             else:
                 messages[entity] = entity.dstate
         for entity, message in messages.items():
@@ -367,7 +364,7 @@ class LogMsg(PubSubMessage):
 
 class Executor(Node):
     def __init__(self, *args, **kwargs):
-        self.name = 'SimpleHomeAutomation'
+        self.name = 'GIVE_ME_A_NAME'
         self.namespace = 'smauto.simple_home_auto'
         self.event_topic = 'event'
         self.logs_topic = 'logs'
@@ -412,15 +409,15 @@ class Executor(Node):
         autos.append(Automation(
             name='start_aircondition',
             condition=Condition(
-                expression="((entities['weather_station'].attributes_dict['temperature'] > 30) and (entities['aircondition'].attributes_dict['on'] == True))"
+                expression="((entities['sn_humidity_1'].attributes_dict['humidity'] > 68) and (entities['ef_light_2'].attributes_dict['state'] == False))"
             ),
             actions=[
-                Action('temperature', 18.0, entities['aircondition']),
-                Action('mode', 'cool', entities['aircondition']),
+                Action('state', True, entities['ef_light_2']),
+                Action('brightness', 50, entities['ef_light_2']),
             ],
             freq=1,
             enabled=True,
-            continuous=False,
+            continuous=True,
             checkOnce=False,
             after=[
             ],
@@ -466,14 +463,12 @@ class Executor(Node):
             password='r4a123$',
         )
         attrs = {
-            'temperature': float(),
             'humidity': float(),
-            'pressure': float(),
         }
         entities.append(
             self.create_entity(
-                True, 'weather_station', 'bedroom.weather_station',
-                conn_params, attrs, msg_type=WeatherStationMsg,
+                True, 'sn_humidity_1', 'sensors.sn_humidity_1',
+                conn_params, attrs, msg_type=SnHumidity1Msg,
                 attr_buff=[]
             )
         )
@@ -485,23 +480,22 @@ class Executor(Node):
             password='r4a123$',
         )
         attrs = {
-            'temperature': float(),
-            'mode': str(),
-            'on': bool(),
+            'state': bool(),
+            'brightness': int(),
         }
         entities.append(
             self.create_entity(
-                False, 'aircondition', 'bedroom.aircondition',
-                conn_params, attrs, msg_type=AirconditionMsg,
+                False, 'ef_light_2', 'actuators.ef_light_2',
+                conn_params, attrs, msg_type=EfLight2Msg,
                 attr_buff=[]
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='localhost',
+            host='155.207.19.66',
             port=1883,
-            username='',
-            password='',
+            username='r4a',
+            password='r4a123$',
         )
         attrs = {
             'time': Time(),
