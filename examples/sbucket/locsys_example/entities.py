@@ -7,6 +7,7 @@ If you are going to execute this in google colab, uncomment the next line
 
 import time
 import random
+import signal
 
 from enum import Enum
 from dataclasses import dataclass
@@ -16,6 +17,7 @@ import numpy as np
 from typing import Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 
 from rich import print, console, pretty
 from commlib.msg import PubSubMessage
@@ -25,6 +27,7 @@ from commlib.node import Node
 pretty.install()
 console = console.Console()
 
+terminate_event = Event()
 
 # Noise definitions
 # ----------------------------------------
@@ -140,7 +143,7 @@ class ValueGenerator:
             if c.type in (ValueGeneratorType.Gaussian,
                           ValueGeneratorType.Saw):
                 c.properties._internal_start = start
-        while True:
+        while not terminate_event.is_set():
             msg = {}
             for c in self.components:
                 if c.type == ValueGeneratorType.Constant:
@@ -224,7 +227,7 @@ class SystemClock(Node):
     def start(self):
         self.run()
         print(f'[*] Initiated System Clock @ {self.topic}')
-        while True:
+        while not terminate_event.is_set():
             self.send_msg()
             self.rate.sleep()
 
@@ -366,6 +369,13 @@ class EfLight2Node(Node):
         print(f'[*] State change command received: {msg}')
 
 
+def signal_handler(sig, frame):
+    print("Interrupt received. Attempting to gracefully terminate workers.")
+    terminate_event.set()
+
+# Register the signal handler for SIGINT (Ctrl+C)
+signal.signal(signal.SIGINT, signal_handler)
+
 
 if __name__ == '__main__':
     sensors = []
@@ -376,12 +386,19 @@ if __name__ == '__main__':
     sensors.append(SnHumidity1Node())
     sclock = SystemClock()
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        sclock_work = executor.submit(
-            sclock.start
-        ).add_done_callback(_worker_clb)
-        for node in sensors:
-            work = node.start(executor)
-            workers.append(work)
-        for node in actuators:
-            node.start()
+    try:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            sclock_work = executor.submit(
+                sclock.start
+            ).add_done_callback(_worker_clb)
+            for node in sensors:
+                work = node.start(executor)
+                workers.append(work)
+            for node in actuators:
+                node.start()
+    except KeyboardInterrupt:
+        print("Keyboard interrupt detected. Exiting...")
+        terminate_event.set()
+    except Exception:
+        print("Interrupt detected. Exiting...")
+        terminate_event.set()
