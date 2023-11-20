@@ -5,7 +5,8 @@ from rich import print, pretty
 from smauto.interpreter import ModelExecutor
 from smauto.generator import generate_automation_graph_from_file
 from smauto.language import build_model
-from smauto.transformations import model_to_vnodes
+from smauto.transformations import model_to_vnodes, smauto_m2t
+from smauto.transformations import model_to_vent
 
 pretty.install()
 
@@ -25,13 +26,8 @@ def cli(ctx):
 @click.pass_context
 @click.argument('model_path')
 def validate(ctx, model_path):
-    # try:
     model = build_model(model_path)
     print('[*] Model validation success!!')
-    # except Exception as e:
-    #     print('[*] Validation failed with error(s):')
-    #     
-    #     print(str(e))
 
 
 @cli.command('interpret',
@@ -50,29 +46,43 @@ def graph(ctx, model_path):
     generate_automation_graph_from_file(model_path)
 
 
-@cli.command('generate',
+@cli.command('gen',
+             help='Generate in Python')
+@click.pass_context
+@click.argument('model_path')
+def generate_py(ctx, model_path):
+    pycode = smauto_m2t(model_path)
+    model = build_model(model_path)
+    filepath = f'{model.metadata.name}.py'
+    with open(filepath, 'w') as fp:
+        fp.write(pycode)
+        make_executable(filepath)
+    print(f'[CLI] Compiled Automations: [bold]{filepath}')
+
+
+@cli.command('genv',
              help='Entities to Code - Generate executable virtual entities')
 @click.pass_context
 @click.argument('model_path')
-def generate(ctx, model_path):
-    vnodes = model_to_vnodes(model_path)
-    # return
-    for vn in vnodes:
-        filepath = f'{vn[0].name}.py'
+@click.option('--merged', '-m', is_flag=True,
+              help="Merge virtual entities into a single output file")
+def generate_vent(ctx, model_path: str, merged: bool):
+    model = build_model(model_path)
+    if merged:
+        vent_code = model_to_vent(model_path)
+        filepath = f'{model.metadata.name.lower()}_entities.py'
         with open(filepath, 'w') as fp:
-            fp.write(vn[1])
+            fp.write(vent_code)
             make_executable(filepath)
-        print(f'[CLI] Compiled virtual Entity: [bold]{filepath}')
-
-
-@cli.command('server',
-             help='Run the REST Api Server')
-@click.pass_context
-def api_server(ctx):
-    from smauto.api.api import api
-    print('[CLI] DEPRECATED!!!')
-    print('[CLI] Run the api using uvicorn!')
-    print('[CLI] uvicorn smauto.api:api --host 0.0.0.0 --port 8080')
+            print(f'[CLI] Compiled virtual Entities: [bold]{filepath}')
+    else:
+        vnodes = model_to_vnodes(model_path)
+        for vn in vnodes:
+            filepath = f'{vn[0].name}.py'
+            with open(filepath, 'w') as fp:
+                fp.write(vn[1])
+                make_executable(filepath)
+            print(f'[CLI] Compiled virtual Entity: [bold]{filepath}')
 
 
 def main():

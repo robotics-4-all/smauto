@@ -1,15 +1,22 @@
 #!/usr/bin/env python
 
+"""
+If you are going to execute this in google colab, uncomment the next line
+!pip install commlib-py>=0.11.0
+"""
+
 import time
 import random
 
 from enum import Enum
 from dataclasses import dataclass
+from pydantic import BaseModel
 import time
 import numpy as np
 from typing import Optional
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
-from commlib.transports.mqtt import ConnectionParameters
 from rich import print, console, pretty
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
@@ -181,62 +188,137 @@ class ValueGenerator:
                     break
 
 
-class BedroomHumiditySensorMsg(PubSubMessage):
-        humidity: float = 0.0
+class Time(BaseModel):
+    hour: int = 0
+    minute: int = 0
+    second: int = 0
+    time_str: str = ''
 
 
-class BedroomHumiditySensorNode(Node):
+class ClockMsg(PubSubMessage):
+    time: Time
+
+
+class SystemClock(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = 1
-        self.topic = 'bedroom.humidity'
+        self.topic = 'system.clock'
+        from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='snf-889260.vm.okeanos.grnet.gr',
-            port=1893,
-            username='porolog',
-            password='fiware',
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
         )
         super().__init__(
-            node_name='entities.bedroom_humidity_sensor',
+            node_name='system_clock',
             connection_params=conn_params,
             *args, **kwargs
         )
         self.pub = self.create_publisher(
-            msg_type=BedroomHumiditySensorMsg,
+            msg_type=ClockMsg,
             topic=self.topic
         )
-
-    def init_gen_components(self):
-        components = []
-        humidity_properties = ValueGeneratorProperties.Linear(
-            start=0,
-            step=0.1
-        )
-        _gen_type = ValueGeneratorType.Linear
-        humidity_noise = Noise(
-            _type=NoiseType.Gaussian,
-            properties=NoiseGaussian(0, 0.05)
-        )
-        humidity_component = ValueComponent(
-            _type=_gen_type,
-            name="humidity",
-            properties = humidity_properties,
-            noise=humidity_noise
-        )
-        components.append(humidity_component)
-        generator = ValueGenerator(
-            self.topic,
-            self.pub_freq,
-            components,
-            self
-        )
-        return generator
-
+        self.rate = Rate(self.pub_freq)
 
     def start(self):
-        generator = self.init_gen_components()
-        generator.start()
+        self.run()
+        print(f'[*] Initiated System Clock @ {self.topic}')
+        while True:
+            self.send_msg()
+            self.rate.sleep()
+
+    def send_msg(self):
+        now = datetime.now()
+        t_str = now.strftime("%H:%M:%S")
+        hour = int(now.hour)
+        minute = int(now.minute)
+        second = int(now.second)
+        msg = ClockMsg(time=Time(
+            hour=hour,
+            minute=minute,
+            second=second,
+            time_str=t_str
+        ))
+        self.pub.publish(msg)
+
+
+# ThreadPoolExecutor worker callback
+def _worker_clb(f):
+    e = f.exception()
+    if e is None:
+        return
+    trace = []
+    tb = e.__traceback__
+    while tb is not None:
+        trace.append({
+            "filename": tb.tb_frame.f_code.co_filename,
+            "name": tb.tb_frame.f_code.co_name,
+            "lineno": tb.tb_lineno
+        })
+        tb = tb.tb_next
+    print({
+        'type': type(e).__name__,
+        'message': str(e),
+        'trace': trace
+    })
+
+
+
+class BedroomLampMsg(PubSubMessage):
+        power: bool = False
+        colorR: int = 0
+        colorG: int = 0
+        colorB: int = 0
+
+
+class BedroomLampNode(Node):
+    def __init__(self, *args, **kwargs):
+        self.tick_hz = 1
+        self.topic = 'bedroom.lamp'
+        self.name = 'bedroom_lamp'
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
+        )
+        super().__init__(
+            node_name='entities.bedroom_lamp',
+            connection_params=conn_params,
+            *args, **kwargs
+        )
+        self.sub = self.create_subscriber(
+            msg_type=BedroomLampMsg,
+            topic=self.topic,
+            on_message=self._on_message
+        )
+
+    def start(self, executor=None):
+        self.run()
+        print(f'[*] Initiated Entity {self.name} @ {self.topic}')
+        return self
+
+    def _on_message(self, msg):
+        print(f'[*] State change command received: {msg}')
+
 
 
 if __name__ == '__main__':
-    node = BedroomHumiditySensorNode()
-    node.start()
+    sensors = []
+    actuators = []
+    workers = []
+    max_workers = 100
+    actuators.append(BedroomLampNode())
+    sclock = SystemClock()
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        sclock_work = executor.submit(
+            sclock.start
+        ).add_done_callback(_worker_clb)
+        for node in sensors:
+            work = node.start(executor)
+            workers.append(work)
+        for node in actuators:
+            node.start()

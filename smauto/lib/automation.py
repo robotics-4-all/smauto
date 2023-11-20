@@ -20,7 +20,8 @@ class AutomationState:
 class Automation(object):
 
     def __init__(self, parent, name, condition, actions, freq,
-                 enabled, continuous, checkOnce, after, starts, stops):
+                 enabled, continuous, checkOnce, after, starts,
+                 stops, description=""):
         """
         Creates and returns an Automation object
         :param name: Automation name. e.g: 'open_lights'
@@ -50,6 +51,7 @@ class Automation(object):
         self.stops = stops
         self.time_between_activations = 5
         self.state = AutomationState.IDLE
+        self.description = description
 
     # Evaluate the Automation's conditions and run the actions
     def evaluate_condition(self):

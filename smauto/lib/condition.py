@@ -92,6 +92,7 @@ class Condition(object):
             if parent.__class__.__name__ in ('StdAttr', 'MeanAttr', 'VarAttr',
                                              'MinAttr', 'MaxAttr'):  # Have buffer
                 entity_ref.init_attr_buffer(attr_ref.name, parent.size)
+                entity_ref.attr_buffs.append((attr_ref.name, parent.size))
                 val = f"entities['{entity_ref.name}']." + \
                     f"get_buffer('{attr_ref.name}')"
             else:
@@ -131,6 +132,7 @@ class Condition(object):
 
     def build(self):
         self.process_node_condition(self)
+        return self.cond_lambda
 
     # Post-Order traversal of Condition tree, generating the condition for each node
     @staticmethod
@@ -149,6 +151,9 @@ class Condition(object):
             # Build lambda
             cond_node.cond_lambda = (OPERATORS[cond_node.operator])(
                 cond_node.r1.cond_lambda, cond_node.r2.cond_lambda)
+        elif textx_isinstance(
+            cond_node, metamodel.namespaces['condition']['InRangeCondition']):
+            cond_node.process_node_condition()
         else:
             operand1 = Condition.transform_operand(cond_node.operand1)
             operand2 = Condition.transform_operand(cond_node.operand2)
@@ -210,12 +215,12 @@ class InRangeCondition(AdvancedCondition):
         self.max = max
         super().__init__(parent)
 
-    def process_node_condition(self, cond_node):
-        operand1 = self.transform_operand(cond_node.attribute)
+    def process_node_condition(self):
+        operand1 = self.transform_operand(self.attribute)
         cond_lambda = (OPERATORS['InRange'])(operand1,
-                                             cond_node.min,
-                                             cond_node.max)
-        cond_node.cond_lambda = cond_lambda
+                                             self.min,
+                                             self.max)
+        self.cond_lambda = cond_lambda
 
 
 class NumericCondition(PrimitiveCondition):

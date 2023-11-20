@@ -181,48 +181,95 @@ class ValueGenerator:
                     break
 
 
-class KitchenGasSensorMsg(PubSubMessage):
-        gas: float = 0.0
+class MotionDetectorMsg(PubSubMessage):
+        detected: bool = False
+        posX: int = 0
+        posY: int = 0
+        mode: str = ''
 
 
-class KitchenGasSensorNode(Node):
+class MotionDetectorNode(Node):
     def __init__(self, *args, **kwargs):
-        self.pub_freq = 10
-        self.topic = 'kitchen.gas'
+        self.pub_freq = 1
+        self.topic = 'bedroom.motion_detector'
         conn_params = ConnectionParameters(
-            host='snf-889260.vm.okeanos.grnet.gr',
-            port=1893,
-            username='porolog',
-            password='fiware',
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
         )
         super().__init__(
-            node_name='entities.kitchen_gas_sensor',
+            node_name='entities.motion_detector',
             connection_params=conn_params,
             *args, **kwargs
         )
         self.pub = self.create_publisher(
-            msg_type=KitchenGasSensorMsg,
+            msg_type=MotionDetectorMsg,
             topic=self.topic
         )
 
     def init_gen_components(self):
         components = []
-        gas_properties = ValueGeneratorProperties.Linear(
-            start=0,
-            step=0.1
+        detected_properties = ValueGeneratorProperties.Constant(
+            0
         )
-        _gen_type = ValueGeneratorType.Linear
-        gas_noise = Noise(
-            _type=NoiseType.Gaussian,
-            properties=NoiseGaussian(0, 0.1)
+        _gen_type = ValueGeneratorType.Constant
+        detected_noise = Noise(
+            _type=NoiseType.Zero,
+            properties=NoiseZero()
         )
-        gas_component = ValueComponent(
+        detected_component = ValueComponent(
             _type=_gen_type,
-            name="gas",
-            properties = gas_properties,
-            noise=gas_noise
+            name="detected",
+            properties = detected_properties,
+            noise=detected_noise
         )
-        components.append(gas_component)
+        components.append(detected_component)
+        posX_properties = ValueGeneratorProperties.Constant(
+            0
+        )
+        _gen_type = ValueGeneratorType.Constant
+        posX_noise = Noise(
+            _type=NoiseType.Zero,
+            properties=NoiseZero()
+        )
+        posX_component = ValueComponent(
+            _type=_gen_type,
+            name="posX",
+            properties = posX_properties,
+            noise=posX_noise
+        )
+        components.append(posX_component)
+        posY_properties = ValueGeneratorProperties.Constant(
+            0
+        )
+        _gen_type = ValueGeneratorType.Constant
+        posY_noise = Noise(
+            _type=NoiseType.Zero,
+            properties=NoiseZero()
+        )
+        posY_component = ValueComponent(
+            _type=_gen_type,
+            name="posY",
+            properties = posY_properties,
+            noise=posY_noise
+        )
+        components.append(posY_component)
+        mode_properties = ValueGeneratorProperties.Constant(
+            0
+        )
+        _gen_type = ValueGeneratorType.Constant
+        mode_noise = Noise(
+            _type=NoiseType.Zero,
+            properties=NoiseZero()
+        )
+        mode_component = ValueComponent(
+            _type=_gen_type,
+            name="mode",
+            properties = mode_properties,
+            noise=mode_noise
+        )
+        components.append(mode_component)
         generator = ValueGenerator(
             self.topic,
             self.pub_freq,
@@ -238,5 +285,5 @@ class KitchenGasSensorNode(Node):
 
 
 if __name__ == '__main__':
-    node = KitchenGasSensorNode()
+    node = MotionDetectorNode()
     node.start()

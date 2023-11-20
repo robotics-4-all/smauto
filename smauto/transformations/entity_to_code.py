@@ -34,6 +34,10 @@ def build_entity_code(entity):
         modelf = sensor_tpl.render(context)
     elif _type == 'actuator':
         modelf = actuator_tpl.render(context)
+    elif _type == 'hybrid':
+        raise NotImplementedError('Hybid Entities not yet supported')
+    else:
+        raise NotImplementedError(f'{_type} Entities not yet supported')
     return modelf
 
 

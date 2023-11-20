@@ -19,30 +19,27 @@ pretty.install()
 console = console.Console()
 
 
-
-
-class BedroomHumidifierMsg(PubSubMessage):
+class BedroomLampMsg(PubSubMessage):
         power: bool = False
-        timer: int = 0
 
 
-class BedroomHumidifierNode(Node):
+class BedroomLampNode(Node):
     def __init__(self, *args, **kwargs):
         self.tick_hz = 1
-        self.topic = 'bedroom.humidifier'
+        self.topic = 'bedroom.lamp'
         conn_params = ConnectionParameters(
-            host='snf-889260.vm.okeanos.grnet.gr',
-            port=1893,
-            username='porolog',
-            password='fiware',
+            host='localhost',
+            port=1883,
+            username='',
+            password='',
         )
         super().__init__(
-            node_name='entities.bedroom_humidifier',
+            node_name='entities.bedroom_lamp',
             connection_params=conn_params,
             *args, **kwargs
         )
         self.sub = self.create_subscriber(
-            msg_type=BedroomHumidifierMsg,
+            msg_type=BedroomLampMsg,
             topic=self.topic,
             on_message=self._on_message
         )
@@ -58,5 +55,5 @@ class BedroomHumidifierNode(Node):
 
 
 if __name__ == '__main__':
-    node = BedroomHumidifierNode()
+    node = BedroomLampNode()
     node.start()

@@ -1,6 +1,3 @@
-from commlib.transports.amqp import ConnectionParameters as AMQP_ConnectionParameters
-from commlib.transports.redis import ConnectionParameters as Redis_ConnectionParameters
-
 # An index of all current MQTT Brokers {'broker_name': broker_object}. Gets populated by Broker's __init()__.
 broker_index = {}
 
@@ -14,31 +11,12 @@ class BrokerAuthPlain:
 
 # A class representing an Automation
 class Broker:
-    """
-    The Broker class represents an MQTT broker structure used by Entities.
-    ...
-
-    Attributes
-    ----------
-        name: str
-            Broker name. e.g: 'home_mqtt'
-        host: str
-            IP address of the MQTT broker used for communications. e.g: '192.168.1.2'
-        credentials: BrokerAuthPlain object
-            Object used for authentication
-
-    Methods
-    -------
-    ---
-    """
-
-    def __init__(self, parent, name, host, port, credentials):
+    def __init__(self, parent, name, host, port, auth, ssl):
         """
         Creates and returns a Broker object
         :param name: Broker name. e.g: 'home_mqtt'
         :param host: IP address of the MQTT broker used for communications. e.g: '192.168.1.2'
         :param port: Port used for MQTT broker communication
-        :param credentials: BrokerAuthPlain used for authentication
         :param parent: Parameter required for Custom Class compatibility in textX
         """
         # TextX parent attribute. Required to use as custom class during metamodel instantiation
@@ -47,53 +25,27 @@ class Broker:
         self.name = name
         self.host = host
         self.port = port
-        self.credentials = credentials
+        self.auth = auth
+        self.ssl = ssl
 
 
 class MQTTBroker(Broker):
-    def __init__(self, parent, name, host, port, credentials):
-        super(MQTTBroker, self).__init__(parent, name, host, port, credentials)
-        # lazy import
-        from commlib.transports.mqtt import ConnectionParameters
-        if self.credentials is None:
-            username = ''
-            password = ''
-        else:
-            username = self.credentials.username
-            password = self.credentials.password
-        self.conn_params = ConnectionParameters(
-            host=self.host,
-            port=self.port,
-            username=username,
-            password=password,
-        )
+    def __init__(self, parent, name, host, port, auth, ssl=False):
+        super(MQTTBroker, self).__init__(parent, name, host, port, auth, ssl)
 
 
 class AMQPBroker(Broker):
 
-    def __init__(self, parent, name, host, port, vhost, credentials, exchange=''):
-
-        super(AMQPBroker, self).__init__(parent, name, host, port, credentials)
-
+    def __init__(self, parent, name, host, port, vhost, auth,
+                 topicExchange='amq.topic', rpcExchange='DEFAULT',
+                 ssl=False):
+        super(AMQPBroker, self).__init__(parent, name, host, port, auth, ssl)
         self.vhost = vhost
-        self.exchange = exchange
-
-        # Create commlib-py Credentials and ConnectionParameters objects for AMQP
-        self.credentials = AMQP_Credentials(self.credentials.username, self.credentials.password)
-        self.conn_params = AMQP_ConnectionParameters(host=self.host, port=self.port,
-                                                     vhost=vhost, creds=self.credentials)
+        self.topicExchange = topicExchange
+        self.rpcExchange = rpcExchange
 
 
 class RedisBroker(Broker):
-
-    def __init__(self, parent, name, host, port, credentials, db=0):
-
-        super(RedisBroker, self).__init__(parent, name, host, port, credentials)
-
+    def __init__(self, parent, name, host, port, auth, db=0, ssl=False):
+        super(RedisBroker, self).__init__(parent, name, host, port, auth, ssl)
         self.db = db
-
-        # Create commlib-py Credentials and ConnectionParameters objects for Redis
-        self.credentials = Redis_Credentials(self.credentials.username, self.credentials.password)
-        self.conn_params = Redis_ConnectionParameters(host=self.host, port=self.port,
-                                                      creds=self.credentials, db=self.db)
-

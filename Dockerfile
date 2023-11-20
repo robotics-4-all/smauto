@@ -15,5 +15,8 @@ COPY ./ /app
 
 RUN pip install .
 
+COPY ./models /models
+ENV SMAUTO_MODEL_REPO=/models
+
 #
 CMD ["uvicorn", "smauto.api:api", "--host", "0.0.0.0", "--port", "8080"]

@@ -1,20 +1,20 @@
-Metadata:
+Metadata
     name: SimpleHomeAutomation
     version: "0.1.0"
     description: "Simple home automation model."
     author: "klpanagi"
     email: "klpanagi@gmail.com"
+end
 
-MQTT:
-    name: cloud_platform_issel
+Broker<MQTT> cloud_platform_issel
     host: "localhost"
     port: 1883
     auth:
         username: ""
         password: ""
+end
 
-Entity:
-    name: bedroom_lamp
+Entity bedroom_lamp
     type: actuator
     topic: "bedroom.lamp"
     broker: cloud_platform_issel
@@ -23,25 +23,23 @@ Entity:
         - colorR: int
         - colorG: int
         - colorB: int
+end
 
-Entity:
-    name: motion_detector
+Entity motion_detector
     type: sensor
 	freq: 1
     topic: "bedroom.motion_detector"
     broker: cloud_platform_issel
     attributes:
         - detected: bool -> replay([false, false, false, false, true], -1)
-        - posX: int -> saw(0, 3, 1)
+        - posX: int -> saw(0, 10, 1)
         - posY: int -> gaussian(0, 10, 1) with noise uniform(0, 1)
-		# - posY: int -> replay([1, 2, 3, 4, 5], -1) with noise uniform(0, 1)
-        - pos: list -> replay("~/recorded_data")  # Generator not yet Implemented
+		// - posY: int -> replay([1, 2, 3, 4, 5], -1) with noise uniform(0, 1)
         - mode: str
+end
 
-Automation:
-    name: motion_detected_self_start
+Automation motion_detected_self_start
     condition:
-        # Pythonic expressions: A is true/false
         (motion_detector.detected is true) AND
         (motion_detector.posX >= 5)
     enabled: true
@@ -50,3 +48,4 @@ Automation:
         - bedroom_lamp.power: true
     starts:
         - motion_detected_self_start
+end

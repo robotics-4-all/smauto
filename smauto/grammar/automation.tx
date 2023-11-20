@@ -1,13 +1,14 @@
 import entity
 import condition
 import types
+import utils
 
 // === Overall Automation ===
 Automation:
-    'Automation:'
+    'Automation' name=ID
         (
-        ('name:' name=ID)
         ('condition:' condition=Condition)
+        ('description:' description=STRING)?
         ('actions:' actions*=Action)?
         ('freq:' freq=INT)?
         ('enabled:' enabled=BOOL)?
@@ -17,6 +18,7 @@ Automation:
         ('stops:' '-' stops*=[Automation:FQN|+pm:automations]['-'])?
         ('after:' '-' after*=[Automation:FQN|+pm:automations]['-'])?
         )#
+    'end'
 ;
 
 AutomationDependency:
@@ -52,6 +54,3 @@ ListAction:
 DictAction:
     ('-' attribute=[DictAttribute:FQN|+pm:entities.attributes] ':' value=Dict)
 ;
-
-// === Fully Qualified Names Rule ===
-FQN: ID('.'ID)*;

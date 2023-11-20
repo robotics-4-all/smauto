@@ -1,0 +1,64 @@
+import utils
+
+MessageBroker:
+    AMQPBroker | MQTTBroker | RedisBroker
+;
+
+
+BrokerConnection:
+    'ref' ':' ref=[MessageBroker:FQN]
+    'auth' ':' auth=Authentication
+;
+
+
+Authentication: AuthPlain | AuthApiKey | AuthCert;
+
+AuthPlain:
+    'username' ':' username=STRING
+    'password' ':' password=STRING
+;
+
+AuthApiKey:
+    'key' ':' key=STRING
+;
+
+AuthCert:
+    ('cert' ':' cert=STRING) | ('certPath' ':' certPath=STRING)
+;
+
+AMQPBroker:
+    'Broker<AMQP>' name=ID
+    (
+        ('host:' host=STRING)
+        ('port:' port=INT)
+        ('vhost:' vhost=STRING)?
+        ('topicExchange:' topicE=STRING)?
+        ('rpcExchange:' rpcE=STRING)?
+        ('ssl' ':' ssl=BOOL)?
+        ('auth' ':' auth=Authentication)?
+    )#
+    'end'
+;
+
+MQTTBroker:
+    'Broker<MQTT>' name=ID
+    (
+        ('host:' host=STRING)
+        ('port:' port=INT)
+        ('ssl' ':' ssl=BOOL)?
+        ('auth' ':' auth=Authentication)?
+    )#
+    'end'
+;
+
+RedisBroker:
+    'Broker<Redis>' name=ID
+    (
+        ('host:' host=STRING)
+        ('port:' port=INT)
+        ('db:' db=INT)?
+        ('ssl' ':' ssl=BOOL)?
+        ('auth' ':' auth=Authentication)?
+    )#
+    'end'
+;

@@ -38,8 +38,8 @@ class {{ entity.camel_name }}Node(Node):
         conn_params = ConnectionParameters(
             host='{{ entity.broker.host }}',
             port={{ entity.broker.port }},
-            username='{{ entity.broker.credentials.username }}',
-            password='{{ entity.broker.credentials.password }}',
+            username='{{ entity.broker.auth.username }}',
+            password='{{ entity.broker.auth.password }}',
         )
         super().__init__(
             node_name='entities.{{ entity.name.lower() }}',

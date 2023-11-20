@@ -1,0 +1,12 @@
+// FQN: ID('.'ID)*;
+FQN: ID+['.'];
+FQNI: ID+['.']('.*')?;
+// Import: 'import' importURI=FQNI ('as' name=ID)?;
+NID: /(.*?)\n/;
+NIDREF: NID+['.']('.*')?;
+Import: 'import' name=STRING;
+
+// Comments
+Comment: CommentLine | CommentBlock ;
+CommentLine: /\/\/.*?$/;
+CommentBlock: /\/\*(.|\n)*?\*\//;

@@ -1,15 +1,22 @@
 #!/usr/bin/env python
 
+"""
+If you are going to execute this in google colab, uncomment the next line
+!pip install commlib-py>=0.11.0
+"""
+
 import time
 import random
 
 from enum import Enum
 from dataclasses import dataclass
+from pydantic import BaseModel
 import time
 import numpy as np
 from typing import Optional
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
-from commlib.transports.mqtt import ConnectionParameters
 from rich import print, console, pretty
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
@@ -181,27 +188,105 @@ class ValueGenerator:
                     break
 
 
-class BedroomTemperatureSensorMsg(PubSubMessage):
-        temperature: float = 0.0
+class Time(BaseModel):
+    hour: int = 0
+    minute: int = 0
+    second: int = 0
+    time_str: str = ''
 
 
-class BedroomTemperatureSensorNode(Node):
+class ClockMsg(PubSubMessage):
+    time: Time
+
+
+class SystemClock(Node):
     def __init__(self, *args, **kwargs):
-        self.pub_freq = 10
-        self.topic = 'bedroom.temperature'
+        self.pub_freq = 1
+        self.topic = 'system.clock'
+        from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='snf-889260.vm.okeanos.grnet.gr',
-            port=1893,
-            username='porolog',
-            password='fiware',
+            host='locsys.issel.ee.auth.gr',
+            port=1883,
+            username='r4a',
+            password='r4a123$',
         )
         super().__init__(
-            node_name='entities.bedroom_temperature_sensor',
+            node_name='system_clock',
             connection_params=conn_params,
             *args, **kwargs
         )
         self.pub = self.create_publisher(
-            msg_type=BedroomTemperatureSensorMsg,
+            msg_type=ClockMsg,
+            topic=self.topic
+        )
+        self.rate = Rate(self.pub_freq)
+
+    def start(self):
+        self.run()
+        print(f'[*] Initiated System Clock @ {self.topic}')
+        while True:
+            self.send_msg()
+            self.rate.sleep()
+
+    def send_msg(self):
+        now = datetime.now()
+        t_str = now.strftime("%H:%M:%S")
+        hour = int(now.hour)
+        minute = int(now.minute)
+        second = int(now.second)
+        msg = ClockMsg(time=Time(
+            hour=hour,
+            minute=minute,
+            second=second,
+            time_str=t_str
+        ))
+        self.pub.publish(msg)
+
+
+# ThreadPoolExecutor worker callback
+def _worker_clb(f):
+    e = f.exception()
+    if e is None:
+        return
+    trace = []
+    tb = e.__traceback__
+    while tb is not None:
+        trace.append({
+            "filename": tb.tb_frame.f_code.co_filename,
+            "name": tb.tb_frame.f_code.co_name,
+            "lineno": tb.tb_lineno
+        })
+        tb = tb.tb_next
+    print({
+        'type': type(e).__name__,
+        'message': str(e),
+        'trace': trace
+    })
+
+
+class TemperatureSensorMsg(PubSubMessage):
+        temperature: float = 0.0
+
+
+class TemperatureSensorNode(Node):
+    def __init__(self, *args, **kwargs):
+        self.pub_freq = 1
+        self.topic = 'home.temperature'
+        self.name = 'temperature_sensor'
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='locsys.issel.ee.auth.gr',
+            port=1883,
+            username='r4a',
+            password='r4a123$',
+        )
+        super().__init__(
+            node_name='entities.temperature_sensor',
+            connection_params=conn_params,
+            *args, **kwargs
+        )
+        self.pub = self.create_publisher(
+            msg_type=TemperatureSensorMsg,
             topic=self.topic
         )
 
@@ -213,8 +298,8 @@ class BedroomTemperatureSensorNode(Node):
         )
         _gen_type = ValueGeneratorType.Linear
         temperature_noise = Noise(
-            _type=NoiseType.Gaussian,
-            properties=NoiseGaussian(0, 0.05)
+            _type=NoiseType.Zero,
+            properties=NoiseZero()
         )
         temperature_component = ValueComponent(
             _type=_gen_type,
@@ -231,12 +316,72 @@ class BedroomTemperatureSensorNode(Node):
         )
         return generator
 
-
-    def start(self):
+    def start(self, executor=None):
+        self.run()
         generator = self.init_gen_components()
-        generator.start()
+        if executor:
+            work = executor.submit(
+                generator.start
+            ).add_done_callback(_worker_clb)
+            print(f'[*] Initiated Entity {self.name} @ {self.topic}')
+            return work
+        else:
+            generator.start()
+            return self
+
+
+class AirconditionMsg(PubSubMessage):
+        power: bool = False
+
+
+class AirconditionNode(Node):
+    def __init__(self, *args, **kwargs):
+        self.tick_hz = 1
+        self.topic = 'home.aircondition'
+        self.name = 'aircondition'
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='locsys.issel.ee.auth.gr',
+            port=1883,
+            username='r4a',
+            password='r4a123$',
+        )
+        super().__init__(
+            node_name='entities.aircondition',
+            connection_params=conn_params,
+            *args, **kwargs
+        )
+        self.sub = self.create_subscriber(
+            msg_type=AirconditionMsg,
+            topic=self.topic,
+            on_message=self._on_message
+        )
+
+    def start(self, executor=None):
+        self.run()
+        print(f'[*] Initiated Entity {self.name} @ {self.topic}')
+        return self
+
+    def _on_message(self, msg):
+        print(f'[*] State change command received: {msg}')
+
 
 
 if __name__ == '__main__':
-    node = BedroomTemperatureSensorNode()
-    node.start()
+    sensors = []
+    actuators = []
+    workers = []
+    max_workers = 100
+    actuators.append(AirconditionNode())
+    sensors.append(TemperatureSensorNode())
+    sclock = SystemClock()
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        sclock_work = executor.submit(
+            sclock.start
+        ).add_done_callback(_worker_clb)
+        for node in sensors:
+            work = node.start(executor)
+            workers.append(work)
+        for node in actuators:
+            node.start()

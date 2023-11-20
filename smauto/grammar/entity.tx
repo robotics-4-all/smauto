@@ -1,16 +1,18 @@
-import broker
+import communication
 import types
+import utils
 
 Entity:
-    'Entity:'
+    'Entity' name=ID
         (
-			('name:' name=ID)?
 			('type:' etype=EntityType)
 			('topic:' topic=STRING)
+            ('description:' description=STRING)?
 			('freq:' freq=NUMBER)?
-			('broker:' broker=[Broker])
+			('broker:' broker=[MessageBroker])
 			('attributes:' '-' attributes*=Attribute['-'])
 		)#
+    'end'
 ;
 
 EntityType:
@@ -117,6 +119,3 @@ UniformNoise:
 GaussianNoise:
     'gaussian' '(' mu=NUMBER ',' sigma=NUMBER ')'
 ;
-
-
-NID: /(.*?)\n/;

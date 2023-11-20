@@ -1,9 +1,10 @@
 import entity
 import types
+import utils
 
 // === Conditions ===
-// Condition: AdvancedCondition | PrimitiveCondition | ConditionGroup ;
-Condition: ConditionGroup | PrimitiveCondition | AdvancedCondition;
+Condition: AdvancedCondition | PrimitiveCondition | ConditionGroup ;
+//Condition: ConditionGroup | PrimitiveCondition | AdvancedCondition;
 
 ConditionGroup:
     '(' r1=Condition ')' operator=LogicalOperator '(' r2=Condition ')'
@@ -11,9 +12,9 @@ ConditionGroup:
 ;
 
 PrimitiveCondition:
-    BoolCondition       |
     TimeCondition       |
     NumericCondition    |
+    BoolCondition       |
     StringCondition     |
     ListCondition       |
     DictCondition
@@ -157,13 +158,13 @@ SimpleTimeAttr:
 
 // SharedOperator: '==' | '!=' | 'is' | 'is not';
 
-StringOperator: '~' | '!~' | '==' | '!=' | 'is not' | 'is' | 'has' | 'in' | 'not in';
+StringOperator: '~' | '!~' | '==' | '!=' | 'has' | 'in' | 'not in';
 
-NumericOperator: '>=' | '>' | '<=' | '<' | '==' | '!=' | 'is not' | 'is';
+NumericOperator: '>=' | '>' | '<=' | '<' | '==' | '!=';
 
 LogicalOperator: 'AND' | 'OR' | 'NOT' | 'XOR' | 'NOR' | 'XNOR' | 'NAND';
 
-BooleanOperator: '==' | '!=' | 'is not' | 'is';
+BooleanOperator: 'is not' | 'is';
 
 ListOperator: '==' | '!=' | 'is' | 'is not' | 'in' | 'not in';
 

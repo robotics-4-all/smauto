@@ -1,35 +1,39 @@
 import automation
-import broker
+import communication
 import entity
 import types
+import utils
 
 SmAutoModel:
     imports*=Import
     (metadata=Metadata)?
+    (monitor=RTMonitor)?
     (
-    brokers*=Broker
+    brokers*=MessageBroker
     entities*=Entity
     automations*=Automation
     )#
 ;
 
 Metadata:
-    'Metadata:'
+    'Metadata'
     (
         ('name:' name=ID)
         ('version:' version=STRING)
         ('author:' author=STRING)?
         ('email:' email=STRING)?
         ('description:' description=STRING)?
+    'end'
     )#
 ;
 
-// FQN: ID('.'ID)*;
-FQN: ID+['.'];
-FQNI: ID+['.']('.*')?;
-// Import: 'import' importURI=FQNI ('as' name=ID)?;
-NIDREF: NID+['.']('.*')?;
-Import: 'import' name=STRING;
-
-// Comments
-Comment: /\#.*?$/;
+RTMonitor:
+    'RTMonitor'
+    (
+        ('broker:' broker=[MessageBroker])
+		('namespace:' ns=STRING)?
+		('eventTopic:' eTopic=STRING)?
+		('logsTopic:' lTopic=STRING)?
+    'end'
+    )#
+;

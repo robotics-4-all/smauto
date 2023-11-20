@@ -47,6 +47,7 @@ from smauto.lib.condition import (
     TimeCondition,
     StringCondition,
     DictCondition,
+    InRangeCondition,
     ListCondition
 )
 
@@ -56,7 +57,7 @@ CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 CUSTOM_CLASSES = [
     Automation, Entity, Condition, ConditionGroup, PrimitiveCondition,
     AdvancedCondition, NumericCondition, BoolCondition, StringCondition,
-    ListCondition, DictCondition, TimeCondition,
+    ListCondition, DictCondition, TimeCondition, InRangeCondition,
     Attribute, IntAttribute, FloatAttribute, TimeAttribute,
     StringAttribute, BoolAttribute, ListAttribute,
     DictAttribute, Broker, MQTTBroker, AMQPBroker,
@@ -74,7 +75,7 @@ ENTITY_BUILDINS = {
         freq=1,
         topic='system.clock',
         broker=MQTTBroker(None, name='fake', host='localhost',
-                          port=1883, credentials=None),
+                          port=1883, auth=None),
         attributes=[
             TimeAttribute(None, 'time', None)
         ]
@@ -82,23 +83,23 @@ ENTITY_BUILDINS = {
 }
 
 FakeBroker = """
-MQTT:
-    name: fake_broker
+Broker<MQTT> fake_broker
     host: "localhost"
     port: 1883
-    credentials:
+    auth:
         username: ""
         password: ""
+end
 """
 
 SystemClock = """
-Entity:
-    name: system_clock
+Entity system_clock
     type: sensor
     topic: "system.clock"
     broker: fake_broker
     attributes:
         - time: time
+end
 """
 
 GLOBAL_REPO = GlobalModelRepository()
@@ -138,11 +139,11 @@ def get_metamodel(debug=False):
         CURRENT_FPATH.joinpath('grammar/smauto.tx'),
         classes=class_provider,
         auto_init_attributes=False,
-        global_repository=GLOBAL_REPO,
+        # textx_tools_support=True,
+        # global_repository=GLOBAL_REPO,
+        # global_repository=True,
         debug=debug
     )
-    # metamodel.register_obj_processors(obj_processors)
-    metamodel.register_model_processor(model_proc)
 
     metamodel.register_scope_providers(
         {
@@ -165,8 +166,8 @@ def get_buildin_models(metamodel):
     return buildin_models
 
 
+
 def build_model(model_path):
-    # Parse model
     mm = get_metamodel(debug=False)
     model = mm.model_from_file(model_path)
     # entities = get_children_of_type('Entity', model)
