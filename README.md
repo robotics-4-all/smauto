@@ -150,26 +150,32 @@ using a message broker. Entities have the following required properties:
 **Attributes** are what define the structure and the type of information in the
 messages the Entity sends to the communication broker.
 
-You can configure an Entity  using the following syntax:
+Entity definitions follow the syntax of the below examples, for both sensor and actuator types. The difference between the two is that sensors are considered "Producers" while actuators are "Consumers" in the environment. Sensor Entities have an extra property, that is the `freq` to set the publishing frequency of either physical or virtual.
 
 ```
-Entity robot_cleaner
-    type: robot
-    topic: "bedroom.robot_cleaner"
-    broker: upstairs_broker
+Entity weather_station
+    type: sensor
+    freq: 5
+    topic: "bedroom.weather_station"
+    broker: cloud_broker
     attributes:
-        - battery: float
-        - cleaning_mode: string
-        - on: bool
-        - destinations: list
-        - location: dict = {
-            x: int,
-            y: int
-        }
+        - temperature: float
+        - humidity: float
+        - pressure: float
 end
 ```
 
+```
+Entity bedroom_lamp
+    type: actuator
+    topic: "bedroom.lamp"
+    broker: cloud_platform_issel
+    attributes:
+        - power: bool
+end
+```
 
+- **type**: The Entity type. Currently supports `sensor`, `actuator` or `hybrid`
 - **topic**: The Topic in the Broker used by the Entity to send and receive
 messages. Note that / should be substituted with .
 (e.g: bedroom/aircondition -> bedroom.aircondition).
@@ -490,6 +496,49 @@ Where object can be a string, number, boolean (true/false), list or dictionary.
 - aircondition.mode: "cool"
 - aircondition.power: true
 ```
+
+### Metadata
+
+An SmAuto model can use the **Metadata** concept of the language to define meta-information as below
+
+```
+Metadata
+    name: SimpleHomeAutomation
+    version: "0.1.0"
+    description: "Simple home automation model."
+    author: "klpanagi"
+    email: "klpanagi@gmail.com"
+end
+```
+
+The properties of the **Metadata** concept are:
+- **name**: The name of the model
+- **description**: The standard deviation of the attribute buffer
+- **author**: The variance of the attribute buffer
+- **email**: The minimum value in the attribute buffer
+- **extraAttr: (UNDER DEVELOPMENT)**: Include user-defined attributes/properties which can be used by M2M and M2T transformations and custom scripts.
+
+
+### RTMonitor
+
+RTMonitor is used to define the monitoring parameters of an SmAuto runtime. Compiled Automations are handled by an executor that is also configured to feed runtime information, such as logs and events (automation-related states etc).
+
+```
+RTMonitor
+    broker: default_broker
+    namespace: "smauto.simple_home_auto"
+    eventTopic: "event"
+    logsTopic: "logs"
+end
+```
+
+The properties of **RTMonitor** are:
+- **broker**: Reference to a Broker definition
+- **namespace**: A namespace used for constructing the URIs (prefix)
+- **eventsTopic**: Topic to send events
+- **logsTopic**: Topic to send logs
+- **extraAttr: (UNDER DEVELOPMENT)**: Include user-defined attributes/properties which can be used by M2M and M2T transformations and custom scripts.
+
 
 ## Constraints
 
