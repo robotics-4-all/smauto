@@ -12,6 +12,8 @@ from pydantic import BaseModel
 from collections import deque
 import statistics
 from concurrent.futures import ThreadPoolExecutor, wait
+from threading import Event
+import signal
 
 {# {% if entity.broker.__class__.__name__ == 'MQTTBroker' %} #}
 {# from commlib.transports.mqtt import ConnectionParameters #}
@@ -27,6 +29,13 @@ from commlib.node import Node
 
 pretty.install()
 console = console.Console()
+
+terminate_event = Event()
+
+
+def signal_handler(sig, frame):
+    print("Interrupt received. Attempting to gracefully terminate workers.")
+    terminate_event.set()
 
 
 class Time(BaseModel):
@@ -307,22 +316,25 @@ class Automation():
     def state_change(self, new_state: AutomationState, msg: str = ""):
         self.state = new_state
         msg = StateChangeMsg(state=new_state, msg=msg, automation=self.name)
-        self.rtm.send_event(msg)
+        if self.rtm:
+            self.rtm.send_event(msg)
 
     def log(self, msg: str, level: str = 'INFO'):
         log_msg = LogMsg(msg=msg, level=level)
-        self.rtm.send_log(log_msg)
+        if self.rtm:
+            self.rtm.send_log(log_msg)
         print(f'[Automation: {self.name}]: {msg}')
 
     def start(self):
         self.state_change(AutomationState.IDLE)
         self.print()
         self.log(f"Starting Automation: {self.name}")
-        while True:
+        while not terminate_event.is_set():
             if len(self.after) == 0:
                 self.state_change(AutomationState.RUNNING)
             # Wait for dependend automations to finish
-            while self.state == AutomationState.IDLE:
+            while self.state == AutomationState.IDLE and \
+                not terminate_event.is_set():
                 wait_for = [
                     dep for dep in self.after
                     if self.autos_map[dep].state == AutomationState.RUNNING
@@ -333,7 +345,8 @@ class Automation():
                     f'Waiting for dependend automations to finish: {wait_for}'
                 )
                 time.sleep(1)
-            while self.state == AutomationState.RUNNING:
+            while self.state == AutomationState.RUNNING and \
+                not terminate_event.is_set():
                 try:
                     triggered = self.evaluate_condition()
                     if triggered:
@@ -383,6 +396,7 @@ class Executor(Node):
         self.logs_topic = '{{ rt_monitor.lTopic }}'
         self._etopic = f'{self.namespace}.{self.event_topic}'
         self._ltopic = f'{self.namespace}.{self.logs_topic}'
+        {% if rt_monitor %}
         self._init_params()
         super().__init__(
             node_name=self.name,
@@ -391,6 +405,9 @@ class Executor(Node):
         )
         self.rtm = RTMonitor(self, self._etopic, self._ltopic)
         self.run()
+        {% else %}
+        self.rtm = None
+        {% endif %}
 
         self.entities = self.create_entities()
         self.entities_map = self.build_entities_map(self.entities)
@@ -399,6 +416,7 @@ class Executor(Node):
         for auto in self.autos:
             auto.set_autos(self.autos_map)
 
+    {% if rt_monitor %}
     def _init_params(self):
         {% if rt_monitor.broker.__class__.__name__ == 'MQTTBroker' %}
         from commlib.transports.mqtt import ConnectionParameters
@@ -426,6 +444,7 @@ class Executor(Node):
         )
         {% endif %}
         self.conn_params = conn_params
+    {% endif %}
 
     def build_autos_map(self, autos):
         a_map = {auto.name: auto for auto in autos}
@@ -596,6 +615,16 @@ class Executor(Node):
 
 
 if __name__ == '__main__':
-    executor = Executor()
-    executor.start_entities()
-    executor.start_automations()
+    # Register the signal handler for SIGINT (Ctrl+C)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    try:
+        executor = Executor()
+        executor.start_entities()
+        executor.start_automations()
+    except KeyboardInterrupt:
+        print("Keyboard interrupt detected. Exiting...")
+        terminate_event.set()
+    except Exception:
+        print("Interrupt detected. Exiting...")
+        terminate_event.set()
