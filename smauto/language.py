@@ -67,7 +67,7 @@ CUSTOM_CLASSES = [
 ]
 
 
-ENTITY_BUILDINS = {
+ENTITY_BUILTINS = {
     'system_clock': Entity(
         None,
         name='system_clock',
@@ -81,26 +81,6 @@ ENTITY_BUILDINS = {
         ]
     )
 }
-
-FakeBroker = """
-Broker<MQTT> fake_broker
-    host: "localhost"
-    port: 1883
-    auth:
-        username: ""
-        password: ""
-end
-"""
-
-SystemClock = """
-Entity system_clock
-    type: sensor
-    topic: "system.clock"
-    broker: fake_broker
-    attributes:
-        - time: time
-end
-"""
 
 GLOBAL_REPO = GlobalModelRepository()
 
@@ -129,19 +109,38 @@ def process_time_class(model):
         if t.second > 60 or t.second < 0:
             raise TextXSemanticError('Time.seconds must be in range [0, 60]')
 
+def entity_name_uniqueness(model):
+    _ids = []
+    entities = get_children_of_type('Entity', model)
+    for e in entities:
+        if e.name in _ids:
+            raise TextXSemanticError(f'Entity with name {e.name} already exists')
+        _ids.append(e.name)
+
+
+def automation_name_uniqueness(model):
+    _ids = []
+    autos = get_children_of_type('Automation', model)
+    for a in autos:
+        if a.name in _ids:
+            raise TextXSemanticError(f'Automation with name {a.name} already exists')
+        _ids.append(a.name)
+
 
 def model_proc(model, metamodel):
     process_time_class(model)
+    entity_name_uniqueness(model)
+    automation_name_uniqueness(model)
 
 
-def get_metamodel(debug=False):
+def get_metamodel(debug: bool = False, global_repo: bool = False):
     metamodel = metamodel_from_file(
         CURRENT_FPATH.joinpath('grammar/smauto.tx'),
         classes=class_provider,
         auto_init_attributes=False,
-        # textx_tools_support=True,
+        textx_tools_support=True,
         # global_repository=GLOBAL_REPO,
-        # global_repository=True,
+        global_repository=global_repo,
         debug=debug
     )
 
@@ -156,6 +155,7 @@ def get_metamodel(debug=False):
             ),
         }
     )
+    metamodel.register_model_processor(model_proc)
     return metamodel
 
 
@@ -164,7 +164,6 @@ def get_buildin_models(metamodel):
     buildin_models.add_model(metamodel.model_from_str(FakeBroker))
     buildin_models.add_model(metamodel.model_from_str(SystemClock))
     return buildin_models
-
 
 
 def build_model(model_path):

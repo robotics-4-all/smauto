@@ -73,6 +73,7 @@ NumericValueGen:
     LinearFun       |
     SawFun			|
     GaussianFun     |
+    SinusFun		|
     ReplayFun       |
     ReplayFileFun
 ;
@@ -85,6 +86,10 @@ DictValueGen: ReplayFun | ReplayFileFun;
 
 GaussianFun:
     'gaussian' '(' value=NUMBER ',' maxValue=NUMBER ',' sigma=NUMBER ')'
+;
+
+SinusFun:
+    'sinus' '(' dc=NUMBER ',' amplitude=NUMBER ',' step=NUMBER ')'
 ;
 
 ConstantFun:

@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pydantic import BaseModel
 import time
 import numpy as np
+import math
 from typing import Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
@@ -110,6 +111,12 @@ class ValueGeneratorProperties:
         values: list
         times: int
 
+    @dataclass
+    class Sinus:
+        dc: float
+        amplitude: float
+        step: float
+
 
 class ValueGeneratorType(Enum):
     Constant = 1
@@ -157,6 +164,9 @@ class ValueGenerator:
                     value = c.properties.value + c.noise.generate()
                 elif c.type == ValueGeneratorType.Linear:
                     value = c.properties.start + (time.time() - start) * c.properties.step
+                    value += c.noise.generate()
+                elif c.type == ValueGeneratorType.Sinus:
+                    value = c.properties.dc + amplitude * math.sin((time.time() - start) * c.properties.step)
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Saw:
                     value = c.properties.min + \
