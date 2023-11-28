@@ -20,28 +20,27 @@ console = console.Console()
 
 
 class BedroomLampMsg(PubSubMessage):
-        power: bool = False
+    power: bool = False
 
 
 class BedroomLampNode(Node):
     def __init__(self, *args, **kwargs):
         self.tick_hz = 1
-        self.topic = 'bedroom.lamp'
+        self.topic = "bedroom.lamp"
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         super().__init__(
-            node_name='entities.bedroom_lamp',
+            node_name="entities.bedroom_lamp",
             connection_params=conn_params,
-            *args, **kwargs
+            *args,
+            **kwargs,
         )
         self.sub = self.create_subscriber(
-            msg_type=BedroomLampMsg,
-            topic=self.topic,
-            on_message=self._on_message
+            msg_type=BedroomLampMsg, topic=self.topic, on_message=self._on_message
         )
 
     def start(self):
@@ -51,9 +50,9 @@ class BedroomLampNode(Node):
             rate.sleep()
 
     def _on_message(self, msg):
-        print(f'[*] State change command received: {msg}')
+        print(f"[*] State change command received: {msg}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     node = BedroomLampNode()
     node.start()

@@ -21,7 +21,7 @@ class Time(BaseModel):
     hour: int = 0
     minute: int = 0
     second: int = 0
-    time_str: str = ''
+    time_str: str = ""
 
 
 class ClockMsg(PubSubMessage):
@@ -31,22 +31,17 @@ class ClockMsg(PubSubMessage):
 class SystemClock(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = 1
-        self.topic = 'system.clock'
+        self.topic = "system.clock"
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         super().__init__(
-            node_name='system_clock',
-            connection_params=conn_params,
-            *args, **kwargs
+            node_name="system_clock", connection_params=conn_params, *args, **kwargs
         )
-        self.pub = self.create_publisher(
-            msg_type=ClockMsg,
-            topic=self.topic
-        )
+        self.pub = self.create_publisher(msg_type=ClockMsg, topic=self.topic)
         self.rate = Rate(self.pub_freq)
 
     def start(self):
@@ -61,15 +56,12 @@ class SystemClock(Node):
         hour = int(now.hour)
         minute = int(now.minute)
         second = int(now.second)
-        msg = ClockMsg(time=Time(
-            hour=hour,
-            minute=minute,
-            second=second,
-            time_str=t_str
-        ))
+        msg = ClockMsg(
+            time=Time(hour=hour, minute=minute, second=second, time_str=t_str)
+        )
         self.pub.publish(msg)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     clock = SystemClock()
     clock.start()

@@ -21,10 +21,10 @@ class Time(BaseModel):
     hour: int = 0
     minute: int = 0
     second: int = 0
-    time_str: str = ''
+    time_str: str = ""
 
     def to_int(self):
-        val = self.second + int(self.minute<<8) + int(self.hour<<16)
+        val = self.second + int(self.minute << 8) + int(self.hour << 16)
         return val
 
 
@@ -39,20 +39,18 @@ class Attribute:
 
 
 class BedroomLampMsg(PubSubMessage):
-        power: bool = False
+    power: bool = False
 
 
 class MotionDetectorMsg(PubSubMessage):
-        detected: bool = False
-        posX: int = 0
-        pos: list = []
-        mode: str = ''
-
+    detected: bool = False
+    posX: int = 0
+    pos: list = []
+    mode: str = ""
 
 
 class Entity(Node):
-    def __init__(self, name, topic, conn_params,
-                 attributes, msg_type, *args, **kwargs):
+    def __init__(self, name, topic, conn_params, attributes, msg_type, *args, **kwargs):
         self.name = name
         self.camel_name = self.to_camel_case(name)
         self.topic = topic
@@ -66,12 +64,15 @@ class Entity(Node):
         super().__init__(
             node_name=self.camel_name,
             connection_params=self.conn_params,
-            *args, **kwargs
+            *args,
+            **kwargs,
         )
 
     def get_buffer(self, attr_name):
-        if len(self.attributes_buff[attr_name]) != \
-            self.attributes_buff[attr_name].maxlen:
+        if (
+            len(self.attributes_buff[attr_name])
+            != self.attributes_buff[attr_name].maxlen
+        ):
             return [0] * self.attributes_buff[attr_name].maxlen
         else:
             return self.attributes_buff[attr_name]
@@ -117,9 +118,7 @@ class Entity(Node):
     def start(self):
         # Create and start communications subscriber on Entity's topic
         self.state_sub = self.create_subscriber(
-            topic=self.topic,
-            msg_type=self.msg_type,
-            on_message=self.update_state
+            topic=self.topic, msg_type=self.msg_type, on_message=self.update_state
         )
         self.state_sub.run()
         self.state_pub = self.create_publisher(
@@ -142,7 +141,6 @@ class EntityAct(Entity):
         super().__init__(*args, **kwargs)
 
 
-
 class AutomationState:
     IDLE = 0
     RUNNING = 1
@@ -158,16 +156,14 @@ class Condition(object):
         try:
             if eval(
                 self.expression,
+                {"entities": entities},
                 {
-                    'entities': entities
+                    "std": statistics.stdev,
+                    "var": statistics.variance,
+                    "mean": statistics.mean,
+                    "min": min,
+                    "max": max,
                 },
-                {
-                    'std': statistics.stdev,
-                    'var': statistics.variance,
-                    'mean': statistics.mean,
-                    'min': min,
-                    'max': max,
-                }
             ):
                 return True
             else:
@@ -178,8 +174,21 @@ class Condition(object):
 
 
 class Automation(Node):
-    def __init__(self, name, condition, actions, freq, enabled, continuous,
-                 checkOnce, after, starts, stops, conn_params, entities):
+    def __init__(
+        self,
+        name,
+        condition,
+        actions,
+        freq,
+        enabled,
+        continuous,
+        checkOnce,
+        after,
+        starts,
+        stops,
+        conn_params,
+        entities,
+    ):
         enabled = True if enabled is None else enabled
         continuous = True if continuous is None else continuous
         checkOnce = False if checkOnce is None else checkOnce
@@ -210,12 +219,9 @@ class Automation(Node):
             return False
 
     def print(self):
-        after = f'\n'.join(
-            [f"      - {self.autos_map[dep]}" for dep in self.after])
-        starts = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.starts])
-        stops = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.stops])
+        after = f"\n".join([f"      - {self.autos_map[dep]}" for dep in self.after])
+        starts = f"\n".join([f"      - {dep.name}" for dep in self.starts])
+        stops = f"\n".join([f"      - {dep.name}" for dep in self.stops])
         print(
             f"[*] Automation <{self.name}>\n"
             f"    Condition: {self.condition.expression}\n"
@@ -262,24 +268,27 @@ class Automation(Node):
             # Wait for dependend automations to finish
             while self.state == AutomationState.IDLE:
                 wait_for = [
-                    dep for dep in self.after
+                    dep
+                    for dep in self.after
                     if self.autos_map[dep].state == AutomationState.RUNNING
                 ]
                 if len(wait_for) == 0:
                     self.state = AutomationState.RUNNING
                 print(
-                    f'[bold magenta]\[{self.name}] Waiting for dependend '
-                    f'automations to finish:[/bold magenta] {wait_for}'
+                    f"[bold magenta]\[{self.name}] Waiting for dependend "
+                    f"automations to finish:[/bold magenta] {wait_for}"
                 )
                 time.sleep(1)
             while self.state == AutomationState.RUNNING:
                 try:
                     triggered = self.evaluate_condition()
                     if triggered:
-                        print(f"[bold yellow][*] Automation <{self.name}> "
+                        print(
+                            f"[bold yellow][*] Automation <{self.name}> "
                             f"Triggered![/bold yellow]"
                         )
-                        print(f"[bold blue][*] Condition met: "
+                        print(
+                            f"[bold blue][*] Condition met: "
                             f"{self.condition.cond_lambda}"
                         )
                         # If automation triggered run its actions
@@ -294,7 +303,7 @@ class Automation(Node):
                         self.state = AutomationState.EXITED_SUCCESS
                     time.sleep(1 / self.freq)
                 except Exception as e:
-                    print(f'[ERROR] {e}')
+                    print(f"[ERROR] {e}")
                     return
             # time.sleep(self.time_between_activations)
             self.state = AutomationState.IDLE
@@ -307,7 +316,7 @@ class Action:
         self.entity = entity
 
 
-class Executor():
+class Executor:
     def __init__(self):
         self.entities = self.create_entities()
         self.entities_map = self.build_entities_map(self.entities)
@@ -326,60 +335,54 @@ class Executor():
 
     def create_automations(self, entities):
         autos = []
-        autos.append(Automation(
-            name='motion_detected_1',
-            condition=Condition(
-                expression="(entities['motion_detector'].attributes_dict['pos'] == [10, 0])"
-            ),
-            actions=[
-                Action('power', True, entities['bedroom_lamp'])
-            ],
-            freq=1,
-            enabled=True,
-            continuous=True,
-            checkOnce=False,
-            after=[
-            ],
-            starts=[
-            ],
-            stops=[
-            ],
-            conn_params=None,
-            entities=entities
-        ))
-        autos.append(Automation(
-            name='motion_detected_2',
-            condition=Condition(
-                expression="((entities['motion_detector'].attributes_dict['detected'] == True) and (entities['motion_detector'].attributes_dict['posX'] == 10))"
-            ),
-            actions=[
-                Action('power', True, entities['bedroom_lamp'])
-            ],
-            freq=1,
-            enabled=True,
-            continuous=True,
-            checkOnce=False,
-            after=[
-                'motion_detected_1',
-            ],
-            starts=[
-            ],
-            stops=[
-            ],
-            conn_params=None,
-            entities=entities
-        ))
+        autos.append(
+            Automation(
+                name="motion_detected_1",
+                condition=Condition(
+                    expression="(entities['motion_detector'].attributes_dict['pos'] == [10, 0])"
+                ),
+                actions=[Action("power", True, entities["bedroom_lamp"])],
+                freq=1,
+                enabled=True,
+                continuous=True,
+                checkOnce=False,
+                after=[],
+                starts=[],
+                stops=[],
+                conn_params=None,
+                entities=entities,
+            )
+        )
+        autos.append(
+            Automation(
+                name="motion_detected_2",
+                condition=Condition(
+                    expression="((entities['motion_detector'].attributes_dict['detected'] == True) and (entities['motion_detector'].attributes_dict['posX'] == 10))"
+                ),
+                actions=[Action("power", True, entities["bedroom_lamp"])],
+                freq=1,
+                enabled=True,
+                continuous=True,
+                checkOnce=False,
+                after=[
+                    "motion_detected_1",
+                ],
+                starts=[],
+                stops=[],
+                conn_params=None,
+                entities=entities,
+            )
+        )
         return autos
 
-    def create_entity(self, sense, name, topic, conn_params,
-                      attributes, msg_type):
+    def create_entity(self, sense, name, topic, conn_params, attributes, msg_type):
         if sense:
             entity = EntitySense(
                 name=name,
                 topic=topic,
                 conn_params=conn_params,
                 attributes=attributes,
-                msg_type=msg_type
+                msg_type=msg_type,
             )
         else:
             entity = EntityAct(
@@ -387,46 +390,55 @@ class Executor():
                 topic=topic,
                 conn_params=conn_params,
                 attributes=attributes,
-                msg_type=msg_type
+                msg_type=msg_type,
             )
         return entity
-
 
     def create_entities(self):
         entities = []
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         attrs = {
-            'power': bool,
+            "power": bool,
         }
         entities.append(
             self.create_entity(
-                False, 'bedroom_lamp', 'bedroom.lamp',
-                conn_params, attrs, msg_type=BedroomLampMsg
+                False,
+                "bedroom_lamp",
+                "bedroom.lamp",
+                conn_params,
+                attrs,
+                msg_type=BedroomLampMsg,
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         attrs = {
-            'detected': bool,
-            'posX': int,
-            'pos': list,
-            'mode': str,
+            "detected": bool,
+            "posX": int,
+            "pos": list,
+            "mode": str,
         }
         entities.append(
             self.create_entity(
-                True, 'motion_detector', 'bedroom.motion_detector',
-                conn_params, attrs, msg_type=MotionDetectorMsg
+                True,
+                "motion_detector",
+                "bedroom.motion_detector",
+                conn_params,
+                attrs,
+                msg_type=MotionDetectorMsg,
             )
         )
         return entities
@@ -441,12 +453,12 @@ class Executor():
             works = []
             for automation in automations:
                 automation.executor = ThreadPoolExecutor()
-                work = executor.submit(
-                    automation.start
-                ).add_done_callback(Executor._worker_clb)
+                work = executor.submit(automation.start).add_done_callback(
+                    Executor._worker_clb
+                )
                 works.append(work)
             # done, not_done = wait(works)
-        print('[bold magenta][*] All automations completed!![/bold magenta]')
+        print("[bold magenta][*] All automations completed!![/bold magenta]")
 
     @staticmethod
     def _worker_clb(f):
@@ -456,20 +468,18 @@ class Executor():
         trace = []
         tb = e.__traceback__
         while tb is not None:
-            trace.append({
-                "filename": tb.tb_frame.f_code.co_filename,
-                "name": tb.tb_frame.f_code.co_name,
-                "lineno": tb.tb_lineno
-            })
+            trace.append(
+                {
+                    "filename": tb.tb_frame.f_code.co_filename,
+                    "name": tb.tb_frame.f_code.co_name,
+                    "lineno": tb.tb_lineno,
+                }
+            )
             tb = tb.tb_next
-        print(str({
-            'type': type(e).__name__,
-            'message': str(e),
-            'trace': trace
-        }))
+        print(str({"type": type(e).__name__, "message": str(e), "trace": trace}))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     executor = Executor()
     executor.start_entities()
     executor.start_automations()

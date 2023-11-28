@@ -29,6 +29,7 @@ console = console.Console()
 
 terminate_event = Event()
 
+
 # Noise definitions
 # ----------------------------------------
 @dataclass
@@ -66,10 +67,13 @@ class Noise:
             return random.gauss(self.properties.mu, self.properties.sigma)
         elif self.type == NoiseType.Zero:
             return 0
+
+
 # ----------------------------------------
 
 # Value generator definitions
 # ----------------------------------------
+
 
 @dataclass
 class ValueGeneratorProperties:
@@ -80,7 +84,7 @@ class ValueGeneratorProperties:
     @dataclass
     class Linear:
         start: float
-        step: float # per second
+        step: float  # per second
 
     @dataclass
     class Saw:
@@ -94,7 +98,7 @@ class ValueGeneratorProperties:
     class Gaussian:
         value: float
         max_value: float
-        sigma: float # this is time (seconds)
+        sigma: float  # this is time (seconds)
 
         _internal_start: Optional[float] = 0.0
 
@@ -114,6 +118,8 @@ class ValueGeneratorType(Enum):
     Logarithmic = 8
     Exponential = 9
     Replay = 10
+
+
 # ----------------------------------------
 
 
@@ -140,8 +146,7 @@ class ValueGenerator:
         replay_counter = 0
         replay_iter = 0
         for c in self.components:
-            if c.type in (ValueGeneratorType.Gaussian,
-                          ValueGeneratorType.Saw):
+            if c.type in (ValueGeneratorType.Gaussian, ValueGeneratorType.Saw):
                 c.properties._internal_start = start
         while not terminate_event.is_set():
             msg = {}
@@ -149,23 +154,35 @@ class ValueGenerator:
                 if c.type == ValueGeneratorType.Constant:
                     value = c.properties.value + c.noise.generate()
                 elif c.type == ValueGeneratorType.Linear:
-                    value = c.properties.start + (time.time() - start) * c.properties.step
+                    value = (
+                        c.properties.start + (time.time() - start) * c.properties.step
+                    )
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Saw:
-                    value = c.properties.min + \
-                        (time.time() - c.properties._internal_start) * \
-                            c.properties.step
+                    value = (
+                        c.properties.min
+                        + (time.time() - c.properties._internal_start)
+                        * c.properties.step
+                    )
                     value += c.noise.generate()
                     if value >= c.properties.max:
                         c.properties._internal_start = time.time()
                 elif c.type == ValueGeneratorType.Gaussian:
-                    if time.time() - c.properties._internal_start > 8 * c.properties.sigma:
+                    if (
+                        time.time() - c.properties._internal_start
+                        > 8 * c.properties.sigma
+                    ):
                         c.properties._internal_start = time.time()
                     value = c.properties.value
                     _norm_exp = -np.power(
-                        time.time() - c.properties._internal_start - 4 *
-                        c.properties.sigma, 2.) / (2 * np.power(c.properties.sigma, 2.))
-                    value += np.exp(_norm_exp) * (c.properties.max_value - c.properties.value)
+                        time.time()
+                        - c.properties._internal_start
+                        - 4 * c.properties.sigma,
+                        2.0,
+                    ) / (2 * np.power(c.properties.sigma, 2.0))
+                    value += np.exp(_norm_exp) * (
+                        c.properties.max_value - c.properties.value
+                    )
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Replay:
                     values = c.properties.values
@@ -180,10 +197,7 @@ class ValueGenerator:
                         replay_iter += 1
                 msg[c.name] = value
 
-
-            self.publisher.publish(
-                msg
-            )
+            self.publisher.publish(msg)
             print(f"Publishing {msg}")
             time.sleep(1.0 / self.hz)
             if minutes is not None:
@@ -195,7 +209,7 @@ class Time(BaseModel):
     hour: int = 0
     minute: int = 0
     second: int = 0
-    time_str: str = ''
+    time_str: str = ""
 
 
 class ClockMsg(PubSubMessage):
@@ -205,28 +219,24 @@ class ClockMsg(PubSubMessage):
 class SystemClock(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = 1
-        self.topic = 'system.clock'
+        self.topic = "system.clock"
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='155.207.19.66',
+            host="155.207.19.66",
             port=1883,
-            username='r4a',
-            password='r4a123$',
+            username="r4a",
+            password="r4a123$",
         )
         super().__init__(
-            node_name='system_clock',
-            connection_params=conn_params,
-            *args, **kwargs
+            node_name="system_clock", connection_params=conn_params, *args, **kwargs
         )
-        self.pub = self.create_publisher(
-            msg_type=ClockMsg,
-            topic=self.topic
-        )
+        self.pub = self.create_publisher(msg_type=ClockMsg, topic=self.topic)
         self.rate = Rate(self.pub_freq)
 
     def start(self):
         self.run()
-        print(f'[*] Initiated System Clock @ {self.topic}')
+        print(f"[*] Initiated System Clock @ {self.topic}")
         while not terminate_event.is_set():
             self.send_msg()
             self.rate.sleep()
@@ -237,12 +247,9 @@ class SystemClock(Node):
         hour = int(now.hour)
         minute = int(now.minute)
         second = int(now.second)
-        msg = ClockMsg(time=Time(
-            hour=hour,
-            minute=minute,
-            second=second,
-            time_str=t_str
-        ))
+        msg = ClockMsg(
+            time=Time(hour=hour, minute=minute, second=second, time_str=t_str)
+        )
         self.pub.publish(msg)
 
 
@@ -254,78 +261,63 @@ def _worker_clb(f):
     trace = []
     tb = e.__traceback__
     while tb is not None:
-        trace.append({
-            "filename": tb.tb_frame.f_code.co_filename,
-            "name": tb.tb_frame.f_code.co_name,
-            "lineno": tb.tb_lineno
-        })
+        trace.append(
+            {
+                "filename": tb.tb_frame.f_code.co_filename,
+                "name": tb.tb_frame.f_code.co_name,
+                "lineno": tb.tb_lineno,
+            }
+        )
         tb = tb.tb_next
-    print({
-        'type': type(e).__name__,
-        'message': str(e),
-        'trace': trace
-    })
+    print({"type": type(e).__name__, "message": str(e), "trace": trace})
 
 
 class SnHumidity1Msg(PubSubMessage):
-        humidity: float = 0.0
+    humidity: float = 0.0
 
 
 class SnHumidity1Node(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = 3.0
-        self.topic = 'sensors.sn_humidity_1'
-        self.name = 'sn_humidity_1'
+        self.topic = "sensors.sn_humidity_1"
+        self.name = "sn_humidity_1"
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='155.207.19.66',
+            host="155.207.19.66",
             port=1883,
-            username='r4a',
-            password='r4a123$',
+            username="r4a",
+            password="r4a123$",
         )
         super().__init__(
-            node_name='entities.sn_humidity_1',
+            node_name="entities.sn_humidity_1",
             connection_params=conn_params,
-            *args, **kwargs
+            *args,
+            **kwargs,
         )
-        self.pub = self.create_publisher(
-            msg_type=SnHumidity1Msg,
-            topic=self.topic
-        )
+        self.pub = self.create_publisher(msg_type=SnHumidity1Msg, topic=self.topic)
 
     def init_gen_components(self):
         components = []
-        humidity_properties = ValueGeneratorProperties.Constant(
-            value=60
-        )
+        humidity_properties = ValueGeneratorProperties.Constant(value=60)
         _gen_type = ValueGeneratorType.Constant
-        humidity_noise = Noise(
-            _type=NoiseType.Gaussian,
-            properties=NoiseGaussian(0, 5)
-        )
+        humidity_noise = Noise(_type=NoiseType.Gaussian, properties=NoiseGaussian(0, 5))
         humidity_component = ValueComponent(
             _type=_gen_type,
             name="humidity",
-            properties = humidity_properties,
-            noise=humidity_noise
+            properties=humidity_properties,
+            noise=humidity_noise,
         )
         components.append(humidity_component)
-        generator = ValueGenerator(
-            self.topic,
-            self.pub_freq,
-            components,
-            self
-        )
+        generator = ValueGenerator(self.topic, self.pub_freq, components, self)
         return generator
 
     def start(self, executor=None):
         self.run()
         generator = self.init_gen_components()
         if executor:
-            work = executor.submit(
-                generator.start
-            ).add_done_callback(_worker_clb)
-            print(f'[*] Initiated Entity {self.name} @ {self.topic}')
+            work = executor.submit(generator.start).add_done_callback(_worker_clb)
+            print(f"[*] Initiated Entity {self.name} @ {self.topic}")
             return work
         else:
             generator.start()
@@ -333,51 +325,52 @@ class SnHumidity1Node(Node):
 
 
 class EfLight2Msg(PubSubMessage):
-        state: bool = False
-        brightness: int = 0
+    state: bool = False
+    brightness: int = 0
 
 
 class EfLight2Node(Node):
     def __init__(self, *args, **kwargs):
         self.tick_hz = 1
-        self.topic = 'actuators.ef_light_2'
-        self.name = 'ef_light_2'
+        self.topic = "actuators.ef_light_2"
+        self.name = "ef_light_2"
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='155.207.19.66',
+            host="155.207.19.66",
             port=1883,
-            username='r4a',
-            password='r4a123$',
+            username="r4a",
+            password="r4a123$",
         )
         super().__init__(
-            node_name='entities.ef_light_2',
+            node_name="entities.ef_light_2",
             connection_params=conn_params,
-            *args, **kwargs
+            *args,
+            **kwargs,
         )
         self.sub = self.create_subscriber(
-            msg_type=EfLight2Msg,
-            topic=self.topic,
-            on_message=self._on_message
+            msg_type=EfLight2Msg, topic=self.topic, on_message=self._on_message
         )
 
     def start(self, executor=None):
         self.run()
-        print(f'[*] Initiated Entity {self.name} @ {self.topic}')
+        print(f"[*] Initiated Entity {self.name} @ {self.topic}")
         return self
 
     def _on_message(self, msg):
-        print(f'[*] State change command received: {msg}')
+        print(f"[*] State change command received: {msg}")
 
 
 def signal_handler(sig, frame):
     print("Interrupt received. Attempting to gracefully terminate workers.")
     terminate_event.set()
 
+
 # Register the signal handler for SIGINT (Ctrl+C)
 signal.signal(signal.SIGINT, signal_handler)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sensors = []
     actuators = []
     workers = []
@@ -388,9 +381,7 @@ if __name__ == '__main__':
 
     try:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            sclock_work = executor.submit(
-                sclock.start
-            ).add_done_callback(_worker_clb)
+            sclock_work = executor.submit(sclock.start).add_done_callback(_worker_clb)
             for node in sensors:
                 work = node.start(executor)
                 workers.append(work)
