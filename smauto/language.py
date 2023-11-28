@@ -110,47 +110,57 @@ def process_time_class(model):
             raise TextXSemanticError('Time.seconds must be in range [0, 60]')
 
 
-def broker_name_uniqueness(model):
+def verify_broker_names(model):
     _ids = []
     brokers = get_children_of_type('MQTTBroker', model)
     brokers += get_children_of_type('AMQPBroker', model)
     brokers += get_children_of_type('RedisBroker', model)
     for b in brokers:
-        print(b)
         if b.name in _ids:
             raise TextXSemanticError(
-                f'Broker with name {b.name} already exists', **get_location(b)
+                f'Broker with name <{b.name}> already exists', **get_location(b)
             )
         _ids.append(b.name)
 
 
-def entity_name_uniqueness(model):
+def verify_entity_names(model):
     _ids = []
     entities = get_children_of_type('Entity', model)
     for e in entities:
         if e.name in _ids:
             raise TextXSemanticError(
-                f'Entity with name {e.name} already exists', **get_location(e)
+                f'Entity with name <{e.name}> already exists', **get_location(e)
             )
         _ids.append(e.name)
+        verify_entity_attrs(e)
 
 
-def automation_name_uniqueness(model):
+def verify_entity_attrs(entity):
+    _ids = []
+    for attr in entity.attributes:
+        if attr.name in _ids:
+            raise TextXSemanticError(
+                f'Entity attribute <{attr.name}> already exists', **get_location(attr)
+            )
+        _ids.append(attr.name)
+
+
+def verify_automation_names(model):
     _ids = []
     autos = get_children_of_type('Automation', model)
     for a in autos:
         if a.name in _ids:
             raise TextXSemanticError(
-                f'Automation with name {a.name} already exists', **get_location(a)
+                f'Automation with name <{a.name}> already exists', **get_location(a)
             )
         _ids.append(a.name)
 
 
 def model_proc(model, metamodel):
     process_time_class(model)
-    entity_name_uniqueness(model)
-    automation_name_uniqueness(model)
-    broker_name_uniqueness(model)
+    verify_entity_names(model)
+    verify_automation_names(model)
+    verify_broker_names(model)
 
 
 def get_metamodel(debug: bool = False, global_repo: bool = False):
