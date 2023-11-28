@@ -67,12 +67,14 @@ def smauto_m2t(model_path: str, outdir: str = ''):
     model = build_model(model_path)
     if len(model.automations) < 1:
         raise ValueError('Model does not include any Automations')
+    clock_broker = select_clock_broker(model)
     for m in model._tx_model_repository.all_models:
         if m.metadata:
             if m.metadata.name == 'SystemClock':
+                m.entities[0].broker = clock_broker
                 ent = m.entities[0]
-                model.system_clock = ent
                 model.entities.append(ent)
+                model.system_clock = ent
     for auto in model.automations:
         auto.condition.build()
     scode = build_smauto_code(model)

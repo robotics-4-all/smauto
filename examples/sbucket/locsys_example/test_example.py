@@ -1,12 +1,23 @@
 #!/usr/bin/env python
+import os
+
+"""
+If you are going to execute this in google colab, uncomment the next line
+"""
+if os.getenv("COLAB_RELEASE_TAG"):
+    print('AAA')
+    # !pip install commlib-py>=0.11.0
+
 
 import time
 import random
+import signal
 from typing import Optional, Dict
 from pydantic import BaseModel
 from collections import deque
 import statistics
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 
 from rich import print, console, pretty
 from commlib.msg import PubSubMessage
@@ -38,12 +49,13 @@ class Attribute:
         self.value = value
 
 
-class AirconditionMsg(PubSubMessage):
-        power: bool = False
+class SnHumidity1Msg(PubSubMessage):
+        humidity: float = 0.0
 
 
-class TemperatureSensorMsg(PubSubMessage):
-        temperature: float = 0.0
+class EfLight2Msg(PubSubMessage):
+        state: bool = False
+        brightness: int = 0
 
 
 class SystemClockMsg(PubSubMessage):
@@ -253,7 +265,7 @@ class Automation():
             [f"  - {self.autos_map[dep].name}" for dep in self.starts])
         stops = f'\n'.join(
             [f"  - {self.autos_map[dep].name}" for dep in self.stops])
-        self.log(
+        print(
             f"Automation <{self.name}>\n"
             f"    Condition: {self.condition.expression}\n"
             f"    Frequency: {self.freq} Hz\n"
@@ -276,7 +288,7 @@ class Automation():
             value = action.value
             entity = action.entity
             if entity in messages.keys():
-                messages[entity].update({action.attribute: value})
+                setattr(messages[entity], action.attribute, action.value)
             else:
                 messages[entity] = entity.dstate
         for entity, message in messages.items():
@@ -363,7 +375,7 @@ class LogMsg(PubSubMessage):
 
 class Executor(Node):
     def __init__(self, *args, **kwargs):
-        self.name = 'SimpleHomeAutomation'
+        self.name = 'GIVE_ME_A_NAME'
         self.namespace = 'smauto.simple_home_auto'
         self.event_topic = 'event'
         self.logs_topic = 'logs'
@@ -388,7 +400,7 @@ class Executor(Node):
     def _init_params(self):
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='locsys.issel.ee.auth.gr',
+            host='155.207.19.66',
             port=1883,
             username='r4a',
             password='r4a123$',
@@ -406,43 +418,20 @@ class Executor(Node):
     def create_automations(self, entities):
         autos = []
         autos.append(Automation(
-            name='mean_example',
+            name='start_aircondition',
             condition=Condition(
-                expression="(mean(entities['temperature_sensor'].get_buffer('temperature')) >= 30)"
+                expression="((entities['sn_humidity_1'].attributes_dict['humidity'] > 68) and (entities['ef_light_2'].attributes_dict['state'] == False))"
             ),
             actions=[
-                Action('power', True, entities['aircondition']),
+                Action('state', True, entities['ef_light_2']),
             ],
             freq=1,
             enabled=True,
-            continuous=False,
+            continuous=True,
             checkOnce=False,
             after=[
             ],
             starts=[
-                'mean_example',
-            ],
-            stops=[
-            ],
-            entities=entities,
-            rtm=self.rtm
-        ))
-        autos.append(Automation(
-            name='min_example',
-            condition=Condition(
-                expression="(min(entities['temperature_sensor'].get_buffer('temperature')) >= 30)"
-            ),
-            actions=[
-                Action('power', True, entities['aircondition']),
-            ],
-            freq=1,
-            enabled=True,
-            continuous=False,
-            checkOnce=False,
-            after=[
-            ],
-            starts=[
-                'min_example',
             ],
             stops=[
             ],
@@ -478,44 +467,45 @@ class Executor(Node):
         entities = []
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='locsys.issel.ee.auth.gr',
+            host='155.207.19.66',
             port=1883,
             username='r4a',
             password='r4a123$',
         )
         attrs = {
-            'power': bool(),
+            'humidity': float(),
         }
         entities.append(
             self.create_entity(
-                False, 'aircondition', 'home.aircondition',
-                conn_params, attrs, msg_type=AirconditionMsg,
+                True, 'sn_humidity_1', 'sensors.sn_humidity_1',
+                conn_params, attrs, msg_type=SnHumidity1Msg,
                 attr_buff=[]
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='locsys.issel.ee.auth.gr',
+            host='155.207.19.66',
             port=1883,
             username='r4a',
             password='r4a123$',
         )
         attrs = {
-            'temperature': float(),
+            'state': bool(),
+            'brightness': int(),
         }
         entities.append(
             self.create_entity(
-                True, 'temperature_sensor', 'home.temperature',
-                conn_params, attrs, msg_type=TemperatureSensorMsg,
-                attr_buff=[('temperature', 4), ('temperature', 4)]
+                False, 'ef_light_2', 'actuators.ef_light_2',
+                conn_params, attrs, msg_type=EfLight2Msg,
+                attr_buff=[]
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='localhost',
+            host='155.207.19.66',
             port=1883,
-            username='',
-            password='',
+            username='r4a',
+            password='r4a123$',
         )
         attrs = {
             'time': Time(),

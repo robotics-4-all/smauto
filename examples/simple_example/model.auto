@@ -35,6 +35,7 @@ Entity motion_detector
         - mode: str
 end
 
+
 // Automations ------->
 /*
 Automation motion_detected_1

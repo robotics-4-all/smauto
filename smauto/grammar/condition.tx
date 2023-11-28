@@ -8,7 +8,6 @@ Condition: AdvancedCondition | PrimitiveCondition | ConditionGroup ;
 
 ConditionGroup:
     '(' r1=Condition ')' operator=LogicalOperator '(' r2=Condition ')'
-    // (cond=Condition (operator=LogicalOperator)?)*
 ;
 
 PrimitiveCondition:

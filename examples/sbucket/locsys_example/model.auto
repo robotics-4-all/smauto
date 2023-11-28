@@ -1,0 +1,54 @@
+Metadata
+    name: SimpleHomeAutomation
+    version: "0.1.0"
+    description: "Simple home automation model."
+    author: "the author"
+    email: "the.author@gmail.com"
+end
+
+RTMonitor
+    broker: home_broker
+    namespace: "smauto.simple_home_auto"
+    eventTopic: "event"
+    logsTopic: "logs"
+end
+
+Broker<MQTT> home_broker
+    host: "155.207.19.66"
+    port: 1883  // Change this accordingly
+    auth:
+        username: "r4a"
+        password: "r4a123$"
+end
+
+Entity weather_station
+    type: sensor
+    freq: 5
+    topic: "bedroom.weather_station"
+    broker: home_broker
+    attributes:
+        - temperature: float -> gaussian(10, 35, 5) with noise gaussian(1,1)
+        - humidity: float -> linear(1, 0.2) with noise uniform (0, 1)
+        - pressure: float -> constant(0.5)
+end
+
+Entity aircondition
+    type: actuator
+    topic: "bedroom.aircondition"
+    broker: home_broker
+    attributes:
+        - temperature: float
+        - mode: str
+        - on: bool
+end
+
+Automation start_aircondition
+    condition:
+        (weather_station.temperature > 30) AND
+        (aircondition.on is true)
+    enabled: true
+    continuous: false
+    actions:
+        - aircondition.temperature:  18.0
+        - aircondition.mode:  "cool"
+end
