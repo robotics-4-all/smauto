@@ -71,7 +71,6 @@ class {{ entity.camel_name }}Msg(PubSubMessage):
 
 
 {% endfor %}
-
 class Entity(Node):
     def __init__(self, name, topic, conn_params,
                  attributes, msg_type, attr_buff=[],
