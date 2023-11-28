@@ -56,10 +56,13 @@ class Noise:
             return random.gauss(self.properties.mu, self.properties.sigma)
         elif self.type == NoiseType.Zero:
             return 0
+
+
 # ----------------------------------------
 
 # Value generator definitions
 # ----------------------------------------
+
 
 @dataclass
 class ValueGeneratorProperties:
@@ -70,7 +73,7 @@ class ValueGeneratorProperties:
     @dataclass
     class Linear:
         start: float
-        step: float # per second
+        step: float  # per second
 
     @dataclass
     class Saw:
@@ -84,7 +87,7 @@ class ValueGeneratorProperties:
     class Gaussian:
         value: float
         max_value: float
-        sigma: float # this is time (seconds)
+        sigma: float  # this is time (seconds)
 
         _internal_start: Optional[float] = 0.0
 
@@ -104,6 +107,8 @@ class ValueGeneratorType(Enum):
     Logarithmic = 8
     Exponential = 9
     Replay = 10
+
+
 # ----------------------------------------
 
 
@@ -130,8 +135,7 @@ class ValueGenerator:
         replay_counter = 0
         replay_iter = 0
         for c in self.components:
-            if c.type in (ValueGeneratorType.Gaussian,
-                          ValueGeneratorType.Saw):
+            if c.type in (ValueGeneratorType.Gaussian, ValueGeneratorType.Saw):
                 c.properties._internal_start = start
         while True:
             msg = {}
@@ -139,23 +143,35 @@ class ValueGenerator:
                 if c.type == ValueGeneratorType.Constant:
                     value = c.properties.value + c.noise.generate()
                 elif c.type == ValueGeneratorType.Linear:
-                    value = c.properties.start + (time.time() - start) * c.properties.step
+                    value = (
+                        c.properties.start + (time.time() - start) * c.properties.step
+                    )
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Saw:
-                    value = c.properties.min + \
-                        (time.time() - c.properties._internal_start) * \
-                            c.properties.step
+                    value = (
+                        c.properties.min
+                        + (time.time() - c.properties._internal_start)
+                        * c.properties.step
+                    )
                     value += c.noise.generate()
                     if value >= c.properties.max:
                         c.properties._internal_start = time.time()
                 elif c.type == ValueGeneratorType.Gaussian:
-                    if time.time() - c.properties._internal_start > 8 * c.properties.sigma:
+                    if (
+                        time.time() - c.properties._internal_start
+                        > 8 * c.properties.sigma
+                    ):
                         c.properties._internal_start = time.time()
                     value = c.properties.value
                     _norm_exp = -np.power(
-                        time.time() - c.properties._internal_start - 4 *
-                        c.properties.sigma, 2.) / (2 * np.power(c.properties.sigma, 2.))
-                    value += np.exp(_norm_exp) * (c.properties.max_value - c.properties.value)
+                        time.time()
+                        - c.properties._internal_start
+                        - 4 * c.properties.sigma,
+                        2.0,
+                    ) / (2 * np.power(c.properties.sigma, 2.0))
+                    value += np.exp(_norm_exp) * (
+                        c.properties.max_value - c.properties.value
+                    )
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Replay:
                     values = c.properties.values
@@ -170,10 +186,7 @@ class ValueGenerator:
                         replay_iter += 1
                 msg[c.name] = value
 
-
-            self.publisher.publish(
-                msg
-            )
+            self.publisher.publish(msg)
             print(f"Publishing {msg}")
             time.sleep(1.0 / self.hz)
             if minutes is not None:
@@ -182,108 +195,71 @@ class ValueGenerator:
 
 
 class MotionDetectorMsg(PubSubMessage):
-        detected: bool = False
-        posX: int = 0
-        posY: int = 0
-        mode: str = ''
+    detected: bool = False
+    posX: int = 0
+    posY: int = 0
+    mode: str = ""
 
 
 class MotionDetectorNode(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = 1
-        self.topic = 'bedroom.motion_detector'
+        self.topic = "bedroom.motion_detector"
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         super().__init__(
-            node_name='entities.motion_detector',
+            node_name="entities.motion_detector",
             connection_params=conn_params,
-            *args, **kwargs
+            *args,
+            **kwargs,
         )
-        self.pub = self.create_publisher(
-            msg_type=MotionDetectorMsg,
-            topic=self.topic
-        )
+        self.pub = self.create_publisher(msg_type=MotionDetectorMsg, topic=self.topic)
 
     def init_gen_components(self):
         components = []
-        detected_properties = ValueGeneratorProperties.Constant(
-            0
-        )
+        detected_properties = ValueGeneratorProperties.Constant(0)
         _gen_type = ValueGeneratorType.Constant
-        detected_noise = Noise(
-            _type=NoiseType.Zero,
-            properties=NoiseZero()
-        )
+        detected_noise = Noise(_type=NoiseType.Zero, properties=NoiseZero())
         detected_component = ValueComponent(
             _type=_gen_type,
             name="detected",
-            properties = detected_properties,
-            noise=detected_noise
+            properties=detected_properties,
+            noise=detected_noise,
         )
         components.append(detected_component)
-        posX_properties = ValueGeneratorProperties.Constant(
-            0
-        )
+        posX_properties = ValueGeneratorProperties.Constant(0)
         _gen_type = ValueGeneratorType.Constant
-        posX_noise = Noise(
-            _type=NoiseType.Zero,
-            properties=NoiseZero()
-        )
+        posX_noise = Noise(_type=NoiseType.Zero, properties=NoiseZero())
         posX_component = ValueComponent(
-            _type=_gen_type,
-            name="posX",
-            properties = posX_properties,
-            noise=posX_noise
+            _type=_gen_type, name="posX", properties=posX_properties, noise=posX_noise
         )
         components.append(posX_component)
-        posY_properties = ValueGeneratorProperties.Constant(
-            0
-        )
+        posY_properties = ValueGeneratorProperties.Constant(0)
         _gen_type = ValueGeneratorType.Constant
-        posY_noise = Noise(
-            _type=NoiseType.Zero,
-            properties=NoiseZero()
-        )
+        posY_noise = Noise(_type=NoiseType.Zero, properties=NoiseZero())
         posY_component = ValueComponent(
-            _type=_gen_type,
-            name="posY",
-            properties = posY_properties,
-            noise=posY_noise
+            _type=_gen_type, name="posY", properties=posY_properties, noise=posY_noise
         )
         components.append(posY_component)
-        mode_properties = ValueGeneratorProperties.Constant(
-            0
-        )
+        mode_properties = ValueGeneratorProperties.Constant(0)
         _gen_type = ValueGeneratorType.Constant
-        mode_noise = Noise(
-            _type=NoiseType.Zero,
-            properties=NoiseZero()
-        )
+        mode_noise = Noise(_type=NoiseType.Zero, properties=NoiseZero())
         mode_component = ValueComponent(
-            _type=_gen_type,
-            name="mode",
-            properties = mode_properties,
-            noise=mode_noise
+            _type=_gen_type, name="mode", properties=mode_properties, noise=mode_noise
         )
         components.append(mode_component)
-        generator = ValueGenerator(
-            self.topic,
-            self.pub_freq,
-            components,
-            self
-        )
+        generator = ValueGenerator(self.topic, self.pub_freq, components, self)
         return generator
-
 
     def start(self):
         generator = self.init_gen_components()
         generator.start()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     node = MotionDetectorNode()
     node.start()

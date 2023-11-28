@@ -32,8 +32,9 @@ class Entity:
 
     """
 
-    def __init__(self, parent, name, etype, freq, topic, broker,
-                 attributes, description=""):
+    def __init__(
+        self, parent, name, etype, freq, topic, broker, attributes, description=""
+    ):
         """
         Creates and returns an Entity object
         :param name: Entity name. e.g: 'temperature_sensor'
@@ -61,20 +62,22 @@ class Entity:
         self.description = description
         self.attr_buffs = []
         # Attributes Dictionary
-        self.attributes_dict = {attribute.name: attribute for attribute in self.attributes}
+        self.attributes_dict = {
+            attribute.name: attribute for attribute in self.attributes
+        }
         self.attributes_buff = {attribute.name: None for attribute in self.attributes}
 
         # Inspect Attributes and if an attribute is a DictAttribute,
         # create its items dictionary for easy updating
         for attr_name, attribute in self.attributes_dict.items():
             if type(attribute) is DictAttribute:
-                attribute.items_dict = {
-                    item.name: item for item in attribute.items
-                }
+                attribute.items_dict = {item.name: item for item in attribute.items}
 
     def get_buffer(self, attr_name):
-        if len(self.attributes_buff[attr_name]) != \
-            self.attributes_buff[attr_name].maxlen:
+        if (
+            len(self.attributes_buff[attr_name])
+            != self.attributes_buff[attr_name].maxlen
+        ):
             return [0] * self.attributes_buff[attr_name].maxlen
         else:
             return self.attributes_buff[attr_name]
@@ -85,7 +88,6 @@ class Entity:
 
     def to_camel_case(self, snake_str):
         return "".join(x.capitalize() for x in snake_str.lower().split("_"))
-
 
     # Callback function for updating Entity state and triggering automations evaluation
     def update_state(self, new_state):
@@ -110,7 +112,6 @@ class Entity:
         """
         # Update attributes
         for attribute, value in state_dict.items():
-
             # If value is a dictionary, also update the Dict's subattributes/items
             if root[attribute] is not None:
                 root[attribute].append(value)
@@ -124,10 +125,10 @@ class Entity:
         # Update attributes
         for attribute, value in state_dict.items():
             # If value is a dictionary, also update the Dict's subattributes/items
-            if root[attribute].__class__.__name__ == 'TimeAttribute':
-                setattr(root[attribute].value, 'hour', value['hour'])
-                setattr(root[attribute].value, 'minute', value['minute'])
-                setattr(root[attribute].value, 'second', value['second'])
+            if root[attribute].__class__.__name__ == "TimeAttribute":
+                setattr(root[attribute].value, "hour", value["hour"])
+                setattr(root[attribute].value, "minute", value["minute"])
+                setattr(root[attribute].value, "second", value["second"])
             elif type(value) is dict:
                 Entity.update_attributes(root[attribute].value, value)
             else:
@@ -146,7 +147,7 @@ class IntAttribute(Attribute):
         super().__init__(parent, name, default)
         self.generator = generator
         self.noise = noise
-        self.type = 'int'
+        self.type = "int"
         if self.value is None:
             self.value = 0
 
@@ -156,7 +157,7 @@ class FloatAttribute(Attribute):
         super().__init__(parent, name, default)
         self.generator = generator
         self.noise = noise
-        self.type = 'float'
+        self.type = "float"
         if self.value is None:
             self.value = 0.0
 
@@ -164,7 +165,7 @@ class FloatAttribute(Attribute):
 class StringAttribute(Attribute):
     def __init__(self, parent, name, default):
         super().__init__(parent, name, default)
-        self.type = 'str'
+        self.type = "str"
         if self.value is None:
             self.value = ""
 
@@ -173,7 +174,7 @@ class BoolAttribute(Attribute):
     def __init__(self, parent, name, default, generator):
         super().__init__(parent, name, default)
         self.generator = generator
-        self.type = 'bool'
+        self.type = "bool"
         if self.value is None:
             self.value = False
 
@@ -181,7 +182,7 @@ class BoolAttribute(Attribute):
 class TimeAttribute(Attribute):
     def __init__(self, parent, name, default):
         super().__init__(parent, name, default)
-        self.type = 'time'
+        self.type = "time"
         if self.value is None:
             self.value = Time(self, 0, 0, 0)
 
@@ -190,7 +191,7 @@ class ListAttribute(Attribute):
     def __init__(self, parent, name, default, generator):
         super().__init__(parent, name, default)
         self.generator = generator
-        self.type = 'list'
+        self.type = "list"
         if self.value is None:
             self.value = []
 

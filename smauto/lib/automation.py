@@ -18,10 +18,21 @@ class AutomationState:
 
 # A class representing an Automation
 class Automation(object):
-
-    def __init__(self, parent, name, condition, actions, freq,
-                 enabled, continuous, checkOnce, after, starts,
-                 stops, description=""):
+    def __init__(
+        self,
+        parent,
+        name,
+        condition,
+        actions,
+        freq,
+        enabled,
+        continuous,
+        checkOnce,
+        after,
+        starts,
+        stops,
+        description="",
+    ):
         """
         Creates and returns an Automation object
         :param name: Automation name. e.g: 'open_lights'
@@ -92,17 +103,14 @@ class Automation(object):
 
     def build_condition(self):
         """Builds Automation Condition into Python expression string
-            so that it can later be evaluated using eval()
+        so that it can later be evaluated using eval()
         """
         self.condition.build()
 
     def print(self):
-        after = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.after])
-        starts = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.starts])
-        stops = f'\n'.join(
-            [f"      - {dep.name}" for dep in self.stops])
+        after = f"\n".join([f"      - {dep.name}" for dep in self.after])
+        starts = f"\n".join([f"      - {dep.name}" for dep in self.starts])
+        stops = f"\n".join([f"      - {dep.name}" for dep in self.stops])
         print(
             f"[*] Automation <{self.name}>\n"
             f"    Condition: {self.condition.cond_lambda}\n"
@@ -128,24 +136,27 @@ class Automation(object):
             # Wait for dependend automations to finish
             while self.state == AutomationState.IDLE:
                 wait_for = [
-                    dep.name for dep in self.after
+                    dep.name
+                    for dep in self.after
                     if dep.state == AutomationState.RUNNING
                 ]
                 if len(wait_for) == 0:
                     self.state = AutomationState.RUNNING
                 print(
-                    f'[bold magenta]\[{self.name}] Waiting for dependend '
-                    f'automations to finish:[/bold magenta] {wait_for}'
+                    f"[bold magenta]\[{self.name}] Waiting for dependend "
+                    f"automations to finish:[/bold magenta] {wait_for}"
                 )
                 time.sleep(1)
             while self.state == AutomationState.RUNNING:
                 try:
                     triggered, msg = self.evaluate_condition()
                     if triggered:
-                        print(f"[bold yellow][*] Automation <{self.name}> "
+                        print(
+                            f"[bold yellow][*] Automation <{self.name}> "
                             f"Triggered![/bold yellow]"
                         )
-                        print(f"[bold blue][*] Condition met: "
+                        print(
+                            f"[bold blue][*] Condition met: "
                             f"{self.condition.cond_lambda}"
                         )
                         # If automation triggered run its actions
@@ -160,7 +171,7 @@ class Automation(object):
                         self.state = AutomationState.EXITED_SUCCESS
                     time.sleep(1 / self.freq)
                 except Exception as e:
-                    print(f'[ERROR] {e}')
+                    print(f"[ERROR] {e}")
                     return
             # time.sleep(self.time_between_activations)
             self.state = AutomationState.IDLE

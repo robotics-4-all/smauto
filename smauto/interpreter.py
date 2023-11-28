@@ -9,15 +9,13 @@ from textx import get_children_of_type
 pretty.install()
 
 
-
 class ModelExecutor:
-
     @staticmethod
     def get_system_clock_model(model):
         for m in model._tx_model_repository.all_models:
-            ent = get_children_of_type('Entity', m)
+            ent = get_children_of_type("Entity", m)
             for e in ent:
-                if e.name == 'system_clock':
+                if e.name == "system_clock":
                     return e
 
     @staticmethod
@@ -37,12 +35,12 @@ class ModelExecutor:
             works = []
             for automation in automations:
                 automation.executor = ThreadPoolExecutor()
-                work = executor.submit(
-                    automation.start
-                ).add_done_callback(ModelExecutor._worker_clb)
+                work = executor.submit(automation.start).add_done_callback(
+                    ModelExecutor._worker_clb
+                )
                 works.append(work)
             # done, not_done = wait(works)
-        print('[bold magenta][*] All automations completed!![/bold magenta]')
+        print("[bold magenta][*] All automations completed!![/bold magenta]")
 
     @staticmethod
     def _worker_clb(f):
@@ -52,15 +50,12 @@ class ModelExecutor:
         trace = []
         tb = e.__traceback__
         while tb is not None:
-            trace.append({
-                "filename": tb.tb_frame.f_code.co_filename,
-                "name": tb.tb_frame.f_code.co_name,
-                "lineno": tb.tb_lineno
-            })
+            trace.append(
+                {
+                    "filename": tb.tb_frame.f_code.co_filename,
+                    "name": tb.tb_frame.f_code.co_name,
+                    "lineno": tb.tb_lineno,
+                }
+            )
             tb = tb.tb_next
-        print(str({
-            'type': type(e).__name__,
-            'message': str(e),
-            'trace': trace
-        }))
-
+        print(str({"type": type(e).__name__, "message": str(e), "trace": trace}))

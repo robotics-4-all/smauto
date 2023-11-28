@@ -56,10 +56,13 @@ class Noise:
             return random.gauss(self.properties.mu, self.properties.sigma)
         elif self.type == NoiseType.Zero:
             return 0
+
+
 # ----------------------------------------
 
 # Value generator definitions
 # ----------------------------------------
+
 
 @dataclass
 class ValueGeneratorProperties:
@@ -70,7 +73,7 @@ class ValueGeneratorProperties:
     @dataclass
     class Linear:
         start: float
-        step: float # per second
+        step: float  # per second
 
     @dataclass
     class Saw:
@@ -84,7 +87,7 @@ class ValueGeneratorProperties:
     class Gaussian:
         value: float
         max_value: float
-        sigma: float # this is time (seconds)
+        sigma: float  # this is time (seconds)
 
         _internal_start: Optional[float] = 0.0
 
@@ -104,6 +107,8 @@ class ValueGeneratorType(Enum):
     Logarithmic = 8
     Exponential = 9
     Replay = 10
+
+
 # ----------------------------------------
 
 
@@ -130,8 +135,7 @@ class ValueGenerator:
         replay_counter = 0
         replay_iter = 0
         for c in self.components:
-            if c.type in (ValueGeneratorType.Gaussian,
-                          ValueGeneratorType.Saw):
+            if c.type in (ValueGeneratorType.Gaussian, ValueGeneratorType.Saw):
                 c.properties._internal_start = start
         while True:
             msg = {}
@@ -139,23 +143,35 @@ class ValueGenerator:
                 if c.type == ValueGeneratorType.Constant:
                     value = c.properties.value + c.noise.generate()
                 elif c.type == ValueGeneratorType.Linear:
-                    value = c.properties.start + (time.time() - start) * c.properties.step
+                    value = (
+                        c.properties.start + (time.time() - start) * c.properties.step
+                    )
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Saw:
-                    value = c.properties.min + \
-                        (time.time() - c.properties._internal_start) * \
-                            c.properties.step
+                    value = (
+                        c.properties.min
+                        + (time.time() - c.properties._internal_start)
+                        * c.properties.step
+                    )
                     value += c.noise.generate()
                     if value >= c.properties.max:
                         c.properties._internal_start = time.time()
                 elif c.type == ValueGeneratorType.Gaussian:
-                    if time.time() - c.properties._internal_start > 8 * c.properties.sigma:
+                    if (
+                        time.time() - c.properties._internal_start
+                        > 8 * c.properties.sigma
+                    ):
                         c.properties._internal_start = time.time()
                     value = c.properties.value
                     _norm_exp = -np.power(
-                        time.time() - c.properties._internal_start - 4 *
-                        c.properties.sigma, 2.) / (2 * np.power(c.properties.sigma, 2.))
-                    value += np.exp(_norm_exp) * (c.properties.max_value - c.properties.value)
+                        time.time()
+                        - c.properties._internal_start
+                        - 4 * c.properties.sigma,
+                        2.0,
+                    ) / (2 * np.power(c.properties.sigma, 2.0))
+                    value += np.exp(_norm_exp) * (
+                        c.properties.max_value - c.properties.value
+                    )
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Replay:
                     values = c.properties.values
@@ -170,10 +186,7 @@ class ValueGenerator:
                         replay_iter += 1
                 msg[c.name] = value
 
-
-            self.publisher.publish(
-                msg
-            )
+            self.publisher.publish(msg)
             print(f"Publishing {msg}")
             time.sleep(1.0 / self.hz)
             if minutes is not None:
@@ -182,30 +195,28 @@ class ValueGenerator:
 
 
 class EnvSensorMsg(PubSubMessage):
-        temperature: float = 0.0
-        humidity: float = 0.0
-        pressure: float = 0.0
+    temperature: float = 0.0
+    humidity: float = 0.0
+    pressure: float = 0.0
 
 
 class EnvSensorNode(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = 10
-        self.topic = 'bedroom.env'
+        self.topic = "bedroom.env"
         conn_params = ConnectionParameters(
-            host='snf-889260.vm.okeanos.grnet.gr',
+            host="snf-889260.vm.okeanos.grnet.gr",
             port=1893,
-            username='porolog',
-            password='fiware',
+            username="porolog",
+            password="fiware",
         )
         super().__init__(
-            node_name='entities.env_sensor',
+            node_name="entities.env_sensor",
             connection_params=conn_params,
-            *args, **kwargs
+            *args,
+            **kwargs,
         )
-        self.pub = self.create_publisher(
-            msg_type=EnvSensorMsg,
-            topic=self.topic
-        )
+        self.pub = self.create_publisher(msg_type=EnvSensorMsg, topic=self.topic)
 
     def init_gen_components(self):
         components = []
@@ -216,30 +227,23 @@ class EnvSensorNode(Node):
         )
         _gen_type = ValueGeneratorType.Gaussian
         temperature_noise = Noise(
-            _type=NoiseType.Gaussian,
-            properties=NoiseGaussian(1, 1)
+            _type=NoiseType.Gaussian, properties=NoiseGaussian(1, 1)
         )
         temperature_component = ValueComponent(
             _type=_gen_type,
             name="temperature",
-            properties = temperature_properties,
-            noise=temperature_noise
+            properties=temperature_properties,
+            noise=temperature_noise,
         )
         components.append(temperature_component)
-        humidity_properties = ValueGeneratorProperties.Linear(
-            start=1,
-            step=0.2
-        )
+        humidity_properties = ValueGeneratorProperties.Linear(start=1, step=0.2)
         _gen_type = ValueGeneratorType.Linear
-        humidity_noise = Noise(
-            _type=NoiseType.Uniform,
-            properties=NoiseUniform(0, 1)
-        )
+        humidity_noise = Noise(_type=NoiseType.Uniform, properties=NoiseUniform(0, 1))
         humidity_component = ValueComponent(
             _type=_gen_type,
             name="humidity",
-            properties = humidity_properties,
-            noise=humidity_noise
+            properties=humidity_properties,
+            noise=humidity_noise,
         )
         components.append(humidity_component)
         pressure_properties = ValueGeneratorProperties.Replay(
@@ -247,31 +251,22 @@ class EnvSensorNode(Node):
             times=-1,
         )
         _gen_type = ValueGeneratorType.Replay
-        pressure_noise = Noise(
-            _type=NoiseType.Zero,
-            properties=NoiseZero()
-        )
+        pressure_noise = Noise(_type=NoiseType.Zero, properties=NoiseZero())
         pressure_component = ValueComponent(
             _type=_gen_type,
             name="pressure",
-            properties = pressure_properties,
-            noise=pressure_noise
+            properties=pressure_properties,
+            noise=pressure_noise,
         )
         components.append(pressure_component)
-        generator = ValueGenerator(
-            self.topic,
-            self.pub_freq,
-            components,
-            self
-        )
+        generator = ValueGenerator(self.topic, self.pub_freq, components, self)
         return generator
-
 
     def start(self):
         generator = self.init_gen_components()
         generator.start()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     node = EnvSensorNode()
     node.start()
