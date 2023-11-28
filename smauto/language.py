@@ -1,6 +1,6 @@
 import os
 from os.path import join
-from textx import language, metamodel_from_file, get_children_of_type, TextXSemanticError
+from textx import language, metamodel_from_file, get_children_of_type, TextXSemanticError, get_location
 import pathlib
 import textx.scoping.providers as scoping_providers
 from rich import print
@@ -114,7 +114,7 @@ def entity_name_uniqueness(model):
     entities = get_children_of_type('Entity', model)
     for e in entities:
         if e.name in _ids:
-            raise TextXSemanticError(f'Entity with name {e.name} already exists')
+            raise TextXSemanticError(f'Entity with name {e.name} already exists', **get_location(e))
         _ids.append(e.name)
 
 
@@ -123,7 +123,7 @@ def automation_name_uniqueness(model):
     autos = get_children_of_type('Automation', model)
     for a in autos:
         if a.name in _ids:
-            raise TextXSemanticError(f'Automation with name {a.name} already exists')
+            raise TextXSemanticError(f'Automation with name {a.name} already exists', **get_location(a))
         _ids.append(a.name)
 
 
