@@ -164,7 +164,7 @@ class ValueGenerator:
                     value = c.properties.start + (time.time() - start) * c.properties.step
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Sinus:
-                    value = c.properties.dc + amplitude * math.sin((time.time() - start) * c.properties.step)
+                    value = c.properties.dc + c.properties.amplitude * math.sin((time.time() - start) * c.properties.step)
                     value += c.noise.generate()
                 elif c.type == ValueGeneratorType.Saw:
                     value = c.properties.min + \
@@ -407,6 +407,13 @@ class {{ entity.camel_name }}Node(Node):
             times={{ attr.generator.times }},
         )
         _gen_type = ValueGeneratorType.Replay
+        {% elif attr.generator.__class__.__name__ == 'SinusFun' %}
+        {{ attr.name }}_properties = ValueGeneratorProperties.Sinus(
+            dc={{ attr.generator.dc }},
+            amplitude={{ attr.generator.amplitude }},
+            step={{ attr.generator.step }},
+        )
+        _gen_type = ValueGeneratorType.Sinus
         {% else %}
         {{ attr.name }}_properties = ValueGeneratorProperties.Constant(
             0
