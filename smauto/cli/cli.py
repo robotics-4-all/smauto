@@ -31,20 +31,6 @@ def validate(ctx, model_path):
     print("[*] Model validation success!!")
 
 
-@cli.command("interpret", help="Interpreter - Dynamically execute models")
-@click.pass_context
-@click.argument("model_path")
-def interpret(ctx, model_path):
-    ModelExecutor.execute_automations_from_path(model_path)
-
-
-@cli.command("graph", help="Graph generator - Generate automation visualization graphs")
-@click.pass_context
-@click.argument("model_path")
-def graph(ctx, model_path):
-    generate_automation_graph_from_file(model_path)
-
-
 @cli.command("gen", help="Generate in Python")
 @click.pass_context
 @click.argument("model_path")
