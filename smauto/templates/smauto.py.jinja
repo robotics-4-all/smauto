@@ -295,10 +295,9 @@ class Automation():
         for action in self.actions:
             value = action.value
             entity = action.entity
-            if entity in messages.keys():
-                setattr(messages[entity], action.attribute,  value)
-            else:
+            if entity not in messages.keys():
                 messages[entity] = entity.dstate
+            setattr(messages[entity], action.attribute,  value)
         for entity, message in messages.items():
             entity.change_state(message)
 
