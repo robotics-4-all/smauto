@@ -21,10 +21,10 @@ class Time(BaseModel):
     hour: int = 0
     minute: int = 0
     second: int = 0
-    time_str: str = ''
+    time_str: str = ""
 
     def to_int(self):
-        val = self.second + int(self.minute<<8) + int(self.hour<<16)
+        val = self.second + int(self.minute << 8) + int(self.hour << 16)
         return val
 
 
@@ -39,42 +39,49 @@ class Attribute:
 
 
 class BedroomHumidifierMsg(PubSubMessage):
-        power: bool = False
-        timer: int = 0
+    power: bool = False
+    timer: int = 0
 
 
 class BedroomHumiditySensorMsg(PubSubMessage):
-        humidity: float = 0.0
+    humidity: float = 0.0
 
 
 class BedroomTemperatureSensorMsg(PubSubMessage):
-        temperature: float = 0.0
+    temperature: float = 0.0
 
 
 class KitchenGasSensorMsg(PubSubMessage):
-        gas: float = 0.0
+    gas: float = 0.0
 
 
 class BedroomAirconditionMsg(PubSubMessage):
-        power: bool = False
-        temperature: float = 0.0
-        swing: bool = False
-        mode: str = ''
+    power: bool = False
+    temperature: float = 0.0
+    swing: bool = False
+    mode: str = ""
 
 
 class AlarmMsg(PubSubMessage):
-        state: int = 0
+    state: int = 0
 
 
 class SystemClockMsg(PubSubMessage):
-        time: Optional[Time] = Time()
-
+    time: Optional[Time] = Time()
 
 
 class Entity(Node):
-    def __init__(self, name, topic, conn_params,
-                 attributes, msg_type, attr_buff=[],
-                 *args, **kwargs):
+    def __init__(
+        self,
+        name,
+        topic,
+        conn_params,
+        attributes,
+        msg_type,
+        attr_buff=[],
+        *args,
+        **kwargs,
+    ):
         self.name = name
         self.camel_name = self.to_camel_case(name)
         self.topic = topic
@@ -92,12 +99,15 @@ class Entity(Node):
         super().__init__(
             node_name=self.camel_name,
             connection_params=self.conn_params,
-            *args, **kwargs
+            *args,
+            **kwargs,
         )
 
     def get_buffer(self, attr_name):
-        if len(self.attributes_buff[attr_name]) != \
-            self.attributes_buff[attr_name].maxlen:
+        if (
+            len(self.attributes_buff[attr_name])
+            != self.attributes_buff[attr_name].maxlen
+        ):
             return [0] * self.attributes_buff[attr_name].maxlen
         else:
             return self.attributes_buff[attr_name]
@@ -118,7 +128,7 @@ class Entity(Node):
         """
         # Update state
         self.dstate = new_state
-        print(f'[*] Entity {self.name} state change: {self.dstate} -> {new_state}')
+        print(f"[*] Entity {self.name} state change: {self.dstate} -> {new_state}")
         # Update attributes based on state
         self.update_attributes(new_state)
         self.update_buffers(new_state)
@@ -139,19 +149,17 @@ class Entity(Node):
             dictionaries/objects and normal Attributes.
         """
         # Fast hack for pydantic changes
-        if hasattr(state_msg, 'time'):
+        if hasattr(state_msg, "time"):
             t = state_msg.time
             self.attributes_dict = state_msg.dict()
-            self.attributes_dict['time'] = t
+            self.attributes_dict["time"] = t
         else:
             self.attributes_dict = state_msg.dict()
 
     def start(self):
         # Create and start communications subscriber on Entity's topic
         self.state_sub = self.create_subscriber(
-            topic=self.topic,
-            msg_type=self.msg_type,
-            on_message=self.update_state
+            topic=self.topic, msg_type=self.msg_type, on_message=self.update_state
         )
         self.state_sub.run()
         self.state_pub = self.create_publisher(
@@ -174,7 +182,6 @@ class EntityAct(Entity):
         super().__init__(*args, **kwargs)
 
 
-
 class AutomationState:
     IDLE = 0
     RUNNING = 1
@@ -190,16 +197,14 @@ class Condition(object):
         try:
             if eval(
                 self.expression,
+                {"entities": entities},
                 {
-                    'entities': entities
+                    "std": statistics.stdev,
+                    "var": statistics.variance,
+                    "mean": statistics.mean,
+                    "min": min,
+                    "max": max,
                 },
-                {
-                    'std': statistics.stdev,
-                    'var': statistics.variance,
-                    'mean': statistics.mean,
-                    'min': min,
-                    'max': max,
-                }
             ):
                 return True
             else:
@@ -212,31 +217,37 @@ class Condition(object):
 class RTMonitor:
     def __init__(self, comm_node, etopic, ltopic):
         self.node = comm_node
-        epub = self.node.create_publisher(
-            topic=etopic,
-            msg_type=StateChangeMsg
-        )
-        lpub = self.node.create_publisher(
-            topic=ltopic,
-            msg_type=LogMsg
-        )
+        epub = self.node.create_publisher(topic=etopic, msg_type=StateChangeMsg)
+        lpub = self.node.create_publisher(topic=ltopic, msg_type=LogMsg)
         self._epub = epub
         self._lpub = lpub
-        print(f'[RTMonitor]: events -> {etopic}, logs -> {ltopic}')
+        print(f"[RTMonitor]: events -> {etopic}, logs -> {ltopic}")
 
     def send_event(self, event):
-        print(f'[RTMonitor] Sending StateChange Event: {event}')
+        print(f"[RTMonitor] Sending StateChange Event: {event}")
         self._epub.publish(event)
 
     def send_log(self, log_msg):
-        print(f'[RTMonitor] Sending Log: {log_msg}')
+        print(f"[RTMonitor] Sending Log: {log_msg}")
         self._lpub.publish(log_msg)
 
 
-class Automation():
-    def __init__(self, name, condition, actions, freq, enabled, continuous,
-                 checkOnce, after, starts, stops, entities,
-                 rtm: RTMonitor = None):
+class Automation:
+    def __init__(
+        self,
+        name,
+        condition,
+        actions,
+        freq,
+        enabled,
+        continuous,
+        checkOnce,
+        after,
+        starts,
+        stops,
+        entities,
+        rtm: RTMonitor = None,
+    ):
         enabled = True if enabled is None else enabled
         continuous = True if continuous is None else continuous
         checkOnce = False if checkOnce is None else checkOnce
@@ -267,12 +278,9 @@ class Automation():
             return False
 
     def print(self):
-        after = f'\n'.join(
-            [f"  - {self.autos_map[dep].name}" for dep in self.after])
-        starts = f'\n'.join(
-            [f"  - {self.autos_map[dep].name}" for dep in self.starts])
-        stops = f'\n'.join(
-            [f"  - {self.autos_map[dep].name}" for dep in self.stops])
+        after = f"\n".join([f"  - {self.autos_map[dep].name}" for dep in self.after])
+        starts = f"\n".join([f"  - {self.autos_map[dep].name}" for dep in self.starts])
+        stops = f"\n".join([f"  - {self.autos_map[dep].name}" for dep in self.stops])
         print(
             f"[*] Automation <{self.name}>\n"
             f"    Condition: {self.condition.expression}\n"
@@ -315,14 +323,14 @@ class Automation():
         msg = StateChangeMsg(state=new_state, msg=msg, automation=self.name)
         self.rtm.send_event(msg)
 
-    def log(self, msg: str, level: str = 'INFO'):
+    def log(self, msg: str, level: str = "INFO"):
         log_msg = LogMsg(msg=msg, level=level)
         self.rtm.send_log(log_msg)
-        print(f'[Automation: {self.name}]: {msg}')
+        print(f"[Automation: {self.name}]: {msg}")
 
     def start(self):
         self.state_change(AutomationState.IDLE)
-        self.log(f'Starting automation {self.name}')
+        self.log(f"Starting automation {self.name}")
         self.print()
         print(f"[bold yellow][*] Executing Automation: {self.name}[/bold yellow]")
         while True:
@@ -331,24 +339,27 @@ class Automation():
             # Wait for dependend automations to finish
             while self.state == AutomationState.IDLE:
                 wait_for = [
-                    dep for dep in self.after
+                    dep
+                    for dep in self.after
                     if self.autos_map[dep].state == AutomationState.RUNNING
                 ]
                 if len(wait_for) == 0:
                     self.state_change(AutomationState.RUNNING)
                 print(
-                    f'[bold magenta]\[{self.name}] Waiting for dependend '
-                    f'automations to finish:[/bold magenta] {wait_for}'
+                    f"[bold magenta]\[{self.name}] Waiting for dependend "
+                    f"automations to finish:[/bold magenta] {wait_for}"
                 )
                 time.sleep(1)
             while self.state == AutomationState.RUNNING:
                 try:
                     triggered = self.evaluate_condition()
                     if triggered:
-                        print(f"[bold yellow][*] Automation <{self.name}> "
+                        print(
+                            f"[bold yellow][*] Automation <{self.name}> "
                             f"Triggered![/bold yellow]"
                         )
-                        print(f"[bold blue][*] Condition met: "
+                        print(
+                            f"[bold blue][*] Condition met: "
                             f"{self.condition.expression}"
                         )
                         # If automation triggered run its actions
@@ -363,7 +374,7 @@ class Automation():
                         self.state_change(AutomationState.EXITED_SUCCESS)
                     time.sleep(1 / self.freq)
                 except Exception as e:
-                    print(f'[ERROR] {e}')
+                    print(f"[ERROR] {e}")
                     return
             # time.sleep(self.time_between_activations)
             self.state_change(AutomationState.IDLE)
@@ -389,17 +400,15 @@ class LogMsg(PubSubMessage):
 
 class Executor(Node):
     def __init__(self, *args, **kwargs):
-        self.name = 'HackathonExampleA'
-        self.namespace = 'smauto.hackathod_a'
-        self.event_topic = 'event'
-        self.logs_topic = 'logs'
-        self._etopic = f'{self.namespace}.{self.event_topic}'
-        self._ltopic = f'{self.namespace}.{self.logs_topic}'
+        self.name = "HackathonExampleA"
+        self.namespace = "smauto.hackathod_a"
+        self.event_topic = "event"
+        self.logs_topic = "logs"
+        self._etopic = f"{self.namespace}.{self.event_topic}"
+        self._ltopic = f"{self.namespace}.{self.logs_topic}"
         self._init_params()
         super().__init__(
-            node_name=self.name,
-            debug=True,
-            connection_params=self.conn_params
+            node_name=self.name, debug=True, connection_params=self.conn_params
         )
         self.rtm = RTMonitor(self, self._etopic, self._ltopic)
         self.run()
@@ -413,11 +422,12 @@ class Executor(Node):
 
     def _init_params(self):
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         self.conn_params = conn_params
 
@@ -431,99 +441,98 @@ class Executor(Node):
 
     def create_automations(self, entities):
         autos = []
-        autos.append(Automation(
-            name='start_humidifier',
-            condition=Condition(
-                expression="(entities['bedroom_humidity_sensor'].attributes_dict['humidity'] > 0.6)"
-            ),
-            actions=[
-                Action('power', True, entities['bedroom_humidifier']),
-                Action('timer', -1, entities['bedroom_humidifier']),
-            ],
-            freq=1,
-            enabled=True,
-            continuous=False,
-            checkOnce=False,
-            after=[
-            ],
-            starts=[
-                'stop_humidifier',
-            ],
-            stops=[
-            ],
-            entities=entities,
-            rtm=self.rtm
-        ))
-        autos.append(Automation(
-            name='stop_humidifier',
-            condition=Condition(
-                expression="(entities['bedroom_humidity_sensor'].attributes_dict['humidity'] < 0.3)"
-            ),
-            actions=[
-                Action('power', False, entities['bedroom_humidifier']),
-            ],
-            freq=1,
-            enabled=False,
-            continuous=False,
-            checkOnce=False,
-            after=[
-            ],
-            starts=[
-                'start_humidifier',
-            ],
-            stops=[
-            ],
-            entities=entities,
-            rtm=self.rtm
-        ))
-        autos.append(Automation(
-            name='start_aircondition',
-            condition=Condition(
-                expression="((entities['bedroom_temperature_sensor'].attributes_dict['temperature'] > 28) and (entities['bedroom_humidity_sensor'].attributes_dict['humidity'] > 0.3 and entities['bedroom_humidity_sensor'].attributes_dict['humidity'] < 0.6))"
-            ),
-            actions=[
-                Action('temperature', 25.0, entities['bedroom_aircondition']),
-                Action('mode', 'cool', entities['bedroom_aircondition']),
-                Action('power', True, entities['bedroom_aircondition']),
-            ],
-            freq=1,
-            enabled=True,
-            continuous=False,
-            checkOnce=False,
-            after=[
-            ],
-            starts=[
-            ],
-            stops=[
-            ],
-            entities=entities,
-            rtm=self.rtm
-        ))
-        autos.append(Automation(
-            name='set_alarm_on_gas',
-            condition=Condition(
-                expression="(std(entities['kitchen_gas_sensor'].get_buffer('gas')) > 0.1)"
-            ),
-            actions=[
-                Action('state', 1, entities['alarm']),
-            ],
-            freq=1,
-            enabled=True,
-            continuous=True,
-            checkOnce=False,
-            after=[
-            ],
-            starts=[
-            ],
-            stops=[
-            ],
-            entities=entities,
-            rtm=self.rtm
-        ))
+        autos.append(
+            Automation(
+                name="start_humidifier",
+                condition=Condition(
+                    expression="(entities['bedroom_humidity_sensor'].attributes_dict['humidity'] > 0.6)"
+                ),
+                actions=[
+                    Action("power", True, entities["bedroom_humidifier"]),
+                    Action("timer", -1, entities["bedroom_humidifier"]),
+                ],
+                freq=1,
+                enabled=True,
+                continuous=False,
+                checkOnce=False,
+                after=[],
+                starts=[
+                    "stop_humidifier",
+                ],
+                stops=[],
+                entities=entities,
+                rtm=self.rtm,
+            )
+        )
+        autos.append(
+            Automation(
+                name="stop_humidifier",
+                condition=Condition(
+                    expression="(entities['bedroom_humidity_sensor'].attributes_dict['humidity'] < 0.3)"
+                ),
+                actions=[
+                    Action("power", False, entities["bedroom_humidifier"]),
+                ],
+                freq=1,
+                enabled=False,
+                continuous=False,
+                checkOnce=False,
+                after=[],
+                starts=[
+                    "start_humidifier",
+                ],
+                stops=[],
+                entities=entities,
+                rtm=self.rtm,
+            )
+        )
+        autos.append(
+            Automation(
+                name="start_aircondition",
+                condition=Condition(
+                    expression="((entities['bedroom_temperature_sensor'].attributes_dict['temperature'] > 28) and (entities['bedroom_humidity_sensor'].attributes_dict['humidity'] > 0.3 and entities['bedroom_humidity_sensor'].attributes_dict['humidity'] < 0.6))"
+                ),
+                actions=[
+                    Action("temperature", 25.0, entities["bedroom_aircondition"]),
+                    Action("mode", "cool", entities["bedroom_aircondition"]),
+                    Action("power", True, entities["bedroom_aircondition"]),
+                ],
+                freq=1,
+                enabled=True,
+                continuous=False,
+                checkOnce=False,
+                after=[],
+                starts=[],
+                stops=[],
+                entities=entities,
+                rtm=self.rtm,
+            )
+        )
+        autos.append(
+            Automation(
+                name="set_alarm_on_gas",
+                condition=Condition(
+                    expression="(std(entities['kitchen_gas_sensor'].get_buffer('gas')) > 0.1)"
+                ),
+                actions=[
+                    Action("state", 1, entities["alarm"]),
+                ],
+                freq=1,
+                enabled=True,
+                continuous=True,
+                checkOnce=False,
+                after=[],
+                starts=[],
+                stops=[],
+                entities=entities,
+                rtm=self.rtm,
+            )
+        )
         return autos
 
-    def create_entity(self, sense, name, topic, conn_params,
-                      attributes, msg_type, attr_buff=[]):
+    def create_entity(
+        self, sense, name, topic, conn_params, attributes, msg_type, attr_buff=[]
+    ):
         if sense:
             entity = EntitySense(
                 name=name,
@@ -531,7 +540,7 @@ class Executor(Node):
                 conn_params=conn_params,
                 attributes=attributes,
                 msg_type=msg_type,
-                attr_buff=attr_buff
+                attr_buff=attr_buff,
             )
         else:
             entity = EntityAct(
@@ -540,134 +549,168 @@ class Executor(Node):
                 conn_params=conn_params,
                 attributes=attributes,
                 msg_type=msg_type,
-                attr_buff=attr_buff
+                attr_buff=attr_buff,
             )
         return entity
-
 
     def create_entities(self):
         entities = []
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         attrs = {
-            'power': bool(),
-            'timer': int(),
+            "power": bool(),
+            "timer": int(),
         }
         entities.append(
             self.create_entity(
-                False, 'bedroom_humidifier', 'bedroom.humidifier',
-                conn_params, attrs, msg_type=BedroomHumidifierMsg,
-                attr_buff=[]
+                False,
+                "bedroom_humidifier",
+                "bedroom.humidifier",
+                conn_params,
+                attrs,
+                msg_type=BedroomHumidifierMsg,
+                attr_buff=[],
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         attrs = {
-            'humidity': float(),
+            "humidity": float(),
         }
         entities.append(
             self.create_entity(
-                True, 'bedroom_humidity_sensor', 'bedroom.humidity',
-                conn_params, attrs, msg_type=BedroomHumiditySensorMsg,
-                attr_buff=[]
+                True,
+                "bedroom_humidity_sensor",
+                "bedroom.humidity",
+                conn_params,
+                attrs,
+                msg_type=BedroomHumiditySensorMsg,
+                attr_buff=[],
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         attrs = {
-            'temperature': float(),
+            "temperature": float(),
         }
         entities.append(
             self.create_entity(
-                True, 'bedroom_temperature_sensor', 'bedroom.temperature',
-                conn_params, attrs, msg_type=BedroomTemperatureSensorMsg,
-                attr_buff=[]
+                True,
+                "bedroom_temperature_sensor",
+                "bedroom.temperature",
+                conn_params,
+                attrs,
+                msg_type=BedroomTemperatureSensorMsg,
+                attr_buff=[],
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         attrs = {
-            'gas': float(),
+            "gas": float(),
         }
         entities.append(
             self.create_entity(
-                True, 'kitchen_gas_sensor', 'kitchen.gas',
-                conn_params, attrs, msg_type=KitchenGasSensorMsg,
-                attr_buff=[('gas', 10)]
+                True,
+                "kitchen_gas_sensor",
+                "kitchen.gas",
+                conn_params,
+                attrs,
+                msg_type=KitchenGasSensorMsg,
+                attr_buff=[("gas", 10)],
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         attrs = {
-            'power': bool(),
-            'temperature': float(),
-            'swing': bool(),
-            'mode': str(),
+            "power": bool(),
+            "temperature": float(),
+            "swing": bool(),
+            "mode": str(),
         }
         entities.append(
             self.create_entity(
-                False, 'bedroom_aircondition', 'bedroom.aircondition',
-                conn_params, attrs, msg_type=BedroomAirconditionMsg,
-                attr_buff=[]
+                False,
+                "bedroom_aircondition",
+                "bedroom.aircondition",
+                conn_params,
+                attrs,
+                msg_type=BedroomAirconditionMsg,
+                attr_buff=[],
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         attrs = {
-            'state': int(),
+            "state": int(),
         }
         entities.append(
             self.create_entity(
-                False, 'alarm', 'alarm',
-                conn_params, attrs, msg_type=AlarmMsg,
-                attr_buff=[]
+                False,
+                "alarm",
+                "alarm",
+                conn_params,
+                attrs,
+                msg_type=AlarmMsg,
+                attr_buff=[],
             )
         )
         from commlib.transports.mqtt import ConnectionParameters
+
         conn_params = ConnectionParameters(
-            host='localhost',
+            host="localhost",
             port=1883,
-            username='',
-            password='',
+            username="",
+            password="",
         )
         attrs = {
-            'time': Time(),
+            "time": Time(),
         }
         entities.append(
             self.create_entity(
-                True, 'system_clock', 'system.clock',
-                conn_params, attrs, msg_type=SystemClockMsg,
-                attr_buff=[]
+                True,
+                "system_clock",
+                "system.clock",
+                conn_params,
+                attrs,
+                msg_type=SystemClockMsg,
+                attr_buff=[],
             )
         )
         return entities
@@ -682,12 +725,12 @@ class Executor(Node):
             works = []
             for automation in automations:
                 automation.executor = ThreadPoolExecutor()
-                work = executor.submit(
-                    automation.start
-                ).add_done_callback(Executor._worker_clb)
+                work = executor.submit(automation.start).add_done_callback(
+                    Executor._worker_clb
+                )
                 works.append(work)
             # done, not_done = wait(works)
-        print('[bold magenta][*] All automations completed!![/bold magenta]')
+        print("[bold magenta][*] All automations completed!![/bold magenta]")
 
     @staticmethod
     def _worker_clb(f):
@@ -697,20 +740,18 @@ class Executor(Node):
         trace = []
         tb = e.__traceback__
         while tb is not None:
-            trace.append({
-                "filename": tb.tb_frame.f_code.co_filename,
-                "name": tb.tb_frame.f_code.co_name,
-                "lineno": tb.tb_lineno
-            })
+            trace.append(
+                {
+                    "filename": tb.tb_frame.f_code.co_filename,
+                    "name": tb.tb_frame.f_code.co_name,
+                    "lineno": tb.tb_lineno,
+                }
+            )
             tb = tb.tb_next
-        print(str({
-            'type': type(e).__name__,
-            'message': str(e),
-            'trace': trace
-        }))
+        print(str({"type": type(e).__name__, "message": str(e), "trace": trace}))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     executor = Executor()
     executor.start_entities()
     executor.start_automations()

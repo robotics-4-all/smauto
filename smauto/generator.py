@@ -17,13 +17,32 @@ import subprocess
 from textx import generator, textx_isinstance
 
 from smauto.language import get_metamodel, build_model
-from smauto.lib.automation import (Action, Automation, BoolAction, Dict,
-                                   FloatAction, IntAction, List, StringAction)
-from smauto.lib.broker import (AMQPBroker, Broker, BrokerAuthPlain, MQTTBroker,
-                               RedisBroker)
-from smauto.lib.entity import (Attribute, BoolAttribute, DictAttribute,
-                               FloatAttribute, IntAttribute, ListAttribute,
-                               StringAttribute)
+from smauto.lib.automation import (
+    Action,
+    Automation,
+    BoolAction,
+    Dict,
+    FloatAction,
+    IntAction,
+    List,
+    StringAction,
+)
+from smauto.lib.broker import (
+    AMQPBroker,
+    Broker,
+    BrokerAuthPlain,
+    MQTTBroker,
+    RedisBroker,
+)
+from smauto.lib.entity import (
+    Attribute,
+    BoolAttribute,
+    DictAttribute,
+    FloatAttribute,
+    IntAttribute,
+    ListAttribute,
+    StringAttribute,
+)
 
 # List of primitive types that can be directly printed
 primitives = (int, float, str, bool)
@@ -47,7 +66,7 @@ def print_operand(node):
     if type(node) in primitives or type(node) in custom_classes:
         return node
     else:
-        return node.parent.name + '.' + node.name
+        return node.parent.name + "." + node.name
 
 
 # Pre-Order traversal of Condition tree
@@ -73,9 +92,7 @@ def visit_node(node, depth, metamodel, file_writer):
     # and right sides
     # TODO: Probably passing around metamodel as an argument just for
     # accessing the ConditionGroup class is not best
-    if textx_isinstance(node,
-                        metamodel.namespaces['automation']['ConditionGroup']):
-
+    if textx_isinstance(node, metamodel.namespaces["automation"]["ConditionGroup"]):
         # Visit left node
         visit_node(node.r1, depth, metamodel, file_writer)
         # Visit right node
@@ -89,8 +106,8 @@ def visit_node(node, depth, metamodel, file_writer):
         file_writer.write(f"{'-' * (depth + 1)} {operand2}\n")
 
 
-def pu_to_png_transformation(pu_file_path: str, out_dir: str = '.'):
-    subprocess.Popen(['plantuml', pu_file_path, '-o', out_dir]).wait()
+def pu_to_png_transformation(pu_file_path: str, out_dir: str = "."):
+    subprocess.Popen(["plantuml", pu_file_path, "-o", out_dir]).wait()
 
 
 def generate_automation_graph(automation, dest=""):
@@ -113,9 +130,9 @@ def generate_automation_graph(automation, dest=""):
     metamodel = get_metamodel()
 
     # Open output file and write
-    with open(dest, 'w') as f:
+    with open(dest, "w") as f:
         # Write MindMap model start
-        f.write('@startmindmap\n')
+        f.write("@startmindmap\n")
         # Write center node
         f.write("+ Then\n")
         # Write Actions
@@ -140,9 +157,10 @@ def generate_automation_graph_from_file(model_path):
         pu_to_png_transformation(fpath)
 
 
-@generator('smauto', 'automation_graph')
-def text_automation_graph_generator(metamodel, model, output_path,
-                                    overwrite, debug, **custom_args):
+@generator("smauto", "automation_graph")
+def text_automation_graph_generator(
+    metamodel, model, output_path, overwrite, debug, **custom_args
+):
     for automation in model.automations:
         automation.build_condition()
         print(f"{automation.name} condition:{automation.condition.cond_lambda}")

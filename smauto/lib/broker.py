@@ -35,10 +35,18 @@ class MQTTBroker(Broker):
 
 
 class AMQPBroker(Broker):
-
-    def __init__(self, parent, name, host, port, vhost, auth,
-                 topicExchange='amq.topic', rpcExchange='DEFAULT',
-                 ssl=False):
+    def __init__(
+        self,
+        parent,
+        name,
+        host,
+        port,
+        vhost,
+        auth,
+        topicExchange="amq.topic",
+        rpcExchange="DEFAULT",
+        ssl=False,
+    ):
         super(AMQPBroker, self).__init__(parent, name, host, port, auth, ssl)
         self.vhost = vhost
         self.topicExchange = topicExchange

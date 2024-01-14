@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
 # If you are going to execute this in google colab, uncomment the next line
-# !pip install commlib-py>=0.11.0
-# !pip install pydantic==2.5.2
+# !pip install commlib-py==0.11.2
 
 import time
 import random
@@ -296,10 +295,9 @@ class Automation():
         for action in self.actions:
             value = action.value
             entity = action.entity
-            if entity in messages.keys():
-                setattr(messages[entity], action.attribute,  value)
-            else:
+            if entity not in messages.keys():
                 messages[entity] = entity.dstate
+            setattr(messages[entity], action.attribute,  value)
         for entity, message in messages.items():
             entity.change_state(message)
 
