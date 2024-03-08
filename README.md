@@ -12,18 +12,14 @@ that go beyond simple tasks.
 ![SmartHomeImage](assets/images/smart_home.png)
 
 
-The DSL is developed using Python and TextX and follows the model interpretation
-and executable models paradigms. It includes a meta-model and a grammar, that is
+The DSL is developed using Python and TextX and includes a meta-model and a grammar, that is
 specialized for smart environments, while it also provides the following features:
 
-- **Command-line Interface**. Used to call the validator, the interpreter and the 
-code generator explicitely.
-- **REST Api**. The DSL implements a REST Api, that can be utilized to remotely call
-the validator, the interpreter and the code generator on demand. ALso usefull for
+- **Command-line Interface**. Used to call the validator and the 
+code generators explicitely.
+- **REST Api**. The DSL implements a REST API, that can be utilized to remotely call
+the validator and the code generators on demand. Also usefull for
 integrating the language in bigger projects and cloud-based platforms.
-- **Dynamically compile and execute models (DEPRECATED)**. Model classes are constructed at runtime
-and are enhanced with platform-specific code that implements the logic. This process is
-executed by the language interpreter.
 - **Generate Virtual Entities**. A code generator is provided that transforms
 Entity model definitions into executable code with enhanced value generation with
 optional noise functions applied on. This can be very usefull to automatically
@@ -52,8 +48,8 @@ pip install .
 ### Docker image
 
 SmAuto can be build into a standalone docker image and provides a REST API
-for remotely performing model validation, interpretation and automated
-generation of virtual entities.
+for remotely performing model validation, automated
+generation of automations and virtual entities.
 
 To build the image execute from this directory:
 
@@ -576,30 +572,11 @@ Commands:
   gen        Generate in Python
   genv       Entities to Code - Generate executable virtual entities
   graph      Graph generator - Generate automation visualization graphs
-  interpret  Interpreter - Dynamically execute models
   validate   Model Validation
 ```
 
-### Dynamic Model Execution (DEPRECATED - WILL REMOVE IN THE FUTURE)
-
-
-SmAuto implements a language interpreter, to parse and validate the model against the meta-model and the logical rules, and to execute the input model. The interpreter dynamically constructs the classes (in Python) in-memory and executes the automation tasks described by the input model, using the Python interpreter. For this purpose, a command-line interface is provided to work with validation and dynamic execution of models, as long as for generating a visual graph for each automation (image file). Of course, for the graph generation and model execution processes, the validation process is initially executed and are terminated in case of syntactic and logical errors in the input model.
-
-The executor process takes as input the model, after success validation, and initially constructs the classes in-memory. The next step is to augment the model classes with platform-specific code, that includes the following core functionalities:
-
-- Augment the Entity class, to connect entities to the message broker and create relevant interfaces (publisher or subscriber), depending on it's type (Sense or Act). The Entity class monitors the state of the smart object by subscribing to the relevant topic and creates a local mirror of it's state. In case of actuator entities (Entity Act), it also constructs a publisher to send commands when actions are triggered by the automation. This augmentation implements the communication layer.
-- Transform the condition of each automation, expressed in SmAuto, into Python source code, that actually implements a lambda function. The injected lambda function is called at each "tick" of the executor.
-- Augment the Automation class and include platform-specific code that implements the execution logic. Each Automation has an internal state machine that defines four (4) states and the transitions as it appears in Figure \ref{XX}.
-\end{itemize}
-
-To execute the automations defined within an SmAuto (.smauto) model use the CLI.
-
-```bash
-smauto interpret simple_model.smauto
-```
 
 ### Compile Virtual Entities
-
 
 To compile SmAuto Entity models into Virtual Entities as explained above, use either the CLI or the REST API of the DSL. Furhermore, the compiler (code generator) can be configured to either generate a single Python executable for each Entity definition, or compile into a merged executable (use the `--merged/-m` flag) that includes all VEntities.
 
