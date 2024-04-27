@@ -1,0 +1,87 @@
+Metadata
+    name: SimpleHomeAutomation
+    version: "0.1.0"
+    description: "Simple home automation model."
+    author: "klpanagi"
+    email: "klpanagi@gmail.com"
+end
+
+// Communication Brokers ------->
+Broker<MQTT> issel_mqtt
+    host: "issel.ee.auth.gr"
+    port: 1883
+    ssl: False
+    auth:
+        username: ""
+        password: ""
+end
+
+Broker<AMQP> issel_amqp
+    host: "issel.ee.auth.gr"
+    port: 5672
+    ssl: True
+    auth:
+        username: ""
+        password: ""
+end
+
+Broker<Redis> issel_redis
+    host: "issel.ee.auth.gr"
+    port: 6379
+    ssl: True
+    auth:
+        username: ""
+        password: ""
+end
+
+// Entities ------->
+Entity bedroom_lamp
+    type: actuator
+    topic: "bedroom.lamp"
+    broker: issel_mqtt
+    attributes:
+        - power: bool
+end
+
+Entity motion_detector
+    type: sensor
+    topic: "bedroom.motion_detector"
+    broker: issel_amqp
+    attributes:
+        - detected: bool
+        - posX: int
+        - posY: int
+        - mode: str
+end
+
+Entity motion_detector_2
+    type: sensor
+    topic: "bedroom.motion_detector"
+    broker: issel_redis
+    attributes:
+        - detected: bool
+        - posX: int
+        - posY: int
+        - mode: str
+end
+
+// Automations ------->
+
+Automation motion_detected_1
+    description: "This is an example automation"
+    condition:
+        (motion_detector.posX == 5) AND (motion_detector.posY == 0)
+    enabled: true
+    continuous: true
+    actions:
+        - bedroom_lamp.power: true
+end
+
+Automation motion_detected_2
+    condition:
+        motion_detector.detected is false
+    enabled: true
+    continuous: true
+    actions:
+        - bedroom_lamp.power: true
+end
