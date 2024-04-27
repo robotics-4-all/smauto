@@ -43,14 +43,14 @@ class AMQPBroker(Broker):
         port,
         vhost,
         auth,
-        topicExchange="amq.topic",
-        rpcExchange="DEFAULT",
+        topicE="amq.topic",
+        rpcEx="DEFAULT",
         ssl=False,
     ):
         super(AMQPBroker, self).__init__(parent, name, host, port, auth, ssl)
         self.vhost = vhost
-        self.topicExchange = topicExchange
-        self.rpcExchange = rpcExchange
+        self.topicExchange = topicE
+        self.rpcExchange = rpcE
 
 
 class RedisBroker(Broker):
