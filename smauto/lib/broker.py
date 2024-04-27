@@ -44,7 +44,7 @@ class AMQPBroker(Broker):
         vhost,
         auth,
         topicE="amq.topic",
-        rpcEx="DEFAULT",
+        rpcE="DEFAULT",
         ssl=False,
     ):
         super(AMQPBroker, self).__init__(parent, name, host, port, auth, ssl)
