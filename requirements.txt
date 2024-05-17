@@ -1,6 +1,6 @@
-click==7.1.2
+click
 textX
-rich==13.4.2
+rich
 aiofiles
 jinja2
 fastapi>=0.100.0
