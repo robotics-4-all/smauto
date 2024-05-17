@@ -15,6 +15,8 @@ COPY ./ /app
 
 RUN pip install .
 
+RUN pip install 'uvicorn[standard]'
+
 # COPY ./models /models
 # ENV SMAUTO_MODEL_REPO=/models
 
