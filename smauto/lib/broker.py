@@ -29,8 +29,12 @@ class Broker:
 
 
 class MQTTBroker(Broker):
-    def __init__(self, parent, name, host, port, auth, ssl=False):
+    def __init__(self, parent, name, host, port, auth, ssl=False,
+                 basePath='', webPath='/mqtt', webPort=8883):
         super(MQTTBroker, self).__init__(parent, name, host, port, auth, ssl)
+        self.basePath = basePath
+        self.webPath = webPath
+        self.webPort = webPort
 
 
 class AMQPBroker(Broker):
