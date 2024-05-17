@@ -9,7 +9,6 @@ class BrokerAuthPlain:
         self.password = password
 
 
-# A class representing an Automation
 class Broker:
     def __init__(self, parent, name, host, port, auth, ssl):
         """
