@@ -9,7 +9,6 @@ class BrokerAuthPlain:
         self.password = password
 
 
-# A class representing an Automation
 class Broker:
     def __init__(self, parent, name, host, port, auth, ssl):
         """
@@ -30,8 +29,12 @@ class Broker:
 
 
 class MQTTBroker(Broker):
-    def __init__(self, parent, name, host, port, auth, ssl=False):
+    def __init__(self, parent, name, host, port, auth, ssl=False,
+                 basePath='', webPath='/mqtt', webPort=8883):
         super(MQTTBroker, self).__init__(parent, name, host, port, auth, ssl)
+        self.basePath = basePath
+        self.webPath = webPath
+        self.webPort = webPort
 
 
 class AMQPBroker(Broker):
@@ -43,14 +46,14 @@ class AMQPBroker(Broker):
         port,
         vhost,
         auth,
-        topicExchange="amq.topic",
-        rpcExchange="DEFAULT",
+        topicE="amq.topic",
+        rpcE="DEFAULT",
         ssl=False,
     ):
         super(AMQPBroker, self).__init__(parent, name, host, port, auth, ssl)
         self.vhost = vhost
-        self.topicExchange = topicExchange
-        self.rpcExchange = rpcExchange
+        self.topicExchange = topicE
+        self.rpcExchange = rpcE
 
 
 class RedisBroker(Broker):

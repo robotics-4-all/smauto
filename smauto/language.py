@@ -11,7 +11,7 @@ import pathlib
 import textx.scoping.providers as scoping_providers
 from rich import print
 from textx.scoping import ModelRepository, GlobalModelRepository
-from smauto.definitions import MODEL_REPO_PATH
+from smauto.definitions import MODEL_REPO_PATH, BUILTIN_MODELS
 
 from smauto.lib.automation import (
     Action,
@@ -201,19 +201,24 @@ def get_metamodel(debug: bool = False, global_repo: bool = False):
         debug=debug,
     )
 
-    metamodel.register_scope_providers(
-        {
-            "*.*": scoping_providers.FQNImportURI(importAs=True),
-            "brokers*": scoping_providers.FQNGlobalRepo(
-                join(MODEL_REPO_PATH, "broker", "*.smauto")
-            ),
-            "entities*": scoping_providers.FQNGlobalRepo(
-                join(MODEL_REPO_PATH, "entity", "*.smauto")
-            ),
-        }
-    )
+    metamodel.register_scope_providers(get_scode_providers())
     metamodel.register_model_processor(model_proc)
     return metamodel
+
+
+def get_scode_providers():
+    sp = {"*.*": scoping_providers.FQNImportURI(importAs=True)}
+    if BUILTIN_MODELS:
+        sp["brokers*"] = scoping_providers.FQNGlobalRepo(
+            join(BUILTIN_MODELS, "broker", "*.smauto"))
+        sp["entities*"] = scoping_providers.FQNGlobalRepo(
+            join(BUILTIN_MODELS, "entity", "*.smauto"))
+    if MODEL_REPO_PATH:
+        sp["brokers*"] = scoping_providers.FQNGlobalRepo(
+            join(MODEL_REPO_PATH, "broker", "*.smauto"))
+        sp["entities*"] = scoping_providers.FQNGlobalRepo(
+            join(MODEL_REPO_PATH, "entity", "*.smauto"))
+    return sp
 
 
 def build_model(model_path):

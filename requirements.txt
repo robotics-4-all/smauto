@@ -1,8 +1,7 @@
-click==7.1.2
-textX
-rich==13.4.2
+click
+textX>=4.0.0
+rich
 aiofiles
 jinja2
 fastapi>=0.100.0
 python-multipart
-uvicorn
