@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # If you are going to execute this in google colab, uncomment the next line
-# !pip install commlib-py==0.11.2
+# !pip install commlib-py==0.11.4
 
 import time
 import random
@@ -274,7 +274,7 @@ class Automation():
         stops = f'\n'.join(
             [f"  - {self.autos_map[dep].name}" for dep in self.stops])
         print(
-            f"Automation <{self.name}>\n"
+            f"Automation <{self.name}>\nz"
             f"    Condition: {self.condition.expression}\n"
             f"    Frequency: {self.freq} Hz\n"
             f"    Continuoues: {self.continuous}\n"
@@ -419,6 +419,7 @@ class Executor(Node):
         conn_params = ConnectionParameters(
             host='{{ rt_monitor.broker.host }}',
             port={{ rt_monitor.broker.port }},
+            ssl={{ rt_monitor.broker.ssl }},
             username='{{ rt_monitor.broker.auth.username }}',
             password='{{ rt_monitor.broker.auth.password }}',
         )
@@ -427,6 +428,7 @@ class Executor(Node):
         conn_params = ConnectionParameters(
             host='{{ rt_monitor.broker.host }}',
             port={{ rt_monitor.broker.port }},
+            ssl={{ rt_monitor.broker.ssl }},
             username='{{ rt_monitor.broker.auth.username }}',
             password='{{ rt_monitor.broker.auth.password }}',
         )
@@ -435,6 +437,16 @@ class Executor(Node):
         conn_params = ConnectionParameters(
             host='{{ rt_monitor.broker.host }}',
             port={{ rt_monitor.broker.port }},
+            ssl={{ rt_monitor.broker.ssl }},
+            username='{{ rt_monitor.broker.auth.username }}',
+            password='{{ rt_monitor.broker.auth.password }}',
+        )
+		{% elif rt_monitor.broker.__class__.__name__ == 'KafkaBroker' %}
+        from commlib.transports.kafka import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='{{ rt_monitor.broker.host }}',
+            port={{ rt_monitor.broker.port }},
+            ssl={{ rt_monitor.broker.ssl }},
             username='{{ rt_monitor.broker.auth.username }}',
             password='{{ rt_monitor.broker.auth.password }}',
         )
@@ -523,6 +535,7 @@ class Executor(Node):
         conn_params = ConnectionParameters(
             host='{{ e.broker.host }}',
             port={{ e.broker.port }},
+            ssl={{ rt_monitor.broker.ssl }},
             username='{{ e.broker.auth.username }}',
             password='{{ e.broker.auth.password }}',
         )
@@ -531,6 +544,7 @@ class Executor(Node):
         conn_params = ConnectionParameters(
             host='{{ e.broker.host }}',
             port={{ e.broker.port }},
+            ssl={{ rt_monitor.broker.ssl }},
             username='{{ e.broker.auth.username }}',
             password='{{ e.broker.auth.password }}',
         )
@@ -539,6 +553,7 @@ class Executor(Node):
         conn_params = ConnectionParameters(
             host='{{ e.broker.host }}',
             port={{ e.broker.port }},
+            ssl={{ rt_monitor.broker.ssl }},
             username='{{ e.broker.auth.username }}',
             password='{{ e.broker.auth.password }}',
         )

@@ -33,6 +33,7 @@ def select_clock_broker(model):
         brokers += get_children_of_type("MQTTBroker", m)
         brokers += get_children_of_type("AMQPBroker", m)
         brokers += get_children_of_type("RedisBroker", m)
+        brokers += get_children_of_type("KafkaBroker", m)
     for broker in brokers:
         if broker.name == "fake_broker":
             brokers.remove(broker)
