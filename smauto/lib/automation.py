@@ -28,6 +28,7 @@ class Automation(object):
         enabled,
         continuous,
         checkOnce,
+        delay,
         after,
         starts,
         stops,
@@ -49,6 +50,7 @@ class Automation(object):
         continuous = True if continuous is None else continuous
         checkOnce = False if checkOnce is None else checkOnce
         freq = 1 if freq in (None, 0) else freq
+        delay = 0 if not delay else delay
         self.parent = parent
         self.name = name
         self.condition = condition
@@ -63,6 +65,7 @@ class Automation(object):
         self.time_between_activations = 5
         self.state = AutomationState.IDLE
         self.description = description
+        self.delay = delay
 
     # Evaluate the Automation's conditions and run the actions
     def evaluate_condition(self):
