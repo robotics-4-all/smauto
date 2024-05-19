@@ -2,8 +2,6 @@ import click
 import os
 from rich import print, pretty
 
-from smauto.interpreter import ModelExecutor
-from smauto.generator import generate_automation_graph_from_file
 from smauto.language import build_model
 from smauto.transformations import model_to_vnodes, smauto_m2t
 from smauto.transformations import model_to_vent
