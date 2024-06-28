@@ -387,12 +387,12 @@ class LogMsg(PubSubMessage):
 class Executor(Node):
     def __init__(self, *args, **kwargs):
         self.name = '{{ metadata.name }}'
-        self.namespace = '{{ rt_monitor.ns }}'
-        self.event_topic = '{{ rt_monitor.eTopic }}'
-        self.logs_topic = '{{ rt_monitor.lTopic }}'
         self._etopic = f'{self.namespace}.{self.event_topic}'
         self._ltopic = f'{self.namespace}.{self.logs_topic}'
         {% if rt_monitor %}
+        self.namespace = '{{ rt_monitor.ns }}'
+        self.event_topic = '{{ rt_monitor.eTopic }}'
+        self.logs_topic = '{{ rt_monitor.lTopic }}'
         self._init_params()
         super().__init__(
             node_name=self.name,
@@ -535,7 +535,7 @@ class Executor(Node):
         conn_params = ConnectionParameters(
             host='{{ e.broker.host }}',
             port={{ e.broker.port }},
-            ssl={{ rt_monitor.broker.ssl }},
+            ssl={{ e.broker.ssl }},
             username='{{ e.broker.auth.username }}',
             password='{{ e.broker.auth.password }}',
         )
@@ -544,7 +544,7 @@ class Executor(Node):
         conn_params = ConnectionParameters(
             host='{{ e.broker.host }}',
             port={{ e.broker.port }},
-            ssl={{ rt_monitor.broker.ssl }},
+            ssl={{ e.broker.ssl }},
             username='{{ e.broker.auth.username }}',
             password='{{ e.broker.auth.password }}',
         )
@@ -553,7 +553,7 @@ class Executor(Node):
         conn_params = ConnectionParameters(
             host='{{ e.broker.host }}',
             port={{ e.broker.port }},
-            ssl={{ rt_monitor.broker.ssl }},
+            ssl={{ e.broker.ssl }},
             username='{{ e.broker.auth.username }}',
             password='{{ e.broker.auth.password }}',
         )
