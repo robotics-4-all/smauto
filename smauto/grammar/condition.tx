@@ -37,7 +37,7 @@ MathTerm: op=MathFactor (op=MulOrDiv op=MathFactor)*;
 
 MathFactor: (sign=PlusOrMinus)?  op=MathOperand;
 
-MathOperand: op=NUMBER | op=[NumericAttribute:FQN|+pm:entities.attributes] |
+MathOperand: op=NUMBER | op=[NumericAttribute:FQN|+m:entities.attributes] |
 	('(' op=MathExpression ')');
 
 StdAttr:
@@ -130,27 +130,27 @@ AugmentedListAttr: SimpleListAttr;
 AugmentedDictAttr: SimpleDictAttr;
 
 SimpleNumericAttr:
-    attribute=[NumericAttribute:FQN|+pm:entities.attributes]
+    attribute=[NumericAttribute:FQN|+m:entities.attributes]
 ;
 
 SimpleStringAttr:
-    attribute=[StringAttribute:FQN|+pm:entities.attributes]
+    attribute=[StringAttribute:FQN|+m:entities.attributes]
 ;
 
 SimpleBoolAttr:
-    attribute=[BoolAttribute:FQN|+pm:entities.attributes]
+    attribute=[BoolAttribute:FQN|+m:entities.attributes]
 ;
 
 SimpleListAttr:
-    attribute=[ListAttribute:FQN|+pm:entities.attributes]
+    attribute=[ListAttribute:FQN|+m:entities.attributes]
 ;
 
 SimpleDictAttr:
-    attribute=[DictAttribute:FQN|+pm:entities.attributes]
+    attribute=[DictAttribute:FQN|+m:entities.attributes]
 ;
 
 SimpleTimeAttr:
-    attribute=[TimeAttribute:FQN|+pm:entities.attributes]
+    attribute=[TimeAttribute:FQN|+m:entities.attributes]
 ;
 
 // Operators

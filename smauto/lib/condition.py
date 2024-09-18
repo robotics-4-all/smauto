@@ -177,7 +177,6 @@ class Condition(object):
             cond_node.cond_lambda = (OPERATORS[cond_node.operator])(operand1, operand2)
 
     def evaluate(self):
-        # Check if condition has been build using build_expression
         if self.cond_lambda not in (None, ""):
             # Evaluate condition providing the textX model as global context for evaluation
             try:
