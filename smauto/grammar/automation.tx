@@ -15,15 +15,15 @@ Automation:
         ('continuous:' continuous=BOOL)?
         ('checkOnce:' checkOnce=BOOL)?
         ('delay:' delay=FLOAT)?
-        ('starts:' '-' starts*=[Automation:FQN|+pm:automations]['-'])?
-        ('stops:' '-' stops*=[Automation:FQN|+pm:automations]['-'])?
-        ('after:' '-' after*=[Automation:FQN|+pm:automations]['-'])?
+        ('starts:' '-' starts*=[Automation:FQN|+m:automations]['-'])?
+        ('stops:' '-' stops*=[Automation:FQN|+m:automations]['-'])?
+        ('after:' '-' after*=[Automation:FQN|+m:automations]['-'])?
         )#
     'end'
 ;
 
 AutomationDependency:
-    automation=[Automation:FQN|+pm:automations] ('on' exitStatus=BOOL)?
+    automation=[Automation:FQN|+m:automations] ('on' exitStatus=BOOL)?
 ;
 
 
@@ -33,25 +33,25 @@ Action:
 ;
 
 IntAction:
-    ('-' attribute=[IntAttribute:FQN|+pm:entities.attributes] ':' value=INT)
+    ('-' attribute=[IntAttribute:FQN|+m:entities.attributes] ':' value=INT)
 ;
 
 FloatAction:
-    ('-' attribute=[FloatAttribute:FQN|+pm:entities.attributes] ':' value=STRICTFLOAT)
+    ('-' attribute=[FloatAttribute:FQN|+m:entities.attributes] ':' value=STRICTFLOAT)
 ;
 
 StringAction:
-    ('-' attribute=[StringAttribute:FQN|+pm:entities.attributes] ':' value=STRING)
+    ('-' attribute=[StringAttribute:FQN|+m:entities.attributes] ':' value=STRING)
 ;
 
 BoolAction:
-    ('-' attribute=[BoolAttribute:FQN|+pm:entities.attributes] ':' value=BOOL)
+    ('-' attribute=[BoolAttribute:FQN|+m:entities.attributes] ':' value=BOOL)
 ;
 
 ListAction:
-    ('-' attribute=[ListAttribute:FQN|+pm:entities.attributes] ':' value=List)
+    ('-' attribute=[ListAttribute:FQN|+m:entities.attributes] ':' value=List)
 ;
 
 DictAction:
-    ('-' attribute=[DictAttribute:FQN|+pm:entities.attributes] ':' value=Dict)
+    ('-' attribute=[DictAttribute:FQN|+m:entities.attributes] ':' value=Dict)
 ;

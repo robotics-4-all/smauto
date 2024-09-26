@@ -6,7 +6,7 @@ MessageBroker:
 
 
 BrokerConnection:
-    'ref' ':' ref=[MessageBroker:FQN]
+    'ref' ':' ref=[MessageBroker:FQN|+m:brokers]
     'auth' ':' auth=Authentication
 ;
 
