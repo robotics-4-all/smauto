@@ -13,13 +13,6 @@ from concurrent.futures import ThreadPoolExecutor, wait
 from threading import Event
 import signal
 
-{# {% if entity.broker.__class__.__name__ == 'MQTTBroker' %} #}
-{# from commlib.transports.mqtt import ConnectionParameters #}
-{# {% elif entity.broker.__class__.__name__ == 'AMQPBroker' %} #}
-{# from commlib.transports.amqp import ConnectionParameters #}
-{# {% elif entity.broker.__class__.__name__ == 'RedisBroker' %} #}
-{# from commlib.transports.redis import ConnectionParameters #}
-{# {% endif %} #}
 from rich import print, console, pretty
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
@@ -57,20 +50,18 @@ class Attribute:
         self.value = value
 
 
-{% for entity in entities %}
-class {{ entity.camel_name }}Msg(PubSubMessage):
-    {% for a in entity.attributes %}
-    {% if a.type == "str" %}
-        {{ a.name }}: {{ a.type }} = '{{ a.value }}'
-    {% elif a.type == "time" %}
-        {{ a.name }}: Optional[Time] = Time()
-    {% else %}
-        {{ a.name }}: {{ a.type }} = {{ a.value }}
-    {% endif %}
-    {% endfor %}
+class AirconditionMsg(PubSubMessage):
+        power: bool = False
 
 
-{% endfor %}
+class TemperatureSensorMsg(PubSubMessage):
+        temperature: float = 0.0
+
+
+class SystemClockMsg(PubSubMessage):
+        time: Optional[Time] = Time()
+
+
 class Entity(Node):
     def __init__(self, name, topic, conn_params,
                  attributes, msg_type, attr_buff=[],
@@ -386,11 +377,10 @@ class LogMsg(PubSubMessage):
 
 class Executor(Node):
     def __init__(self, *args, **kwargs):
-        self.name = '{{ metadata.name }}'
-        {% if rt_monitor %}
-        self.namespace = '{{ rt_monitor.ns }}'
-        self.event_topic = '{{ rt_monitor.eTopic }}'
-        self.logs_topic = '{{ rt_monitor.lTopic }}'
+        self.name = 'AdvancedConditions'
+        self.namespace = 'smauto.simple_home_auto'
+        self.event_topic = 'event'
+        self.logs_topic = 'logs'
         self._init_params()
         super().__init__(
             node_name=self.name,
@@ -401,9 +391,6 @@ class Executor(Node):
         self._ltopic = f'{self.namespace}.{self.logs_topic}'
         self.rtm = RTMonitor(self, self._etopic, self._ltopic)
         self.run()
-        {% else %}
-        self.rtm = None
-        {% endif %}
 
         self.entities = self.create_entities()
         self.entities_map = self.build_entities_map(self.entities)
@@ -412,47 +399,16 @@ class Executor(Node):
         for auto in self.autos:
             auto.set_autos(self.autos_map)
 
-    {% if rt_monitor %}
     def _init_params(self):
-        {% if rt_monitor.broker.__class__.__name__ == 'MQTTBroker' %}
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='{{ rt_monitor.broker.host }}',
-            port={{ rt_monitor.broker.port }},
-            ssl={{ rt_monitor.broker.ssl }},
-            username='{{ rt_monitor.broker.auth.username }}',
-            password='{{ rt_monitor.broker.auth.password }}',
+            host='locsys.issel.ee.auth.gr',
+            port=1883,
+            ssl=False,
+            username='r4a',
+            password='r4a123$',
         )
-        {% elif rt_monitor.broker.__class__.__name__ == 'AMQPBroker' %}
-        from commlib.transports.amqp import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='{{ rt_monitor.broker.host }}',
-            port={{ rt_monitor.broker.port }},
-            ssl={{ rt_monitor.broker.ssl }},
-            username='{{ rt_monitor.broker.auth.username }}',
-            password='{{ rt_monitor.broker.auth.password }}',
-        )
-        {% elif rt_monitor.broker.__class__.__name__ == 'RedisBroker' %}
-        from commlib.transports.redis import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='{{ rt_monitor.broker.host }}',
-            port={{ rt_monitor.broker.port }},
-            ssl={{ rt_monitor.broker.ssl }},
-            username='{{ rt_monitor.broker.auth.username }}',
-            password='{{ rt_monitor.broker.auth.password }}',
-        )
-		{% elif rt_monitor.broker.__class__.__name__ == 'KafkaBroker' %}
-        from commlib.transports.kafka import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='{{ rt_monitor.broker.host }}',
-            port={{ rt_monitor.broker.port }},
-            ssl={{ rt_monitor.broker.ssl }},
-            username='{{ rt_monitor.broker.auth.username }}',
-            password='{{ rt_monitor.broker.auth.password }}',
-        )
-        {% endif %}
         self.conn_params = conn_params
-    {% endif %}
 
     def build_autos_map(self, autos):
         a_map = {auto.name: auto for auto in autos}
@@ -464,44 +420,50 @@ class Executor(Node):
 
     def create_automations(self, entities):
         autos = []
-        {% for auto in automations %}
         autos.append(Automation(
-            name='{{ auto.name }}',
+            name='mean_example',
             condition=Condition(
-                expression="{{ auto.condition.cond_lambda.replace('.value', '') }}"
+                expression="(mean(entities['temperature_sensor'].get_buffer('temperature')) >= 30)"
             ),
             actions=[
-            {% for action in auto.actions %}
-                {% if action.attribute.type == "str" %}
-                Action('{{ action.attribute.name }}', '{{ action.value }}', entities['{{ action.attribute.parent.name }}']),
-                {% else %}
-                Action('{{ action.attribute.name }}', {{ action.value }}, entities['{{ action.attribute.parent.name }}']),
-                {% endif %}
-            {% endfor %}
+                Action('power', True, entities['aircondition']),
             ],
-            freq={{ auto.freq }},
-            enabled={{ auto.enabled }},
-            continuous={{ auto.continuous }},
-            checkOnce={{ auto.checkOnce }},
+            freq=1,
+            enabled=True,
+            continuous=False,
+            checkOnce=False,
             after=[
-            {% for after in auto.after %}
-                '{{ after.name }}',
-            {% endfor %}
             ],
             starts=[
-            {% for starts in auto.starts %}
-                '{{ starts.name }}',
-            {% endfor %}
+                'mean_example',
             ],
             stops=[
-            {% for stops in auto.stops %}
-                '{{ stops.name }}',
-            {% endfor %}
             ],
             entities=entities,
             rtm=self.rtm
         ))
-        {% endfor %}
+        autos.append(Automation(
+            name='min_example',
+            condition=Condition(
+                expression="(min(entities['temperature_sensor'].get_buffer('temperature')) >= 30)"
+            ),
+            actions=[
+                Action('power', True, entities['aircondition']),
+            ],
+            freq=1,
+            enabled=True,
+            continuous=False,
+            checkOnce=False,
+            after=[
+            ],
+            starts=[
+                'min_example',
+            ],
+            stops=[
+            ],
+            entities=entities,
+            rtm=self.rtm
+        ))
         return autos
 
     def create_entity(self, sense, name, topic, conn_params,
@@ -529,62 +491,60 @@ class Executor(Node):
 
     def create_entities(self):
         entities = []
-    {% for e in entities %}
-        {% if e.broker.__class__.__name__ == 'MQTTBroker' %}
         from commlib.transports.mqtt import ConnectionParameters
         conn_params = ConnectionParameters(
-            host='{{ e.broker.host }}',
-            port={{ e.broker.port }},
-            ssl={{ e.broker.ssl }},
-            username='{{ e.broker.auth.username }}',
-            password='{{ e.broker.auth.password }}',
+            host='locsys.issel.ee.auth.gr',
+            port=1883,
+            ssl=False,
+            username='r4a',
+            password='r4a123$',
         )
-        {% elif e.broker.__class__.__name__ == 'AMQPBroker' %}
-        from commlib.transports.amqp import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='{{ e.broker.host }}',
-            port={{ e.broker.port }},
-            ssl={{ e.broker.ssl }},
-            username='{{ e.broker.auth.username }}',
-            password='{{ e.broker.auth.password }}',
-        )
-        {% elif e.broker.__class__.__name__ == 'RedisBroker' %}
-        from commlib.transports.redis import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='{{ e.broker.host }}',
-            port={{ e.broker.port }},
-            ssl={{ e.broker.ssl }},
-            username='{{ e.broker.auth.username }}',
-            password='{{ e.broker.auth.password }}',
-        )
-        {% endif %}
         attrs = {
-        {% for attr in e.attributes %}
-        {% if attr.type == "time" %}
-            '{{ attr.name }}': Time(),
-        {% else %}
-            '{{ attr.name }}': {{ attr.type }}(),
-        {% endif %}
-        {% endfor %}
+            'power': bool(),
         }
-        {% if e.etype == 'sensor' %}
         entities.append(
             self.create_entity(
-                True, '{{ e.name }}', '{{ e.topic }}',
-                conn_params, attrs, msg_type={{ e.camel_name }}Msg,
-                attr_buff={{ e.attr_buffs }}
+                False, 'aircondition', 'home.aircondition',
+                conn_params, attrs, msg_type=AirconditionMsg,
+                attr_buff=[]
             )
         )
-        {% else %}
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='locsys.issel.ee.auth.gr',
+            port=1883,
+            ssl=False,
+            username='r4a',
+            password='r4a123$',
+        )
+        attrs = {
+            'temperature': float(),
+        }
         entities.append(
             self.create_entity(
-                False, '{{ e.name }}', '{{ e.topic }}',
-                conn_params, attrs, msg_type={{ e.camel_name }}Msg,
-                attr_buff={{ e.attr_buffs }}
+                True, 'temperature_sensor', 'home.temperature',
+                conn_params, attrs, msg_type=TemperatureSensorMsg,
+                attr_buff=[('temperature', 4), ('temperature', 4)]
             )
         )
-        {% endif %}
-    {% endfor %}
+        from commlib.transports.mqtt import ConnectionParameters
+        conn_params = ConnectionParameters(
+            host='locsys.issel.ee.auth.gr',
+            port=1883,
+            ssl=False,
+            username='r4a',
+            password='r4a123$',
+        )
+        attrs = {
+            'time': Time(),
+        }
+        entities.append(
+            self.create_entity(
+                True, 'system_clock', 'system.clock',
+                conn_params, attrs, msg_type=SystemClockMsg,
+                attr_buff=[]
+            )
+        )
         return entities
 
     def start_entities(self):

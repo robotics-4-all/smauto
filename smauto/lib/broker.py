@@ -25,7 +25,7 @@ class Broker:
         self.host = host
         self.port = port
         self.auth = auth
-        self.ssl = ssl
+        self.ssl = ssl if ssl is not None else False
 
 
 class MQTTBroker(Broker):

@@ -201,30 +201,33 @@ def get_metamodel(debug: bool = False, global_repo: bool = False):
         debug=debug,
     )
 
-    metamodel.register_scope_providers(get_scode_providers())
+    metamodel.register_scope_providers(get_scope_providers())
     metamodel.register_model_processor(model_proc)
     return metamodel
 
 
-def get_scode_providers():
+def get_scope_providers():
     sp = {"*.*": scoping_providers.FQNImportURI(importAs=True)}
     if BUILTIN_MODELS:
         sp["brokers*"] = scoping_providers.FQNGlobalRepo(
-            join(BUILTIN_MODELS, "broker", "*.smauto"))
+            join(BUILTIN_MODELS, "broker", "*.br"))
         sp["entities*"] = scoping_providers.FQNGlobalRepo(
-            join(BUILTIN_MODELS, "entity", "*.smauto"))
+            join(BUILTIN_MODELS, "entity", "*.ent"))
+        # sp["automations*"] = scoping_providers.FQNGlobalRepo(
+        #     join(BUILTIN_MODELS, "automations", "*.smauto"))
     if MODEL_REPO_PATH:
         sp["brokers*"] = scoping_providers.FQNGlobalRepo(
-            join(MODEL_REPO_PATH, "broker", "*.smauto"))
+            join(MODEL_REPO_PATH, "broker", "*.br"))
         sp["entities*"] = scoping_providers.FQNGlobalRepo(
-            join(MODEL_REPO_PATH, "entity", "*.smauto"))
+            join(MODEL_REPO_PATH, "entity", "*.ent"))
+        # sp["automations*"] = scoping_providers.FQNGlobalRepo(
+        #     join(BUILTIN_MODELS, "automations", "*.smauto"))
     return sp
 
 
 def build_model(model_path):
     mm = get_metamodel(debug=False)
     model = mm.model_from_file(model_path)
-    # entities = get_children_of_type('Entity', model)
     return model
 
 
@@ -234,7 +237,7 @@ def get_model_grammar(model_path):
     return grammar_model
 
 
-@language("smauto", "*.auto")
+@language("smauto", "*.smauto")
 def smauto_language():
     "SmartAutomation (SmAuto) language"
     mm = get_metamodel()
