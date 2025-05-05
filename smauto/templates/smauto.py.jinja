@@ -3,6 +3,7 @@
 # If you are going to execute this in google colab, uncomment the next line
 # !pip install commlib-py==0.11.4
 
+import math
 import time
 import random
 from typing import Optional, Dict
@@ -12,6 +13,10 @@ import statistics
 from concurrent.futures import ThreadPoolExecutor, wait
 from threading import Event
 import signal
+from dataclasses import dataclass
+from enum import Enum
+from threading import Thread
+
 
 {# {% if entity.broker.__class__.__name__ == 'MQTTBroker' %} #}
 {# from commlib.transports.mqtt import ConnectionParameters #}
@@ -30,6 +35,163 @@ console = console.Console()
 
 terminate_event = Event()
 
+# Value generation machinery for virtual entities
+@dataclass
+class NoiseUniform:
+    min: float
+    max: float
+
+@dataclass
+class NoiseGaussian:
+    mu: float
+    sigma: float
+
+@dataclass
+class NoiseZero:
+    pass
+
+class NoiseType(Enum):
+    Zero = 0
+    Uniform = 1
+    Gaussian = 2
+
+class Noise:
+    def __init__(self, _type, properties):
+        self.type = _type
+        self.properties = properties
+
+    def generate(self):
+        if self.type == NoiseType.Zero:
+            return 0
+        elif self.type == NoiseType.Uniform:
+            return random.uniform(self.properties.min, self.properties.max)
+        elif self.type == NoiseType.Gaussian:
+            return random.gauss(self.properties.mu, self.properties.sigma)
+        return 0
+
+@dataclass
+class ValueGeneratorProperties:
+    @dataclass
+    class Constant:
+        value: float
+
+    @dataclass
+    class Linear:
+        start: float
+        step: float  # per second
+
+    @dataclass
+    class Saw:
+        min: float
+        max: float
+        step: float
+        _internal_start: Optional[float] = 0.0
+
+    @dataclass
+    class Gaussian:
+        value: float
+        max_value: float
+        sigma: float  # this is time (seconds)
+        _internal_start: Optional[float] = 0.0
+        
+    @dataclass
+    class Replay:
+        values: list
+        times: int
+        
+    @dataclass
+    class Sinus:
+        dc: float
+        amplitude: float
+        step: float
+
+class ValueGeneratorType(Enum):
+    Constant = 1
+    Linear = 2
+    Gaussian = 3
+    Step = 5
+    Saw = 6
+    Sinus = 7
+    Logarithmic = 8
+    Exponential = 9
+    Replay = 10
+
+class ValueComponent:
+    def __init__(self, _type, name, properties, noise):
+        self.type = _type
+        self.name = name
+        self.properties = properties
+        self.noise = noise
+
+class ValueGenerator:
+    def __init__(self, topic, hz, components, commlib_node):
+        self.topic = topic
+        self.hz = hz
+        self.components = components
+        self.commlib_node = commlib_node
+        self.publisher = self.commlib_node.create_publisher(
+            topic=topic,
+            msg_type=commlib_node.msg_type
+        )
+        self.running = False
+        self._thread = None
+
+    def start(self, minutes=None):
+        self.running = True
+        start = time.time()
+        value = None
+        replay_counter = 0
+        replay_iter = 0
+        
+        for c in self.components:
+            if c.type in (ValueGeneratorType.Gaussian, ValueGeneratorType.Saw):
+                c.properties._internal_start = start
+                
+        while self.running and not terminate_event.is_set():
+            msg = self.commlib_node.msg_type()
+            for c in self.components:
+                if c.type == ValueGeneratorType.Constant:
+                    value = c.properties.value + c.noise.generate()
+                elif c.type == ValueGeneratorType.Linear:
+                    value = c.properties.start + (time.time() - start) * c.properties.step
+                    value += c.noise.generate()
+                elif c.type == ValueGeneratorType.Sinus:
+                    value = c.properties.dc + c.properties.amplitude * math.sin((time.time() - start) * c.properties.step)
+                    value += c.noise.generate()
+                elif c.type == ValueGeneratorType.Saw:
+                    value = c.properties.min + \
+                        (time.time() - c.properties._internal_start) * \
+                        c.properties.step
+                    value += c.noise.generate()
+                    if value >= c.properties.max:
+                        c.properties._internal_start = time.time()
+                elif c.type == ValueGeneratorType.Gaussian:
+                    if time.time() - c.properties._internal_start > 8 * c.properties.sigma:
+                        c.properties._internal_start = time.time()
+                    value = c.properties.value
+                    _norm_exp = -np.power(
+                        time.time() - c.properties._internal_start - 4 *
+                        c.properties.sigma, 2.) / (2 * np.power(c.properties.sigma, 2.))
+                    value += np.exp(_norm_exp) * (c.properties.max_value - c.properties.value)
+                    value += c.noise.generate()
+                elif c.type == ValueGeneratorType.Replay:
+                    values = c.properties.values
+                    times = c.properties.times
+                    if replay_iter == times:
+                        setattr(msg, c.name, values[-1])
+                        continue
+                    value = values[replay_counter]
+                    replay_counter += 1
+                    replay_counter = replay_counter % (len(values))
+                    if replay_counter == 0:
+                        replay_iter += 1
+                setattr(msg, c.name, value)
+
+            self.publisher.publish(msg)
+            time.sleep(1.0 / self.hz)
+            if minutes is not None:
+                if time.time() - start > minutes * 60.0:
+                    break
 
 def signal_handler(sig, frame):
     print("Interrupt received. Attempting to gracefully terminate workers.")
@@ -69,18 +231,37 @@ class {{ entity.camel_name }}Msg(PubSubMessage):
     {% endif %}
     {% endfor %}
 
+class {{ entity.name|capitalize }}:
+    def __init__(self):
+        {% for attribute in entity.attributes %}
+        self.{{ attribute.name }} = None
+        {% endfor %}
 
+    {% if entity.virtual %}
+    def generate_values(self):
+        {% for attribute in entity.attributes %}
+        {% if attribute.value_generator %}
+        self.{{ attribute.name }} = {{ attribute.value_generator }}
+        {% else %}
+        self.{{ attribute.name }} = 0  # Default safe value if no generator
+        {% endif %}
+        {% if attribute.noise_generator %}
+        self.{{ attribute.name }} += {{ attribute.noise_generator }}
+        {% endif %}
+        {% endfor %}
+    {% endif %}
 {% endfor %}
 class Entity(Node):
     def __init__(self, name, topic, conn_params,
                  attributes, msg_type, attr_buff=[],
-                 *args, **kwargs):
+                 virtual=False, *args, **kwargs):
         self.name = name
         self.camel_name = self.to_camel_case(name)
         self.topic = topic
         self.conn_params = conn_params
         self.attributes = attributes
         self.msg_type = msg_type
+        self.virtual = virtual  
         self.attributes_dict = {key: val for key, val in self.attributes.items()}
         self.attributes_buff = {key: [] for key, _ in self.attributes.items()}
         self.dstate = self.msg_type()
@@ -159,7 +340,64 @@ class Entity(Node):
             msg_type=self.msg_type,
         )
         self.state_pub.run()
+        # Special handling for virtual entities
+        if self.virtual:
+            self.start_virtual_generation()
 
+    def start_virtual_generation(self):
+        # Get entity class name
+        entity_class_name = self.name.capitalize()
+        # Find entity class in globals
+        entity_class = globals().get(entity_class_name)
+        
+        if entity_class:
+            # Create instance of entity class
+            self.entity_instance = entity_class()
+            
+            # If entity has generate_values method, use it to set up value generator
+            if hasattr(self.entity_instance, 'generate_values'):
+                # Create components based on entity's attributes
+                components = []
+                for attr_name in self.attributes:
+                    # Default to zero noise
+                    noise = Noise(
+                        _type=NoiseType.Zero,
+                        properties=NoiseZero()
+                    )
+                    
+                    # Use constant value generator by default
+                    properties = ValueGeneratorProperties.Constant(value=0)
+                    
+                    component = ValueComponent(
+                        _type=ValueGeneratorType.Constant,
+                        name=attr_name,
+                        properties=properties,
+                        noise=noise
+                    )
+                    components.append(component)
+                
+                generator = ValueGenerator(
+                    self.topic,
+                    1.0,  #Hz
+                    components,
+                    self
+                )
+                
+                # Start generator in a thread
+                self.generator = generator
+                self.generator_thread = Thread(target=self.generator.start)
+                self.generator_thread.daemon = True
+                self.generator_thread.start()
+                print(f"Started virtual entity generator for {self.name}")
+
+    def stop(self):
+        """Stop entity and its value generation"""
+        if hasattr(self, 'generator'):
+            self.generator.running = False
+            if hasattr(self, 'generator_thread') and self.generator_thread.is_alive():
+                self.generator_thread.join(timeout=2.0)
+        super().stop()
+    
     def change_state(self, msg):
         self.state_pub.publish(msg)
 
@@ -505,7 +743,7 @@ class Executor(Node):
         return autos
 
     def create_entity(self, sense, name, topic, conn_params,
-                      attributes, msg_type, attr_buff=[]):
+                      attributes, msg_type, attr_buff=[], virtual=False):
         if sense:
             entity = EntitySense(
                 name=name,
@@ -513,7 +751,8 @@ class Executor(Node):
                 conn_params=conn_params,
                 attributes=attributes,
                 msg_type=msg_type,
-                attr_buff=attr_buff
+                attr_buff=attr_buff,
+                virtual=virtual
             )
         else:
             entity = EntityAct(
@@ -522,7 +761,8 @@ class Executor(Node):
                 conn_params=conn_params,
                 attributes=attributes,
                 msg_type=msg_type,
-                attr_buff=attr_buff
+                attr_buff=attr_buff,
+                virtual=virtual
             )
         return entity
 
@@ -572,7 +812,8 @@ class Executor(Node):
             self.create_entity(
                 True, '{{ e.name }}', '{{ e.topic }}',
                 conn_params, attrs, msg_type={{ e.camel_name }}Msg,
-                attr_buff={{ e.attr_buffs }}
+                attr_buff={{ e.attr_buffs }},
+                virtual={{ e.virtual|default(false) }}
             )
         )
         {% else %}
@@ -580,7 +821,8 @@ class Executor(Node):
             self.create_entity(
                 False, '{{ e.name }}', '{{ e.topic }}',
                 conn_params, attrs, msg_type={{ e.camel_name }}Msg,
-                attr_buff={{ e.attr_buffs }}
+                attr_buff={{ e.attr_buffs }},
+                virtual={{ e.virtual|default(false) }}
             )
         )
         {% endif %}
@@ -641,3 +883,4 @@ if __name__ == '__main__':
         print("Interrupt detected. Exiting...")
         terminate_event.set()
         executor.stop()
+

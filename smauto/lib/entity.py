@@ -33,7 +33,7 @@ class Entity:
     """
 
     def __init__(
-        self, parent, name, etype, freq, topic, broker, attributes, description=""
+        self, parent, name, etype, freq, topic, broker, attributes, description="", virtual=False
     ):
         """
         Creates and returns an Entity object
@@ -42,6 +42,7 @@ class Entity:
                         topic sensors/temp_sensor
         :param broker: Reference to the Broker used for communications
         :param parent: Parameter required for Custom Class compatibility in textX
+        :param virtual: Flag to indicate if the entity is virtual or not
         :param attributes: List of Attribute objects belonging to the Entity
         """
         # TextX parent attribute. Required to use Entity as a custom class during metamodel instantiation
@@ -57,6 +58,8 @@ class Entity:
         self.state = {}
         # Set Entity's MQTT Broker
         self.broker = broker
+        # Flag for virtual entities
+        self.virtual = virtual
         # Entity's Attributes
         self.attributes = attributes
         self.description = description
@@ -116,7 +119,18 @@ class Entity:
             if root[attribute] is not None:
                 root[attribute].append(value)
 
-    @staticmethod
+    def set_virtual(self, value):
+        """
+        Set the virtual attribute.
+        """
+        self.virtual = value
+
+    def is_virtual(self):
+        """
+        Check if the entity is virtual.
+        """
+        return self.virtual
+
     def update_attributes(root, state_dict):
         """
         Recursive function used by update_state() mainly to updated

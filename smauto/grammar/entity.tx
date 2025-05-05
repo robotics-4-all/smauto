@@ -11,6 +11,7 @@ Entity:
 			('freq:' freq=NUMBER)?
 			('broker:' broker=[MessageBroker])
 			('attributes:' '-' attributes*=Attribute['-'])
+            ('virtual:' virtual=BOOLEAN)?
 		)#
     'end'
 ;

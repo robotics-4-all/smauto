@@ -3,32 +3,32 @@
 ![SmAutoLogo](assets/images/smauto_logo.png)
 
 ## Description
+
 Smart environments are becoming quite popular in the home setting consisting of a broad range of connected devices. While offering a novel set of possibilities, this also contributes to the complexity of the environment, posing new challenges to allowing the full potential of a sensorized home to be made available to users.
 
-SmAuto is a Domain Specific Language (DSL) that enables users to program complex 
+SmAuto is a Domain Specific Language (DSL) that enables users to program complex
 automation scenarios, for connected IoT devices in smart environments,
-that go beyond simple tasks. 
+that go beyond simple tasks.
 
 ![SmartHomeImage](assets/images/smart_home.png)
-
 
 The DSL is developed using Python and TextX and includes a meta-model and a grammar, that is
 specialized for smart environments, while it also provides the following features:
 
-- **Command-line Interface**. Used to call the validator and the 
-code generators explicitely.
+- **Command-line Interface**. Used to call the validator and the
+  code generators explicitely.
 - **REST Api**. The DSL implements a REST API, that can be utilized to remotely call
-the validator and the code generators on demand. Also usefull for
-integrating the language in bigger projects and cloud-based platforms.
+  the validator and the code generators on demand. Also usefull for
+  integrating the language in bigger projects and cloud-based platforms.
 - **Generate Virtual Entities**. A code generator is provided that transforms
-Entity model definitions into executable code with enhanced value generation with
-optional noise functions applied on. This can be very usefull to automatically
-generate the source code of virtual entities which simulate the behaviour of physical
-sensors.
+  Entity model definitions into executable code with enhanced value generation with
+  optional noise functions applied on. This can be very usefull to automatically
+  generate the source code of virtual entities which simulate the behaviour of physical
+  sensors.
 - **Compile Models**. Models are transformed (Model-to-Text) into executable Python source code implementing the Automations logic.
-- **Generate Visualization graphs of Automations**. A generator is provided 
-which takes a model as input and generates an image
-of the automation graph.
+- **Generate Visualization graphs of Automations**. A generator is provided
+  which takes a model as input and generates an image
+  of the automation graph.
 
 ![SmAutoArchitecture](assets/images/SmAutoArchitecture.png)
 
@@ -173,13 +173,14 @@ end
 
 - **type**: The Entity type. Currently supports `sensor`, `actuator` or `hybrid`
 - **topic**: The Topic in the Broker used by the Entity to send and receive
-messages. Note that / should be substituted with .
-(e.g: bedroom/aircondition -> bedroom.aircondition).
+  messages. Note that / should be substituted with .
+  (e.g: bedroom/aircondition -> bedroom.aircondition).
 - **broker**: The name property of a previously defined Broker which the
-Entity uses to communicate.
+  Entity uses to communicate.
+- **virtual (Optional)**: A boolean (`true` or `false`) indicating whether the Entity is virtual (simulated) or physical. Defaults to `false`.                                                                                                        Virtual Entities can leverage value and noise generators for simulation purposes.
 - **attributes**: Attributes have a name and a type. As can be seen in the above
-example, HA-Auto supports int, float, string, bool, list and dictionary types.
-Note that nested dictionaries are also supported.
+  example, HA-Auto supports int, float, string, bool, list and dictionary types.
+  Note that nested dictionaries are also supported.
 - **description (Optional)**: A description of the Entity
 - **freq (Optional)**: Used for Entities of type "**sensor**" to set the msg publishing rate
 
@@ -199,12 +200,7 @@ Supported data types for Attributes:
 
 #### Attribute value generation for virtual Entities
 
-SmAuto provides a code generator which can be utilized to transform Entities models
-into executable source code in Python.
-This feature of the language enables end-to-end generation of the objects (sensors, actuators, robots)
-which send and receive data based on their models. Thus it can be used to 
-generate while virtual smart environments and directly dig into defining and
-testing automations.
+SmAuto provides a code generator which can be utilized to transform Entities models marked as `virtual: true` into executable source code in Python.                                                                     This feature of the language enables end-to-end generation of virtual objects (sensors, actuators, robots) that simulate sending and receiving data based on their models.                                      Thus it can be used to generate while virtual smart environments and directly dig into defining and testing automations.
 
 For this purpose, the language supports (Optional) definition of a `Value Generator` and a `Noise` to be applied on each attribute of an Entity of type **sensor** separately.
 
@@ -237,7 +233,6 @@ it's own value and noise generators, using a simple grammar as evident below:
 - **Replay**: `replay([values], times)`. Replay from a list of values. The `times` parameter can be used to force replay iterations to a specific value. If `times=-1` then values will be replayed infinitely.
 - **ReplayFile**: `replayFile("FILE_PATH")`. Replay data from a file.
 
-
 **Supported Noise Generators:**
 
 - **Uniform**: `uniform(min, max)`.
@@ -259,21 +254,23 @@ protocols. You can define a Broker using the syntax in the following example:
 Broker<MQTT> upstairs_broker
     host: "localhost"
     port: 1883
+    version: "5.0"  # Optional, defaults to "3.1.1"
     auth:
         username: "my_username"
         password: "my_password"
 end
 ```
 
-- **type**: The first line can be `MQTT`, `AMQP` or `Redis` according to the Broker type
-- **host**: Host IP address or hostname for the Broker
-- **port**: Broker Port number
+- **type**: The first line can be `MQTT`, `AMQP`, or `Redis` according to the Broker type.
+- **host**: Host IP address or hostname for the Broker.
+- **port**: Broker Port number.
+- **version (Optional)**: MQTT protocol version (e.g., `"3.1.1"` or `"5.0"`). Only for MQTT brokers. Defaults to `"3.1.1"`.
 - **auth**: Authentication credentials. Unified for all communication brokers.
-    - **username**: Username used for authentication
-    - **password**: Password used for authentication
-- **vhost (Optional)**: Vhost parameter. Only for AMQP brokers
-- **vhost (Optional)**: Vhost parameter. Only for AMQP brokers
-- **topicExchange (Optional)**: (Optional) Exchange parameter. Only for AMQP brokers.
+
+  - **username**: Username used for authentication.
+  - **password**: Password used for authentication.
+- **vhost (Optional)**: Vhost parameter. Only for AMQP brokers.
+- **topicExchange (Optional)**: Exchange parameter. Only for AMQP brokers.
 - **rpcExchange (FUTURE SUPPORT)**: Exchange parameter. Only for AMQP brokers.
 - **db (Optional)**: Database number parameter. Only for Redis brokers.
 
@@ -330,8 +327,8 @@ end
   exit.
 - **actions**: The actions that should be run once the condition is met. See Writing Actions for more information.
 - **after**: The automation will not start
-    and will be hold at the IDLE state until termination of the automations
-    listed here as dependencies.
+  and will be hold at the IDLE state until termination of the automations
+  listed here as dependencies.
 - **starts**: Starts other automation after termination of the current
   automation.
 - **stops**: stops other automation after termination of the current
@@ -339,12 +336,11 @@ end
 
 ![CheckOnceExample](assets/images/checkOnce_example_1.png)
 
-
 ### Conditions
 
 Conditions are very similar to conditions in imperative programming languages
 such as Python, Java, C++ or JavaScript. You can use Entity Attributes in a
-condition just like a variable by referencing it in the Condition using 
+condition just like a variable by referencing it in the Condition using
 it's Fully-Qualified Name (FQN) in dot (.) notation.
 
 ```
@@ -412,7 +408,6 @@ will have to be rephrased to an equivalent like:
 
 `((condition_1) AND (condition_2)) AND (condition_3)`
 
-
 #### Lists and Dictionaries:
 
 The language has support for Lists and Dictionaries and even nesting them.
@@ -453,7 +448,6 @@ condition:
 condition:
     var(mean(bedroom_temp_sensor.temperature, 10), 10) >= 0.1
 ```
-
 
 **Supported Functions:**
 
@@ -508,12 +502,12 @@ end
 ```
 
 The properties of the **Metadata** concept are:
+
 - **name**: The name of the model
 - **description**: The standard deviation of the attribute buffer
 - **author**: The variance of the attribute buffer
 - **email**: The minimum value in the attribute buffer
 - **extraAttr: (UNDER DEVELOPMENT)**: Include user-defined attributes/properties which can be used by M2M and M2T transformations and custom scripts.
-
 
 ### RTMonitor
 
@@ -529,12 +523,12 @@ end
 ```
 
 The properties of **RTMonitor** are:
+
 - **broker**: Reference to a Broker definition
 - **namespace**: A namespace used for constructing the URIs (prefix)
 - **eventsTopic**: Topic to send events
 - **logsTopic**: Topic to send logs
 - **extraAttr: (UNDER DEVELOPMENT)**: Include user-defined attributes/properties which can be used by M2M and M2T transformations and custom scripts.
-
 
 ## Constraints
 
@@ -562,7 +556,7 @@ The freq property can only be set only for sensor and robot Entities.
 ## Command-Line-Interface
 
 ```bash
-➜ smauto --help         
+➜ smauto --help     
 Usage: smauto [OPTIONS] COMMAND [ARGS]...
 
 Options:
@@ -574,7 +568,6 @@ Commands:
   graph      Graph generator - Generate automation visualization graphs
   validate   Model Validation
 ```
-
 
 ### Compile Virtual Entities
 
@@ -593,7 +586,6 @@ venv [I] ➜ smauto genv -m model.auto
 ```
 
 ## Compile Automations
-
 
 To compile SmAuto models into executable Python programs which run the Automations, use either the CLI or the REST API of the DSL.
 
