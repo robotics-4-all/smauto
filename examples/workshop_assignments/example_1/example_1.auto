@@ -75,42 +75,39 @@ Entity alarm
         - state: int = 0
 end
 
-Automation start_humidifier
-    condition:
-        bedroom_humidity_sensor.humidity > 0.6
+AUTO start_humidifier
+WITH
     continuous: false
-    actions:
-        - bedroom_humidifier.power: true
-        - bedroom_humidifier.timer: -1
-    starts:
-        - stop_humidifier
-end
+ON bedroom_humidity_sensor.humidity > 0.6
+DO
+    SET bedroom_humidifier.power: true
+    SET bedroom_humidifier.timer: -1
+    START stop_humidifier
+;
 
-Automation stop_humidifier
-    condition:
-        bedroom_humidity_sensor.humidity < 0.3
+AUTO stop_humidifier
+WITH
     enabled: false
     continuous: false
-    actions:
-        - bedroom_humidifier.power: false
-    starts:
-        - start_humidifier
-end
+ON bedroom_humidity_sensor.humidity < 0.3
+DO
+    SET bedroom_humidifier.power: false
+    START start_humidifier
+;
 
-Automation start_aircondition
-    condition:
-        (bedroom_temperature_sensor.temperature > 28) AND
-        (bedroom_humidity_sensor.humidity in range [0.3, 0.6])
+AUTO start_aircondition
+WITH
     continuous: false
-    actions:
-        - bedroom_aircondition.temperature:  25.0
-        - bedroom_aircondition.mode:  "cool"
-        - bedroom_aircondition.power:  true
-end
+ON (bedroom_temperature_sensor.temperature > 28) AND
+(bedroom_humidity_sensor.humidity in range [0.3, 0.6])
+DO
+    SET bedroom_aircondition.temperature:  25.0
+    SET bedroom_aircondition.mode:  "cool"
+    SET bedroom_aircondition.power:  true
+;
 
-Automation set_alarm_on_gas
-    condition:
-        std(kitchen_gas_sensor.gas, 10) > 0.1
-    actions:
-        - alarm.state:  1
-end
+AUTO set_alarm_on_gas
+ON std(kitchen_gas_sensor.gas, 10) > 0.1
+DO
+    SET alarm.state:  1
+;

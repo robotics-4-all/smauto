@@ -5,21 +5,22 @@ import utils
 
 // === Overall Automation ===
 Automation:
-    'Automation' name=ID
+    'AUTO' name=ID
+    ('WITH'
         (
-        ('condition:' condition=Condition)
-        ('description:' description=STRING)?
-        ('actions:' actions*=Action)?
-        ('freq:' freq=INT)?
-        ('enabled:' enabled=BOOL)?
-        ('continuous:' continuous=BOOL)?
-        ('checkOnce:' checkOnce=BOOL)?
-        ('delay:' delay=FLOAT)?
-        ('starts:' '-' starts*=[Automation:FQN|+m:automations]['-'])?
-        ('stops:' '-' stops*=[Automation:FQN|+m:automations]['-'])?
-        ('after:' '-' after*=[Automation:FQN|+m:automations]['-'])?
+            ('description:' description=STRING)?
+            ('freq:' freq=INT)?
+            ('enabled:' enabled=BOOL)?
+            ('continuous:' continuous=BOOL)?
+            ('checkOnce:' checkOnce=BOOL)?
+            ('delay:' delay=FLOAT)?
+            ('after:' after*=[Automation:FQN|+m:automations][','])?
         )#
-    'end'
+    )?
+    'ON' condition=Condition
+    'DO'
+    actions*=Action
+    ';'
 ;
 
 AutomationDependency:
@@ -29,29 +30,41 @@ AutomationDependency:
 
 // === Actions ===
 Action:
-    FloatAction | IntAction | BoolAction | StringAction | ListAction | DictAction
+    SetAction | StartAction | StopAction
 ;
 
-IntAction:
-    ('-' attribute=[IntAttribute:FQN|+m:entities.attributes] ':' value=INT)
+SetAction:
+    FloatSetAction | IntSetAction | BoolSetAction | StringSetAction | ListSetAction | DictSetAction
 ;
 
-FloatAction:
-    ('-' attribute=[FloatAttribute:FQN|+m:entities.attributes] ':' value=STRICTFLOAT)
+IntSetAction:
+    ('SET' attribute=[IntAttribute:FQN|+m:entities.attributes] ':' value=INT)
 ;
 
-StringAction:
-    ('-' attribute=[StringAttribute:FQN|+m:entities.attributes] ':' value=STRING)
+FloatSetAction:
+    ('SET' attribute=[FloatAttribute:FQN|+m:entities.attributes] ':' value=STRICTFLOAT)
 ;
 
-BoolAction:
-    ('-' attribute=[BoolAttribute:FQN|+m:entities.attributes] ':' value=BOOL)
+StringSetAction:
+    ('SET' attribute=[StringAttribute:FQN|+m:entities.attributes] ':' value=STRING)
 ;
 
-ListAction:
-    ('-' attribute=[ListAttribute:FQN|+m:entities.attributes] ':' value=List)
+BoolSetAction:
+    ('SET' attribute=[BoolAttribute:FQN|+m:entities.attributes] ':' value=BOOL)
 ;
 
-DictAction:
-    ('-' attribute=[DictAttribute:FQN|+m:entities.attributes] ':' value=Dict)
+ListSetAction:
+    ('SET' attribute=[ListAttribute:FQN|+m:entities.attributes] ':' value=List)
+;
+
+DictSetAction:
+    ('SET' attribute=[DictAttribute:FQN|+m:entities.attributes] ':' value=Dict)
+;
+
+StartAction:
+    'START' automation=[Automation:FQN|+m:automations]
+;
+
+StopAction:
+    'STOP' automation=[Automation:FQN|+m:automations]
 ;

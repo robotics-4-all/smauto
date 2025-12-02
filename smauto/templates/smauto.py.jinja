@@ -235,7 +235,7 @@ class RTMonitor:
 
 class Automation():
     def __init__(self, name, condition, actions, freq, enabled, continuous,
-                 checkOnce, after, starts, stops, entities,
+                 checkOnce, after, entities,
                  rtm: RTMonitor = None):
         enabled = True if enabled is None else enabled
         continuous = True if continuous is None else continuous
@@ -249,8 +249,6 @@ class Automation():
         self.freq = freq
         self.actions = actions
         self.after = after
-        self.starts = starts
-        self.stops = stops
         self.time_between_activations = 5
         self.state = AutomationState.IDLE
         self.entities = entities
@@ -269,20 +267,12 @@ class Automation():
     def print(self):
         after = f'\n'.join(
             [f"  - {self.autos_map[dep].name}" for dep in self.after])
-        starts = f'\n'.join(
-            [f"  - {self.autos_map[dep].name}" for dep in self.starts])
-        stops = f'\n'.join(
-            [f"  - {self.autos_map[dep].name}" for dep in self.stops])
         print(
-            f"Automation <{self.name}>\nz"
+            f"Automation <{self.name}>\n"
             f"    Condition: {self.condition.expression}\n"
             f"    Frequency: {self.freq} Hz\n"
             f"    Continuoues: {self.continuous}\n"
             f"    CheckOnce: {self.checkOnce}\n"
-            f"    Starts:\n"
-            f"      {starts}\n"
-            f"    Stops:\n"
-            f"      {stops}\n"
             f"    After:\n"
             f"      {after}\n"
         )
@@ -293,6 +283,15 @@ class Automation():
         if not self.continuous:
             self.enabled = False
         for action in self.actions:
+            # Handle START actions
+            if action.__class__.__name__ == 'StartAction':
+                self.autos_map[action.automation].enable()
+                continue
+            # Handle STOP actions
+            elif action.__class__.__name__ == 'StopAction':
+                self.autos_map[action.automation].disable()
+                continue
+            # Handle SET actions (attribute assignments)
             value = action.value
             entity = action.entity
             if entity not in messages.keys():
@@ -351,10 +350,6 @@ class Automation():
                         # If automation triggered run its actions
                         self.trigger_actions()
                         self.state_change(AutomationState.EXITED_SUCCESS)
-                        for auto in self.starts:
-                            self.autos_map[auto].enable()
-                        for auto in self.stops:
-                            self.autos_map[auto].disable()
                     if self.checkOnce:
                         self.disable()
                         self.state_change(AutomationState.EXITED_SUCCESS)
@@ -366,11 +361,21 @@ class Automation():
             self.state_change(AutomationState.IDLE)
 
 
-class Action:
+class SetAction:
     def __init__(self, attribute, value, entity):
         self.attribute = attribute
         self.value = value
         self.entity = entity
+
+
+class StartAction:
+    def __init__(self, automation):
+        self.automation = automation
+
+
+class StopAction:
+    def __init__(self, automation):
+        self.automation = automation
 
 
 class StateChangeMsg(PubSubMessage):
@@ -472,10 +477,14 @@ class Executor(Node):
             ),
             actions=[
             {% for action in auto.actions %}
-                {% if action.attribute.type == "str" %}
-                Action('{{ action.attribute.name }}', '{{ action.value }}', entities['{{ action.attribute.parent.name }}']),
+                {% if action.__class__.__name__ == 'StartAction' %}
+                StartAction('{{ action.automation.name }}'),
+                {% elif action.__class__.__name__ == 'StopAction' %}
+                StopAction('{{ action.automation.name }}'),
+                {% elif action.attribute.type == "str" %}
+                SetAction('{{ action.attribute.name }}', '{{ action.value }}', entities['{{ action.attribute.parent.name }}']),
                 {% else %}
-                Action('{{ action.attribute.name }}', {{ action.value }}, entities['{{ action.attribute.parent.name }}']),
+                SetAction('{{ action.attribute.name }}', {{ action.value }}, entities['{{ action.attribute.parent.name }}']),
                 {% endif %}
             {% endfor %}
             ],
@@ -486,16 +495,6 @@ class Executor(Node):
             after=[
             {% for after in auto.after %}
                 '{{ after.name }}',
-            {% endfor %}
-            ],
-            starts=[
-            {% for starts in auto.starts %}
-                '{{ starts.name }}',
-            {% endfor %}
-            ],
-            stops=[
-            {% for stops in auto.stops %}
-                '{{ stops.name }}',
             {% endfor %}
             ],
             entities=entities,

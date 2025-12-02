@@ -30,8 +30,6 @@ class Automation(object):
         checkOnce,
         delay,
         after,
-        starts,
-        stops,
         description="",
     ):
         """
@@ -59,12 +57,10 @@ class Automation(object):
         self.checkOnce = checkOnce
         self.freq = freq
         self.actions = actions
-        self.after = after
-        self.starts = starts
-        self.stops = stops
+        self.after = after if after else []
         self.time_between_activations = 5
         self.state = AutomationState.IDLE
-        self.description = description
+        self.description = description if description else ""
         self.delay = delay
 
     # Evaluate the Automation's conditions and run the actions
@@ -87,17 +83,27 @@ class Automation(object):
         messages = {}
         # Iterate over actions to form messages for each Entity
         for action in self.actions:
-            # If value is List or Dict, cast them to python lists and dicts
-            value = action.value
-            if type(value) is Dict:
-                value = value.to_dict()
-            elif type(value) is List:
-                value = value.print_item(value)
-            # If entity of action already in messages, update the message. Else insert it.
-            if action.attribute.parent in messages.keys():
-                messages[action.attribute.parent].update({action.attribute.name: value})
-            else:
-                messages[action.attribute.parent] = {action.attribute.name: value}
+            # Handle START and STOP actions
+            if isinstance(action, StartAction):
+                action.automation.enable()
+                continue
+            elif isinstance(action, StopAction):
+                action.automation.disable()
+                continue
+            
+            # Handle SET actions (attribute assignments)
+            if isinstance(action, SetAction):
+                # If value is List or Dict, cast them to python lists and dicts
+                value = action.value
+                if type(value) is Dict:
+                    value = value.to_dict()
+                elif type(value) is List:
+                    value = value.print_item(value)
+                # If entity of action already in messages, update the message. Else insert it.
+                if action.attribute.parent in messages.keys():
+                    messages[action.attribute.parent].update({action.attribute.name: value})
+                else:
+                    messages[action.attribute.parent] = {action.attribute.name: value}
 
         # Iterate over Entities and their corresponding messages
         for entity, message in messages.items():
@@ -112,18 +118,12 @@ class Automation(object):
 
     def print(self):
         after = f"\n".join([f"      - {dep.name}" for dep in self.after])
-        starts = f"\n".join([f"      - {dep.name}" for dep in self.starts])
-        stops = f"\n".join([f"      - {dep.name}" for dep in self.stops])
         print(
             f"[*] Automation <{self.name}>\n"
             f"    Condition: {self.condition.cond_lambda}\n"
             f"    Frequency: {self.freq} Hz\n"
             f"    Continuoues: {self.continuous}\n"
             f"    CheckOnce: {self.checkOnce}\n"
-            f"    Starts:\n"
-            f"      {starts}\n"
-            f"    Stops:\n"
-            f"      {stops}\n"
             f"    After:\n"
             f"      {after}\n"
         )
@@ -146,7 +146,7 @@ class Automation(object):
                 if len(wait_for) == 0:
                     self.state = AutomationState.RUNNING
                 print(
-                    f"[bold magenta]\[{self.name}] Waiting for dependend "
+                    f"[bold magenta][{self.name}] Waiting for dependend "
                     f"automations to finish:[/bold magenta] {wait_for}"
                 )
                 time.sleep(1)
@@ -165,10 +165,6 @@ class Automation(object):
                         # If automation triggered run its actions
                         self.trigger_actions()
                         self.state = AutomationState.EXITED_SUCCESS
-                        for automation in self.starts:
-                            automation.enable()
-                        for automation in self.stops:
-                            automation.disable()
                     if self.checkOnce:
                         self.disable()
                         self.state = AutomationState.EXITED_SUCCESS
@@ -189,27 +185,54 @@ class Automation(object):
 
 
 class Action:
-    def __init__(self, parent, attribute, value):
+    def __init__(self, parent):
         self.parent = parent
+
+
+class SetAction(Action):
+    def __init__(self, parent, attribute, value):
+        super(SetAction, self).__init__(parent)
         self.attribute = attribute
         self.value = value
 
 
-class IntAction(Action):
+class IntSetAction(SetAction):
     def __init__(self, parent, attribute, value):
-        super(IntAction, self).__init__(parent, attribute, value)
+        super(IntSetAction, self).__init__(parent, attribute, value)
 
 
-class FloatAction(Action):
+class FloatSetAction(SetAction):
     def __init__(self, parent, attribute, value):
-        super(FloatAction, self).__init__(parent, attribute, value)
+        super(FloatSetAction, self).__init__(parent, attribute, value)
 
 
-class StringAction(Action):
+class StringSetAction(SetAction):
     def __init__(self, parent, attribute, value):
-        super(StringAction, self).__init__(parent, attribute, value)
+        super(StringSetAction, self).__init__(parent, attribute, value)
 
 
-class BoolAction(Action):
+class BoolSetAction(SetAction):
     def __init__(self, parent, attribute, value):
-        super(BoolAction, self).__init__(parent, attribute, value)
+        super(BoolSetAction, self).__init__(parent, attribute, value)
+
+
+class ListSetAction(SetAction):
+    def __init__(self, parent, attribute, value):
+        super(ListSetAction, self).__init__(parent, attribute, value)
+
+
+class DictSetAction(SetAction):
+    def __init__(self, parent, attribute, value):
+        super(DictSetAction, self).__init__(parent, attribute, value)
+
+
+class StartAction(Action):
+    def __init__(self, parent, automation):
+        super(StartAction, self).__init__(parent)
+        self.automation = automation
+
+
+class StopAction(Action):
+    def __init__(self, parent, automation):
+        super(StopAction, self).__init__(parent)
+        self.automation = automation
