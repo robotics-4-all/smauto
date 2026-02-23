@@ -17,9 +17,6 @@ specialized for smart environments, while it also provides the following feature
 
 - **Command-line Interface**. Used to call the validator and the 
 code generators explicitely.
-- **REST Api**. The DSL implements a REST API, that can be utilized to remotely call
-the validator and the code generators on demand. Also usefull for
-integrating the language in bigger projects and cloud-based platforms.
 - **Generate Virtual Entities**. A code generator is provided that transforms
 Entity model definitions into executable code with enhanced value generation with
 optional noise functions applied on. This can be very usefull to automatically
@@ -45,25 +42,41 @@ cd smauto-dsl
 pip install .
 ```
 
-### Docker image
+### Docker
 
-SmAuto can be build into a standalone docker image and provides a REST API
-for remotely performing model validation, automated
-generation of automations and virtual entities.
+SmAuto ships with a Docker image that bundles [tx-lsp](https://github.com/robotics-4-all/tx-lsp), a generic Language Server for textX-based DSLs. The container exposes both an LSP server (TCP on port 2087) and a REST API (HTTP on port 8080).
 
-To build the image execute from this directory:
+Build and run using the provided Makefile:
 
+```bash
+make docker-build                    # Build image (requires SSH key for tx-lsp repo)
+make docker-run                      # Run (API on :8080, LSP on :2087)
+make docker-run API_KEY=mysecret     # Run with API key authentication
+make docker-stop                     # Stop and remove container
+make docker-restart                  # Restart container
+make docker-logs                     # Tail container logs
+make docker-rebuild                  # Rebuild from scratch (no cache)
+make docker-clean                    # Stop container and remove image
 ```
-docker build -t smauto .
+
+Ports and image name are configurable:
+
+```bash
+make docker-run API_PORT=9090 LSP_PORT=3000 IMAGE_NAME=my-smauto
 ```
 
-then run the container with:
+REST API usage:
 
-```
-docker run -it --rm --name mysmauto -p 8080:8080 smauto
-```
+```bash
+# Validate a model file
+curl -X POST http://localhost:8080/api/v1/validate/file -F "file=@model.auto"
 
-By default the image exposes port 8080 for the REST API.
+# Generate code
+curl -X POST http://localhost:8080/api/v1/generate/dot/file -F "file=@model.auto"
+
+# List available generators
+curl http://localhost:8080/api/v1/generators
+```
 
 ## SmAuto Overview
 
@@ -586,7 +599,7 @@ Commands:
 
 ### Compile Virtual Entities
 
-To compile SmAuto Entity models into Virtual Entities as explained above, use either the CLI or the REST API of the DSL. Furhermore, the compiler (code generator) can be configured to either generate a single Python executable for each Entity definition, or compile into a merged executable (use the `--merged/-m` flag) that includes all VEntities.
+To compile SmAuto Entity models into Virtual Entities as explained above, use the CLI. The compiler (code generator) can be configured to either generate a single Python executable for each Entity definition, or compile into a merged executable (use the `--merged/-m` flag) that includes all VEntities.
 
 ```bash
 venv [I] ➜ smauto genv model.auto
@@ -603,7 +616,7 @@ venv [I] ➜ smauto genv -m model.auto
 ## Compile Automations
 
 
-To compile SmAuto models into executable Python programs which run the Automations, use either the CLI or the REST API of the DSL.
+To compile SmAuto models into executable Python programs which run the Automations, use the CLI.
 
 ```bash
 venv [I] ➜ smauto gen model.auto

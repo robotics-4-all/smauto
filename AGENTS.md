@@ -17,7 +17,6 @@ smauto/                  # Main Python package
 ├── transformations/     # M2T code generators (model → Python)
 ├── templates/           # Jinja2 templates for generated code
 ├── cli/                 # Click-based CLI (`smauto` command)
-├── api/                 # FastAPI REST API for remote compilation
 ├── builtin_models/      # Built-in .br/.ent models (fake_broker, system_clock)
 ├── utils.py             # Shared utilities (select_clock_broker, make_executable)
 └── definitions.py       # Path constants (TEMPLATES_PATH, BUILTIN_MODELS)
@@ -34,7 +33,6 @@ scripts/                 # Validation scripts (model, entity gen, automations ge
 | Change generated output | `smauto/templates/*.jinja` | Jinja2 templates for Python codegen |
 | Change codegen pipeline | `smauto/transformations/` | M2T logic, model traversal |
 | Add CLI command | `smauto/cli/cli.py` | Click group, calls `build_model()` + transformations |
-| Add API endpoint | `smauto/api/api.py` | FastAPI, API key auth via `X-API-Key` header |
 | Add built-in model | `smauto/builtin_models/` | `.br` (broker) and `.ent` (entity) files |
 | Validate all examples | `bash scripts/run_all_validations.sh` | Or individual `python3 scripts/validate_*.py` |
 | Test with a model | `examples/01_smart_light/model.auto` | Best starting point |
@@ -89,13 +87,12 @@ smauto gen model.auto                            # Compile automations → Pytho
 smauto genv model.auto                           # Generate virtual entities (per-entity)
 smauto genv -m model.auto                        # Generate virtual entities (merged)
 bash scripts/run_all_validations.sh              # Run all validation scripts
-docker build -t smauto . && docker run -p 8080:8080 smauto  # Docker deployment
 ```
 
 ## NOTES
 
 - **No tests exist** — `pytest` is in `setup.cfg[test]` extras but no test files or `tests/` dir
-- CI pipeline is **deploy-only** (SSH + Docker on push to `main`) — no test step
+- CI pipeline is **deploy-only** (SSH on push to `main`) — no test step
 - The `system_clock` entity is a built-in injected at codegen time, its broker is swapped to the first real broker in the model
 - `commlib-py` is required at **runtime** by generated code, but NOT in `requirements.txt` (it's a generated-code dependency)
 - The `graph` CLI command referenced in README is not implemented in `cli.py`
