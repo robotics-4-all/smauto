@@ -27,6 +27,7 @@ def rtm_set_defaults(model):
 def build_smauto_code(model):
     rtm_set_defaults(model)
     context = {
+        "brokers": model.brokers,
         "entities": model.entities,
         "automations": model.automations,
         "system_clock": model.system_clock,
