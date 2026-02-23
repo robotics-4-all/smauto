@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smauto"
+version = "0.1.0"
+description = "Domain-Specific Language for smart automations."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Konstantinos Panayiotou", email = "klpanagi@gmail.com" },
+]
+keywords = ["smauto", "dsl", "iot", "automation", "textx"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "Topic :: Software Development :: Interpreters",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "click",
+    "textX>=4.0.0",
+    "rich",
+    "aiofiles",
+    "jinja2",
+]
+
+[project.optional-dependencies]
+dev = ["wheel", "twine"]
+test = ["pytest", "coverage"]
+
+[project.urls]
+Repository = "https://github.com/robotics-4-all/smauto"
+
+[project.scripts]
+smauto = "smauto.cli.cli:main"
+
+[project.entry-points."textx_languages"]
+smauto = "smauto:smauto_language"
+
+[tool.setuptools.packages.find]
+include = ["smauto*"]
+
+[tool.setuptools.package-data]
+"smauto.grammar" = ["*.tx"]
+"smauto.templates" = ["*.jinja"]
+"smauto.builtin_models.broker" = ["*.br"]
+"smauto.builtin_models.entity" = ["*.ent"]
+
+[tool.ruff]
+line-length = 99
