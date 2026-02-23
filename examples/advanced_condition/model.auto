@@ -37,22 +37,26 @@ Entity temperature_sensor
         - temperature: float -> linear(20, 1)
 end
 
-AUTO mean_example
-WITH
-    enabled: true
-    continuous: false
-ON mean(temperature_sensor.temperature, 4) >= 30
-DO
-    SET aircondition.power: true
-    START mean_example
-;
+Automation mean_example
+    when
+        mean(temperature_sensor.temperature, 4) >= 30
+    then
+        aircondition.power <- true
+    config
+        enabled: true
+        continuous: false
+    triggers
+        mean_example
+end
 
-AUTO min_example
-WITH
-    enabled: true
-    continuous: false
-ON min(temperature_sensor.temperature, 4) >= 30
-DO
-    SET aircondition.power: true
-    START min_example
-;
+Automation min_example
+    when
+        min(temperature_sensor.temperature, 4) >= 30
+    then
+        aircondition.power <- true
+    config
+        enabled: true
+        continuous: false
+    triggers
+        min_example
+end

@@ -235,7 +235,7 @@ class RTMonitor:
 
 class Automation():
     def __init__(self, name, condition, actions, freq, enabled, continuous,
-                 checkOnce, after, entities,
+                 checkOnce, dependencies, entities,
                  rtm: RTMonitor = None):
         enabled = True if enabled is None else enabled
         continuous = True if continuous is None else continuous
@@ -248,7 +248,7 @@ class Automation():
         self.checkOnce = checkOnce
         self.freq = freq
         self.actions = actions
-        self.after = after
+        self.dependencies = dependencies
         self.time_between_activations = 5
         self.state = AutomationState.IDLE
         self.entities = entities
@@ -265,16 +265,16 @@ class Automation():
             return False
 
     def print(self):
-        after = f'\n'.join(
-            [f"  - {self.autos_map[dep].name}" for dep in self.after])
+        deps = f'\n'.join(
+            [f"  - {self.autos_map[dep].name}" for dep in self.dependencies])
         print(
             f"Automation <{self.name}>\n"
             f"    Condition: {self.condition.expression}\n"
             f"    Frequency: {self.freq} Hz\n"
-            f"    Continuoues: {self.continuous}\n"
+            f"    Continuous: {self.continuous}\n"
             f"    CheckOnce: {self.checkOnce}\n"
-            f"    After:\n"
-            f"      {after}\n"
+            f"    Dependencies:\n"
+            f"      {deps}\n"
         )
 
     def trigger_actions(self):
@@ -283,15 +283,13 @@ class Automation():
         if not self.continuous:
             self.enabled = False
         for action in self.actions:
-            # Handle START actions
+            # Handle SET actions (attribute assignments)
             if action.__class__.__name__ == 'StartAction':
                 self.autos_map[action.automation].enable()
                 continue
-            # Handle STOP actions
             elif action.__class__.__name__ == 'StopAction':
                 self.autos_map[action.automation].disable()
                 continue
-            # Handle SET actions (attribute assignments)
             value = action.value
             entity = action.entity
             if entity not in messages.keys():
@@ -325,13 +323,13 @@ class Automation():
         self.print()
         self.log(f"Starting Automation: {self.name}")
         while not terminate_event.is_set():
-            if len(self.after) == 0:
+            if len(self.dependencies) == 0:
                 self.state_change(AutomationState.RUNNING)
-            # Wait for dependend automations to finish
+            # Wait for dependent automations to finish
             while self.state == AutomationState.IDLE and \
                 not terminate_event.is_set():
                 wait_for = [
-                    dep for dep in self.after
+                    dep for dep in self.dependencies
                     if self.autos_map[dep].state == AutomationState.RUNNING
                 ]
                 if len(wait_for) == 0:
@@ -477,24 +475,26 @@ class Executor(Node):
             ),
             actions=[
             {% for action in auto.actions %}
-                {% if action.__class__.__name__ == 'StartAction' %}
-                StartAction('{{ action.automation.name }}'),
-                {% elif action.__class__.__name__ == 'StopAction' %}
-                StopAction('{{ action.automation.name }}'),
-                {% elif action.attribute.type == "str" %}
+                {% if action.attribute.type == "str" %}
                 SetAction('{{ action.attribute.name }}', '{{ action.value }}', entities['{{ action.attribute.parent.name }}']),
                 {% else %}
                 SetAction('{{ action.attribute.name }}', {{ action.value }}, entities['{{ action.attribute.parent.name }}']),
                 {% endif %}
+            {% endfor %}
+            {% for t in auto.triggers %}
+                StartAction('{{ t.name }}'),
+            {% endfor %}
+            {% for t in auto.terminates %}
+                StopAction('{{ t.name }}'),
             {% endfor %}
             ],
             freq={{ auto.freq }},
             enabled={{ auto.enabled }},
             continuous={{ auto.continuous }},
             checkOnce={{ auto.checkOnce }},
-            after=[
-            {% for after in auto.after %}
-                '{{ after.name }}',
+            dependencies=[
+            {% for dep in auto.dependencies %}
+                '{{ dep.name }}',
             {% endfor %}
             ],
             entities=entities,

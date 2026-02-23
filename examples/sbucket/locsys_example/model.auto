@@ -42,13 +42,14 @@ Entity aircondition
         - on: bool
 end
 
-AUTO start_aircondition
-WITH
-    enabled: true
-    continuous: false
-ON (weather_station.temperature > 30) AND
-(aircondition.on is true)
-DO
-    SET aircondition.temperature:  18.0
-    SET aircondition.mode:  "cool"
-;
+Automation start_aircondition
+    when
+        (weather_station.temperature > 30) AND
+        (aircondition.on is true)
+    then
+        aircondition.temperature <- 18.0
+        aircondition.mode <- "cool"
+    config
+        enabled: true
+        continuous: false
+end

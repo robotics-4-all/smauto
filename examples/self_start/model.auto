@@ -27,24 +27,25 @@ end
 
 Entity motion_detector
     type: sensor
-	freq: 1
+    freq: 1
     topic: "bedroom.motion_detector"
     broker: cloud_platform_issel
     attributes:
         - detected: bool -> replay([false, false, false, false, true], -1)
         - posX: int -> saw(0, 10, 1)
         - posY: int -> gaussian(0, 10, 1) with noise uniform(0, 1)
-		// - posY: int -> replay([1, 2, 3, 4, 5], -1) with noise uniform(0, 1)
         - mode: str
 end
 
-AUTO motion_detected_self_start
-WITH
-    enabled: true
-    continuous: false
-ON (motion_detector.detected is true) AND
-(motion_detector.posX >= 5)
-DO
-    SET bedroom_lamp.power: true
-    START motion_detected_self_start
-;
+Automation motion_detected_self_start
+    when
+        (motion_detector.detected is true) AND
+        (motion_detector.posX >= 5)
+    then
+        bedroom_lamp.power <- true
+    config
+        enabled: true
+        continuous: false
+    triggers
+        motion_detected_self_start
+end

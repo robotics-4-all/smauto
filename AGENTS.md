@@ -74,7 +74,8 @@ scripts/                 # Validation scripts (model, entity gen, automations ge
 ## UNIQUE STYLES
 
 - **Condition evaluation via `eval()`**: Conditions are built as Python expression strings at parse time, then evaluated at runtime with `eval()` and an entity dict context
-- **Automation grammar uses keyword-based syntax**: `AUTO name WITH ... ON condition DO actions ;`
+- **Automation grammar uses ECA (Event-Condition-Action) syntax**: `Automation name when condition then actions config properties depends on ... triggers ... terminates ... end`
+- **Action assignment uses `<-` operator**: `entity.attr <- value` (formal notation matching $x.a \leftarrow e$)
 - **textX `parent` parameter**: All custom classes take `parent` as first arg (textX convention for tree navigation)
 - **`auto_init_attributes=False`**: Metamodel disables auto-init — classes must handle all initialization
 

@@ -67,21 +67,23 @@ end
 
 // Automations ------->
 
-AUTO motion_detected_1
-WITH
-    description: "This is an example automation"
-    enabled: true
-    continuous: true
-ON (motion_detector.posX == 5) AND (motion_detector.posY == 0)
-DO
-    SET bedroom_lamp.power: true
-;
+Automation motion_detected_1
+    when
+        (motion_detector.posX == 5) AND (motion_detector.posY == 0)
+    then
+        bedroom_lamp.power <- true
+    config
+        description: "This is an example automation"
+        enabled: true
+        continuous: true
+end
 
-AUTO motion_detected_2
-WITH
-    enabled: true
-    continuous: true
-ON motion_detector.detected is false
-DO
-    SET bedroom_lamp.power: true
-;
+Automation motion_detected_2
+    when
+        motion_detector.detected is false
+    then
+        bedroom_lamp.power <- true
+    config
+        enabled: true
+        continuous: true
+end

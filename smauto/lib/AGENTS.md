@@ -8,7 +8,7 @@ Python classes mapped to textX grammar rules. These ARE the metamodel — textX 
 
 | File | Domain | Key Classes |
 |------|--------|-------------|
-| `automation.py` | Automation logic | `Automation`, `AutomationState`, `Action`, `SetAction` (+ typed variants), `StartAction`, `StopAction` |
+| `automation.py` | Automation logic | `Automation`, `AutomationState`, `Action`, `SetAction` (+ typed variants) |
 | `entity.py` | Smart devices | `Entity`, `Attribute` (+ typed variants: `IntAttribute`, `FloatAttribute`, etc.) |
 | `broker.py` | Communication | `Broker`, `MQTTBroker`, `AMQPBroker`, `RedisBroker`, `BrokerAuthPlain` |
 | `condition.py` | Condition evaluation | `Condition`, `ConditionGroup`, `PrimitiveCondition`, `AdvancedCondition`, `InRangeCondition`, typed `*Condition` |
@@ -19,6 +19,7 @@ Python classes mapped to textX grammar rules. These ARE the metamodel — textX 
 - **Constructor signature**: `(self, parent, ...grammar_fields)` — `parent` is always first (textX tree navigation)
 - **Default handling**: Classes must set defaults manually since `auto_init_attributes=False` (e.g., `enabled = True if enabled is None else enabled`)
 - **Inheritance maps to grammar alternatives**: `SetAction` → `IntSetAction | FloatSetAction | ...` mirrors `SetAction: IntSetAction | FloatSetAction | ...` in grammar
+- **ECA parameters**: `Automation` uses `dependencies` (depends on), `triggers`, `terminates` as lists of Automation references — replaces old `after`/`StartAction`/`StopAction` pattern
 - **No ABC/Protocol**: Base classes are plain `object` subclasses, no abstract methods
 
 ## CRITICAL PATTERNS
@@ -27,10 +28,10 @@ Python classes mapped to textX grammar rules. These ARE the metamodel — textX 
 - **Condition.evaluate()**: Calls `eval(self.cond_lambda, {"entities": ...}, {...})` — the entity dict is the runtime context
 - **Entity.update_state()**: Callback for `commlib-py` subscriber — updates attribute values from incoming messages
 - **Entity.attributes_dict**: `{name: Attribute}` mapping built at init — used by condition evaluation at runtime
-- **Automation.start()**: Blocking event loop — checks dependencies (`after`), evaluates conditions, triggers actions in a `while True` loop
+- **Automation.start()**: Blocking event loop — checks dependencies, evaluates conditions, triggers actions in a `while True` loop
 
 ## ANTI-PATTERNS
 
-- Never add an Attribute subclass without also adding a corresponding `*SetAction` in `automation.py`
+- Never add an Attribute subclass without also adding a corresponding `*SetAction` in `automation.py` and `automation.tx`
 - The `transform_augmented_attr()` method in `condition.py` uses `__class__.__name__` string comparison — fragile; don't rename classes without updating these strings
 - Do not add a `broker_index` or similar global registry — it was removed as dead code

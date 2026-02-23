@@ -10,7 +10,7 @@ Modular textX grammar files defining SmAuto's concrete syntax. `smauto.tx` is th
 |------|-------------|-----------|
 | `smauto.tx` | Root model | `SmAutoModel`, `Metadata`, `RTMonitor` |
 | `entity.tx` | Entities + Attributes | `Entity`, `*Attribute`, `*ValueGen`, `Noise` |
-| `automation.tx` | Automations + Actions | `Automation`, `*SetAction`, `StartAction`, `StopAction` |
+| `automation.tx` | Automations + Actions | `Automation`, `*SetAction` (ECA: when/then/config/triggers/terminates) |
 | `condition.tx` | Conditions + Operators | `Condition`, `ConditionGroup`, `*Condition` variants, all operators |
 | `communication.tx` | Brokers + Auth | `MQTTBroker`, `AMQPBroker`, `RedisBroker`, `Auth*` |
 | `types.tx` | Primitive types | `Time`, `Date`, `List`, `Dict` |
@@ -18,7 +18,7 @@ Modular textX grammar files defining SmAuto's concrete syntax. `smauto.tx` is th
 
 ## CONVENTIONS
 
-- **Keyword-block syntax**: `Keyword name ... end` for Broker/Entity/Metadata; `AUTO name ... ;` for Automation
+- **Keyword-block syntax**: `Keyword name ... end` for all concepts including Automations (`Automation name ... end`)
 - **Ordered assignments with `#`**: Rules use `(...)#` — textX ordered assignment groups
 - **Cross-references via FQN**: Attributes referenced as `[TypeName:FQN|+m:scope]` (e.g., `[IntAttribute:FQN|+m:entities.attributes]`)
 - **Optional fields**: `(?` suffix on grammar lines — most Entity/Automation fields are optional
@@ -36,4 +36,7 @@ Modular textX grammar files defining SmAuto's concrete syntax. `smauto.tx` is th
 
 - Grammar comments use `//` and `/* */` (defined in `utils.tx`)
 - The `#` in `(...)#` is textX syntax for "unordered group" — allows properties in any order
-- Automation syntax changed from `Automation name ... end` to `AUTO name WITH ... ON ... DO ... ;` (migration scripts exist in `scripts/`)
+- Automation uses ECA (Event-Condition-Action) syntax: `Automation name when ... then ... config ... depends on ... triggers ... terminates ... end`
+- Action assignment uses `<-` operator: `entity.attr <- value` (formal notation matching operational semantics $x.a \leftarrow e$)
+- `StartAction`/`StopAction` grammar rules were removed — replaced by declarative `triggers`/`terminates` lists on Automation
+- Migration scripts in `scripts/` handle syntax evolution (latest: `migrate_to_eca_syntax.py`)

@@ -27,20 +27,28 @@ class Automation(object):
         continuous,
         checkOnce,
         delay,
-        after,
+        dependencies,
+        triggers,
+        terminates,
         description="",
     ):
         """
-        Creates and returns an Automation object
+        Creates and returns an Automation object (ECA Rule).
         :param name: Automation name. e.g: 'open_lights'
         :param enabled: Whether the automation should be evaluated
             or not. e.g: True->Enabled, False->Disabled
         :param condition: A condition object evaluated to determine if
             the Automation's actions should be executed
-        :param actions: List of Action objects to be executed upon successful
-            condition evaluation
+        :param actions: List of SetAction objects to be executed upon
+            successful condition evaluation
         :param continuous: Boolean variable indicating if the Automation
             should remain enabled after actions are run
+        :param dependencies: List of Automations that must complete
+            before this one starts
+        :param triggers: List of Automations to enable after this
+            one completes
+        :param terminates: List of Automations to disable after this
+            one completes
         """
         enabled = True if enabled is None else enabled
         continuous = True if continuous is None else continuous
@@ -55,7 +63,9 @@ class Automation(object):
         self.checkOnce = checkOnce
         self.freq = freq
         self.actions = actions
-        self.after = after if after else []
+        self.dependencies = dependencies if dependencies else []
+        self.triggers = triggers if triggers else []
+        self.terminates = terminates if terminates else []
         self.time_between_activations = 5
         self.state = AutomationState.IDLE
         self.description = description if description else ""
@@ -71,7 +81,8 @@ class Automation(object):
     # Run Automation's actions
     def trigger_actions(self):
         """
-        Runs the Automation's actions.
+        Runs the Automation's actions, then triggers/terminates
+        dependent automations.
         :return:
         """
         # If continuous is false, disable automation until it is manually re-enabled
@@ -81,35 +92,34 @@ class Automation(object):
         messages = {}
         # Iterate over actions to form messages for each Entity
         for action in self.actions:
-            # Handle START and STOP actions
-            if isinstance(action, StartAction):
-                action.automation.enable()
-                continue
-            elif isinstance(action, StopAction):
-                action.automation.disable()
-                continue
-
-            # Handle SET actions (attribute assignments)
-            if isinstance(action, SetAction):
-                # If value is List or Dict, cast them to python lists and dicts
-                value = action.value
-                if type(value) is Dict:
-                    value = value.to_dict()
-                elif type(value) is List:
-                    value = value.print_item(value)
-                # If entity of action already in messages,
-                # update the message. Else insert it.
-                entity = action.attribute.parent
-                attr_name = action.attribute.name
-                if entity in messages:
-                    messages[entity].update({attr_name: value})
-                else:
-                    messages[entity] = {attr_name: value}
+            # All actions are SetActions (attribute assignments)
+            # If value is List or Dict, cast them to python lists and dicts
+            value = action.value
+            if type(value) is Dict:
+                value = value.to_dict()
+            elif type(value) is List:
+                value = value.print_item(value)
+            # If entity of action already in messages,
+            # update the message. Else insert it.
+            entity = action.attribute.parent
+            attr_name = action.attribute.name
+            if entity in messages:
+                messages[entity].update({attr_name: value})
+            else:
+                messages[entity] = {attr_name: value}
 
         # Iterate over Entities and their corresponding messages
         for entity, message in messages.items():
             # Send message via Entity's publisher
             entity.publisher.publish(message)
+
+        # Trigger dependent automations (replaces StartAction)
+        for auto in self.triggers:
+            auto.enable()
+
+        # Terminate dependent automations (replaces StopAction)
+        for auto in self.terminates:
+            auto.disable()
 
     def build_condition(self):
         """Builds Automation Condition into Python expression string
@@ -118,15 +128,21 @@ class Automation(object):
         self.condition.build()
 
     def print(self):
-        after = "\n".join([f"      - {dep.name}" for dep in self.after])
+        deps = "\n".join([f"      - {dep.name}" for dep in self.dependencies])
+        trigs = "\n".join([f"      - {t.name}" for t in self.triggers])
+        terms = "\n".join([f"      - {t.name}" for t in self.terminates])
         print(
             f"[*] Automation <{self.name}>\n"
             f"    Condition: {self.condition.cond_lambda}\n"
             f"    Frequency: {self.freq} Hz\n"
-            f"    Continuoues: {self.continuous}\n"
+            f"    Continuous: {self.continuous}\n"
             f"    CheckOnce: {self.checkOnce}\n"
-            f"    After:\n"
-            f"      {after}\n"
+            f"    Dependencies:\n"
+            f"      {deps}\n"
+            f"    Triggers:\n"
+            f"      {trigs}\n"
+            f"    Terminates:\n"
+            f"      {terms}\n"
         )
 
     def start(self):
@@ -135,13 +151,13 @@ class Automation(object):
         self.print()
         print(f"[bold yellow][*] Executing Automation: {self.name}[/bold yellow]")
         while True:
-            if len(self.after) == 0:
+            if len(self.dependencies) == 0:
                 self.state = AutomationState.RUNNING
-            # Wait for dependend automations to finish
+            # Wait for dependent automations to finish
             while self.state == AutomationState.IDLE:
                 wait_for = [
                     dep.name
-                    for dep in self.after
+                    for dep in self.dependencies
                     if dep.state == AutomationState.RUNNING
                 ]
                 if len(wait_for) == 0:
@@ -225,15 +241,3 @@ class ListSetAction(SetAction):
 class DictSetAction(SetAction):
     def __init__(self, parent, attribute, value):
         super(DictSetAction, self).__init__(parent, attribute, value)
-
-
-class StartAction(Action):
-    def __init__(self, parent, automation):
-        super(StartAction, self).__init__(parent)
-        self.automation = automation
-
-
-class StopAction(Action):
-    def __init__(self, parent, automation):
-        super(StopAction, self).__init__(parent)
-        self.automation = automation

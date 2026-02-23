@@ -21,8 +21,6 @@ from smauto.lib.automation import (
     StringSetAction,
     ListSetAction,
     DictSetAction,
-    StartAction,
-    StopAction,
 )
 from smauto.lib.types import Dict, List, Time, Date
 from smauto.lib.broker import (
@@ -96,8 +94,6 @@ CUSTOM_CLASSES = [
     BoolSetAction,
     ListSetAction,
     DictSetAction,
-    StartAction,
-    StopAction,
     List,
     Dict,
     Time,
