@@ -1,4 +1,3 @@
-import os
 from os.path import join
 from textx import (
     language,
@@ -9,8 +8,7 @@ from textx import (
 )
 import pathlib
 import textx.scoping.providers as scoping_providers
-from rich import print
-from textx.scoping import ModelRepository, GlobalModelRepository
+from textx.scoping import GlobalModelRepository
 from smauto.definitions import MODEL_REPO_PATH, BUILTIN_MODELS
 
 from smauto.lib.automation import (
@@ -123,7 +121,7 @@ GLOBAL_REPO = GlobalModelRepository()
 
 
 def class_provider(name):
-    classes = dict(map(lambda x: (x.__name__, x), CUSTOM_CLASSES))
+    classes = {x.__name__: x for x in CUSTOM_CLASSES}
     return classes.get(name)
 
 
@@ -220,16 +218,20 @@ def get_scope_providers():
     sp = {"*.*": scoping_providers.FQNImportURI(importAs=True)}
     if BUILTIN_MODELS:
         sp["brokers*"] = scoping_providers.FQNGlobalRepo(
-            join(BUILTIN_MODELS, "broker", "*.br"))
+            join(BUILTIN_MODELS, "broker", "*.br")
+        )
         sp["entities*"] = scoping_providers.FQNGlobalRepo(
-            join(BUILTIN_MODELS, "entity", "*.ent"))
+            join(BUILTIN_MODELS, "entity", "*.ent")
+        )
         # sp["automations*"] = scoping_providers.FQNGlobalRepo(
         #     join(BUILTIN_MODELS, "automations", "*.smauto"))
     if MODEL_REPO_PATH:
         sp["brokers*"] = scoping_providers.FQNGlobalRepo(
-            join(MODEL_REPO_PATH, "broker", "*.br"))
+            join(MODEL_REPO_PATH, "broker", "*.br")
+        )
         sp["entities*"] = scoping_providers.FQNGlobalRepo(
-            join(MODEL_REPO_PATH, "entity", "*.ent"))
+            join(MODEL_REPO_PATH, "entity", "*.ent")
+        )
         # sp["automations*"] = scoping_providers.FQNGlobalRepo(
         #     join(BUILTIN_MODELS, "automations", "*.smauto"))
     return sp

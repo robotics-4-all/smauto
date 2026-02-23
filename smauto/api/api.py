@@ -7,7 +7,7 @@ import tarfile
 from pydantic import BaseModel
 
 from fastapi import FastAPI, File, UploadFile, status, HTTPException, Security, Body
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 
@@ -67,7 +67,6 @@ class GenVentInputModel(BaseModel):
 @api.post("/validate")
 async def validate(model: SmAutoModel, api_key: str = Security(get_api_key)):
     text = model.model
-    name = model.name
     if len(text) == 0:
         return 404
     resp = {"status": 200, "message": ""}
@@ -87,8 +86,9 @@ async def validate(model: SmAutoModel, api_key: str = Security(get_api_key)):
 
 
 @api.post("/validate/file")
-async def validate_file(file: UploadFile = File(...),
-                        api_key: str = Security(get_api_key)):
+async def validate_file(
+    file: UploadFile = File(...), api_key: str = Security(get_api_key)
+):
     print(
         f"Validation for request: file=<{file.filename}>,"
         + f" descriptor=<{file.file}>"
@@ -111,8 +111,7 @@ async def validate_file(file: UploadFile = File(...),
 
 
 @api.post("/validate/b64")
-async def validate_b64(base64_model: str,
-                       api_key: str = Security(get_api_key)):
+async def validate_b64(base64_model: str, api_key: str = Security(get_api_key)):
     if len(base64_model) == 0:
         return 404
     resp = {"status": 200, "message": ""}
@@ -135,8 +134,9 @@ async def validate_b64(base64_model: str,
 
 
 @api.post("/generate/autos")
-async def gen_autos(gen_auto_model: GenAutosInputModel = Body(...),
-                    api_key: str = Security(get_api_key)):
+async def gen_autos(
+    gen_auto_model: GenAutosInputModel = Body(...), api_key: str = Security(get_api_key)
+):
     resp = {"status": 200, "message": "", "code": ""}
     model = gen_auto_model.model
     u_id = uuid.uuid4().hex[0:8]
@@ -160,8 +160,9 @@ async def gen_autos(gen_auto_model: GenAutosInputModel = Body(...),
 
 
 @api.post("/generate/autos/file")
-async def gen_autos_file(model_file: UploadFile = File(...),
-                         api_key: str = Security(get_api_key)):
+async def gen_autos_file(
+    model_file: UploadFile = File(...), api_key: str = Security(get_api_key)
+):
     fd = model_file.file
     u_id = uuid.uuid4().hex[0:8]
     model_path = os.path.join(TMP_DIR, f"model-{u_id}.auto")
@@ -190,8 +191,9 @@ async def gen_autos_file(model_file: UploadFile = File(...),
 
 
 @api.post("/generate/ventities")
-async def gen_ventities(gen_vent_model: GenVentInputModel = Body(...),
-                        api_key: str = Security(get_api_key)):
+async def gen_ventities(
+    gen_vent_model: GenVentInputModel = Body(...), api_key: str = Security(get_api_key)
+):
     resp = {"status": 200, "message": "", "code": ""}
     model = gen_vent_model.model
     u_id = uuid.uuid4().hex[0:8]
@@ -214,8 +216,9 @@ async def gen_ventities(gen_vent_model: GenVentInputModel = Body(...),
 
 
 @api.post("/generate/ventities/file")
-async def gen_ventities_file(model_file: UploadFile = File(...),
-                             api_key: str = Security(get_api_key)):
+async def gen_ventities_file(
+    model_file: UploadFile = File(...), api_key: str = Security(get_api_key)
+):
     print(
         f"Generate for request: file=<{model_file.filename}>,"
         + f" descriptor=<{model_file.file}>"
@@ -250,8 +253,9 @@ async def gen_ventities_file(model_file: UploadFile = File(...),
 
 
 @api.post("/generate/ventities/merged")
-async def gen_merged(in_model: GenMergedInputModel = Body(...),
-                     api_key: str = Security(get_api_key)):
+async def gen_merged(
+    in_model: GenMergedInputModel = Body(...), api_key: str = Security(get_api_key)
+):
     resp = {"status": 200, "message": "", "code": ""}
     model = in_model.model
     u_id = uuid.uuid4().hex[0:8]
@@ -274,8 +278,9 @@ async def gen_merged(in_model: GenMergedInputModel = Body(...),
 
 
 @api.post("/generate/ventities/merged/file")
-async def gen_merged_file(model_file: UploadFile = File(...),
-                          api_key: str = Security(get_api_key)):
+async def gen_merged_file(
+    model_file: UploadFile = File(...), api_key: str = Security(get_api_key)
+):
     resp = {"status": 200, "message": "", "code": ""}
     fd = model_file.file
     u_id = uuid.uuid4().hex[0:8]

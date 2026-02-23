@@ -1,13 +1,13 @@
 from collections import deque
 
-from smauto.lib.broker import MQTTBroker, AMQPBroker, RedisBroker
 from smauto.lib.types import Time
 
 
 # A class representing an entity communicating via an MQTT broker on a specific topic
 class Entity:
     """
-    The Entity class represents an entity communicating via an MQTT broker on a specific topic.
+    The Entity class represents an entity communicating
+    via an MQTT broker on a specific topic.
     ...
 
     Attributes
@@ -15,18 +15,25 @@ class Entity:
         name: str
             Entity name. e.g: 'temperature_sensor'
         topic: str
-            Topic on which entity communicates. e.g: 'sensors.temp_sensor' corresponds to topic sensors/temp_sensor
+            Topic on which entity communicates.
+            e.g: 'sensors.temp_sensor' corresponds to
+            topic sensors/temp_sensor
         state: dictionary
-            Dictionary from the entity's state JSON. Initial state is a blank dictionary {}
+            Dictionary from the entity's state JSON.
+            Initial state is a blank dictionary {}
         subscriber:
-            Communication endpoint built using commlib-py used to subscribe to the Entity's topic
+            Communication endpoint built using commlib-py
+            used to subscribe to the Entity's topic
 
     Methods
     -------
-        add_automation(self, automation): Adds an Automation reference to this Entity. Meant to be called by the
-            Automation constructor
-        update_state(self, new_state): Function for updating Entity state. Meant to be used as a callback function by
-            the Entity's subscriber object (commlib-py).
+        add_automation(self, automation):
+            Adds an Automation reference to this Entity.
+            Meant to be called by the Automation constructor
+        update_state(self, new_state):
+            Function for updating Entity state. Meant to be
+            used as a callback function by the Entity's
+            subscriber object (commlib-py).
 
 
 
@@ -38,13 +45,15 @@ class Entity:
         """
         Creates and returns an Entity object
         :param name: Entity name. e.g: 'temperature_sensor'
-        :param topic: Topic on which entity communicates using the Broker. e.g: 'sensors.temp_sensor' corresponds to
-                        topic sensors/temp_sensor
+        :param topic: Topic on which entity communicates
+            using the Broker.
+            e.g: 'sensors.temp_sensor' -> sensors/temp_sensor
         :param broker: Reference to the Broker used for communications
         :param parent: Parameter required for Custom Class compatibility in textX
         :param attributes: List of Attribute objects belonging to the Entity
         """
-        # TextX parent attribute. Required to use Entity as a custom class during metamodel instantiation
+        # TextX parent attribute. Required to use Entity
+        # as a custom class during metamodel instantiation
         self.parent = parent
         # Entity name
         self.name = name
@@ -92,8 +101,9 @@ class Entity:
     # Callback function for updating Entity state and triggering automations evaluation
     def update_state(self, new_state):
         """
-        Function for updating Entity state. Meant to be used as a callback function by the Entity's subscriber object
-        (commlib-py).
+        Function for updating Entity state.
+        Meant to be used as a callback function by the
+        Entity's subscriber object (commlib-py).
         :param new_state: Dictionary containing the Entity's state
         :return:
         """

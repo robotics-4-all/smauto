@@ -11,7 +11,7 @@ class List:
     @staticmethod
     def print_item(item):
         # If item is a list return list of items printed out including sublists
-        if type(item) == List:
+        if type(item) is List:
             return [item.print_item(x) for x in item.items]
         # else if just a primitive, return it as is
         else:
@@ -38,7 +38,7 @@ class Dict:
     @staticmethod
     def print_item(item):
         # If item is a list return list of items printed out including sublists
-        if type(item) == List:
+        if type(item) is List:
             return [item.print_item(x) for x in item.items]
         # else if just a primitive, return it as is
         else:

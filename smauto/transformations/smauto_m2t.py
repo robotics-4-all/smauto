@@ -1,11 +1,10 @@
 import os
-from os.path import basename
+
 import jinja2
-from rich import print, pretty
 
 from smauto.language import build_model
 from smauto.definitions import TEMPLATES_PATH
-from textx import get_children_of_type
+from smauto.utils import select_clock_broker, make_executable
 
 
 jinja_env = jinja2.Environment(
@@ -35,24 +34,6 @@ def build_smauto_code(model):
         "metadata": model.metadata,
     }
     return smauto_tpl.render(context)
-
-
-def select_clock_broker(model):
-    brokers = []
-    for m in model._tx_model_repository.all_models:
-        brokers += get_children_of_type("MQTTBroker", m)
-        brokers += get_children_of_type("AMQPBroker", m)
-        brokers += get_children_of_type("RedisBroker", m)
-    for broker in brokers:
-        if broker.name == "fake_broker":
-            brokers.remove(broker)
-    return brokers[0]
-
-
-def make_executable(path):
-    mode = os.stat(path).st_mode
-    mode |= (mode & 0o444) >> 2  # copy R bits to X
-    os.chmod(path, mode)
 
 
 def write_to_file(code, fpath):

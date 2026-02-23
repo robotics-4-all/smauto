@@ -1,7 +1,5 @@
-from textx import textx_isinstance, get_metamodel
 import time
 from rich import print, pretty
-from concurrent.futures import ThreadPoolExecutor
 from smauto.lib.types import List, Dict
 
 pretty.install()
@@ -90,7 +88,7 @@ class Automation(object):
             elif isinstance(action, StopAction):
                 action.automation.disable()
                 continue
-            
+
             # Handle SET actions (attribute assignments)
             if isinstance(action, SetAction):
                 # If value is List or Dict, cast them to python lists and dicts
@@ -99,11 +97,14 @@ class Automation(object):
                     value = value.to_dict()
                 elif type(value) is List:
                     value = value.print_item(value)
-                # If entity of action already in messages, update the message. Else insert it.
-                if action.attribute.parent in messages.keys():
-                    messages[action.attribute.parent].update({action.attribute.name: value})
+                # If entity of action already in messages,
+                # update the message. Else insert it.
+                entity = action.attribute.parent
+                attr_name = action.attribute.name
+                if entity in messages:
+                    messages[entity].update({attr_name: value})
                 else:
-                    messages[action.attribute.parent] = {action.attribute.name: value}
+                    messages[entity] = {attr_name: value}
 
         # Iterate over Entities and their corresponding messages
         for entity, message in messages.items():
@@ -117,7 +118,7 @@ class Automation(object):
         self.condition.build()
 
     def print(self):
-        after = f"\n".join([f"      - {dep.name}" for dep in self.after])
+        after = "\n".join([f"      - {dep.name}" for dep in self.after])
         print(
             f"[*] Automation <{self.name}>\n"
             f"    Condition: {self.condition.cond_lambda}\n"
