@@ -21,7 +21,7 @@ smauto/                  # Main Python package
 ├── builtin_models/      # Built-in .br/.ent models (fake_broker, system_clock)
 ├── utils.py             # Shared utilities (select_clock_broker, make_executable)
 └── definitions.py       # Path constants (TEMPLATES_PATH, BUILTIN_MODELS)
-examples/                # Sample .auto models (11 files across 8 scenarios)
+examples/                # Sample .auto models (6 progressive real-world IoT scenarios)
 scripts/                 # Validation scripts (model, entity gen, automations gen)
 ```
 
@@ -37,7 +37,7 @@ scripts/                 # Validation scripts (model, entity gen, automations ge
 | Add API endpoint | `smauto/api/api.py` | FastAPI, API key auth via `X-API-Key` header |
 | Add built-in model | `smauto/builtin_models/` | `.br` (broker) and `.ent` (entity) files |
 | Validate all examples | `bash scripts/run_all_validations.sh` | Or individual `python3 scripts/validate_*.py` |
-| Test with a model | `examples/simple_example/model.auto` | Best starting point |
+| Test with a model | `examples/01_smart_light/model.auto` | Best starting point |
 
 ## CODE MAP
 

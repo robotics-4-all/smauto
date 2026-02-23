@@ -1,0 +1,85 @@
+Metadata
+    name: SmartThermostat
+    version: "0.1.0"
+    description: "Temperature-controlled HVAC system."
+    author: "smauto"
+    email: "smauto@2023"
+end
+
+// Home MQTT broker
+Broker<MQTT> home_broker
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+// Temperature sensor with linearly rising values and gaussian noise
+Entity temperature_sensor
+    type: sensor
+    freq: 5
+    topic: "living_room.temperature"
+    broker: home_broker
+    attributes:
+        - temperature: float -> linear(18, 0.5) with noise gaussian(0, 0.2)
+end
+
+// Humidity sensor with gaussian distribution and uniform noise
+Entity humidity_sensor
+    type: sensor
+    freq: 5
+    topic: "living_room.humidity"
+    broker: home_broker
+    attributes:
+        - humidity: float -> gaussian(40, 80, 10) with noise uniform(-2, 2)
+end
+
+// HVAC actuator with multiple control attributes
+Entity hvac
+    type: actuator
+    topic: "living_room.hvac"
+    broker: home_broker
+    attributes:
+        - power: bool
+        - target_temp: float
+        - mode: str
+end
+
+// When temperature exceeds 28°C, start cooling
+Automation start_cooling
+    when
+        temperature_sensor.temperature > 28
+    then
+        hvac.power <- true
+        hvac.target_temp <- 24.0
+        hvac.mode <- "cool"
+    config
+        continuous: false
+    triggers
+        stop_cooling
+end
+
+// When temperature drops below 22°C, stop cooling
+// Initially disabled — activated by start_cooling via triggers
+Automation stop_cooling
+    when
+        temperature_sensor.temperature < 22
+    then
+        hvac.power <- false
+    config
+        enabled: false
+        continuous: false
+    triggers
+        start_cooling
+end
+
+// Activate dehumidification when humidity is too high
+Automation dehumidify
+    when
+        humidity_sensor.humidity > 70
+    then
+        hvac.mode <- "dry"
+    config
+        continuous: false
+end

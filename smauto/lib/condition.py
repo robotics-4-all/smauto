@@ -146,7 +146,7 @@ class Condition(object):
         return val
 
     def build(self):
-        self.process_node_condition(self)
+        Condition.process_node_condition(self)
         return self.cond_lambda
 
     # Post-Order traversal of Condition tree, generating the condition for each node

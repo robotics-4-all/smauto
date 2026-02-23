@@ -1,0 +1,188 @@
+Metadata
+    name: IndustrialMonitoring
+    version: "0.1.0"
+    description: "Factory floor monitoring across MQTT, AMQP, and Redis protocols."
+    author: "smauto"
+    email: "smauto@2023"
+end
+
+RTMonitor
+    broker: factory_mqtt
+    namespace: "smauto.factory"
+    eventTopic: "event"
+    logsTopic: "logs"
+end
+
+// MQTT broker for real-time sensor data
+Broker<MQTT> factory_mqtt
+    host: "mqtt.factory.local"
+    port: 1883
+    auth:
+        username: "sensor_gw"
+        password: "s3ns0r"
+end
+
+// AMQP broker for SCADA commands with SSL
+Broker<AMQP> scada_amqp
+    host: "amqp.factory.local"
+    port: 5672
+    ssl: True
+    vhost: "/production"
+    auth:
+        username: "scada"
+        password: "sc4d4"
+end
+
+// Redis broker for state caching
+Broker<Redis> cache_redis
+    host: "redis.factory.local"
+    port: 6379
+    ssl: False
+    db: 2
+    auth:
+        username: ""
+        password: "r3d1s"
+end
+
+// Vibration sensor on CNC machine (via MQTT)
+Entity vibration_sensor
+    type: sensor
+    freq: 10
+    topic: "cnc.vibration"
+    broker: factory_mqtt
+    attributes:
+        - amplitude: float -> gaussian(0.5, 5, 2) with noise gaussian(0, 0.1)
+        - frequency_hz: float -> saw(10, 100, 5)
+end
+
+// Temperature probe on hydraulic press (via AMQP)
+Entity temperature_probe
+    type: sensor
+    freq: 5
+    topic: "press.temperature"
+    broker: scada_amqp
+    attributes:
+        - temperature: float -> linear(60, 0.5) with noise uniform(-1, 1)
+end
+
+// Pressure gauge on pneumatic system (via Redis)
+Entity pressure_gauge
+    type: sensor
+    freq: 5
+    topic: "pneumatic.pressure"
+    broker: cache_redis
+    attributes:
+        - pressure: float -> sinus(100, 20, 0.05) with noise gaussian(0, 2)
+end
+
+// Emergency stop actuator (MQTT)
+Entity emergency_stop
+    type: actuator
+    topic: "factory.emergency"
+    broker: factory_mqtt
+    attributes:
+        - triggered: bool
+end
+
+// Cooling system (AMQP)
+Entity cooling_system
+    type: actuator
+    topic: "press.cooling"
+    broker: scada_amqp
+    attributes:
+        - power: bool
+        - flow_rate: float
+end
+
+// Data logger for alerts (Redis)
+Entity data_logger
+    type: actuator
+    topic: "factory.logger"
+    broker: cache_redis
+    attributes:
+        - recording: bool
+        - alert_level: int = 0
+end
+
+// Detect abnormal vibration using standard deviation
+Automation vibration_anomaly
+    when
+        std(vibration_sensor.amplitude, 20) > 1.5
+    then
+        data_logger.alert_level <- 2
+        data_logger.recording <- true
+    config
+        freq: 5
+        continuous: true
+end
+
+// Cool down when average temperature exceeds threshold
+Automation high_temperature
+    when
+        mean(temperature_probe.temperature, 10) > 80
+    then
+        cooling_system.power <- true
+        cooling_system.flow_rate <- 10.0
+    config
+        continuous: false
+    triggers
+        normal_temperature
+end
+
+// Stop cooling when temperature stabilizes
+Automation normal_temperature
+    when
+        mean(temperature_probe.temperature, 10) < 70
+    then
+        cooling_system.power <- false
+        cooling_system.flow_rate <- 0.0
+    config
+        enabled: false
+        continuous: false
+    triggers
+        high_temperature
+end
+
+// Emergency stop on pressure spike (max over window)
+Automation pressure_emergency
+    when
+        max(pressure_gauge.pressure, 5) > 140
+    then
+        emergency_stop.triggered <- true
+    config
+        checkOnce: true
+end
+
+// Detect pressure leak (min over window)
+Automation pressure_leak
+    when
+        min(pressure_gauge.pressure, 10) < 60
+    then
+        data_logger.alert_level <- 1
+    config
+        continuous: true
+end
+
+// Start monitoring at shift start
+Automation shift_start
+    when
+        system_clock.time >= 08:00
+    then
+        data_logger.recording <- true
+    config
+        continuous: true
+end
+
+// Variance-based anomaly detection (depends on shift being active)
+Automation variance_monitor
+    when
+        var(vibration_sensor.amplitude, 30) > 2.0
+    then
+        emergency_stop.triggered <- true
+        data_logger.alert_level <- 3
+    config
+        freq: 2
+        continuous: true
+    depends on
+        shift_start
+end
