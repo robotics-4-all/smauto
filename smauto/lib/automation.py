@@ -179,6 +179,13 @@ class Automation(object):
                             f"[bold blue][*] Condition met: "
                             f"{self.condition.cond_lambda}"
                         )
+                        # Apply delay before triggering actions (debounce)
+                        if self.delay > 0:
+                            print(
+                                f"[bold cyan][*] Delaying actions by "
+                                f"{self.delay}s[/bold cyan]"
+                            )
+                            time.sleep(self.delay)
                         # If automation triggered run its actions
                         self.trigger_actions()
                         self.state = AutomationState.EXITED_SUCCESS
