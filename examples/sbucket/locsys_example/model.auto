@@ -1,5 +1,5 @@
 Metadata
-    name: SimpleHomeAutomation
+    name: SimpleHomeAUTO
     version: "0.1.0"
     description: "Simple home automation model."
     author: "the author"
@@ -42,13 +42,13 @@ Entity aircondition
         - on: bool
 end
 
-Automation start_aircondition
-    condition:
-        (weather_station.temperature > 30) AND
-        (aircondition.on is true)
+AUTO start_aircondition
+WITH
     enabled: true
     continuous: false
-    actions:
-        - aircondition.temperature:  18.0
-        - aircondition.mode:  "cool"
-end
+ON (weather_station.temperature > 30) AND
+(aircondition.on is true)
+DO
+    SET aircondition.temperature:  18.0
+    SET aircondition.mode:  "cool"
+;

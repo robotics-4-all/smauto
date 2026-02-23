@@ -26,13 +26,12 @@ Entity bedroom_lamp
         - colorB: int
 end
 
-Automation motion_detected_self_start
-    condition:
-        system_clock.time >= 03:06
+AUTO motion_detected_self_start
+WITH
     enabled: true
     continuous: false
-    actions:
-        - bedroom_lamp.power: true
-    starts:
-        - motion_detected_self_start
-end
+ON system_clock.time >= 03:06
+DO
+    SET bedroom_lamp.power: true
+    START motion_detected_self_start
+;

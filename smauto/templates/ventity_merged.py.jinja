@@ -230,27 +230,27 @@ class SystemClock(Node):
             username='{{ system_clock.broker.auth.username }}',
             password='{{ system_clock.broker.auth.password }}',
         )
-		{% elif system_clock.broker.__class__.__name__ == 'AMQPBroker' %}
+        {% elif system_clock.broker.__class__.__name__ == 'AMQPBroker' %}
         from commlib.transports.amqp import ConnectionParameters
         conn_params = ConnectionParameters(
             host='{{ system_clock.broker.host }}',
             port={{ system_clock.broker.port }},
             ssl={{ system_clock.broker.ssl }},
-			vhost='{{ system_clock.broker.vhost }}',
+            vhost='{{ system_clock.broker.vhost }}',
             username='{{ system_clock.broker.auth.username }}',
             password='{{ system_clock.broker.auth.password }}',
         )
-		{% elif system_clock.broker.__class__.__name__ == 'RedisBroker' %}
+        {% elif system_clock.broker.__class__.__name__ == 'RedisBroker' %}
         from commlib.transports.redis import ConnectionParameters
         conn_params = ConnectionParameters(
             host='{{ system_clock.broker.host }}',
             port={{ system_clock.broker.port }},
             ssl={{ system_clock.broker.ssl }},
-            db={{ system_clock.broker.vhost }},
+            db={{ system_clock.broker.db }},
             username='{{ system_clock.broker.auth.username }}',
             password='{{ system_clock.broker.auth.password }}',
         )
-		{% elif system_clock.broker.__class__.__name__ == 'KafkaBroker' %}
+        {% elif system_clock.broker.__class__.__name__ == 'KafkaBroker' %}
         from commlib.transports.kafka import ConnectionParameters
         conn_params = ConnectionParameters(
             host='{{ system_clock.broker.host }}',
@@ -259,7 +259,7 @@ class SystemClock(Node):
             username='{{ system_clock.broker.auth.username }}',
             password='{{ system_clock.broker.auth.password }}',
         )
-		{% endif %}
+        {% endif %}
         super().__init__(
             node_name='{{ system_clock.name }}',
             connection_params=conn_params,
@@ -340,28 +340,28 @@ class {{ entity.camel_name }}Node(Node):
             username='{{ entity.broker.auth.username }}',
             password='{{ entity.broker.auth.password }}',
         )
-		{% elif entity.broker.__class__.__name__ == 'AMQPBroker' %}
-		from commlib.transports.amqp import ConnectionParameters
+        {% elif entity.broker.__class__.__name__ == 'AMQPBroker' %}
+        from commlib.transports.amqp import ConnectionParameters
         conn_params = ConnectionParameters(
             host='{{ entity.broker.host }}',
             port={{ entity.broker.port }},
             ssl={{ entity.broker.ssl }},
-			vhost='{{ entity.broker.vhost }}',
+            vhost='{{ entity.broker.vhost }}',
             username='{{ entity.broker.auth.username }}',
             password='{{ entity.broker.auth.password }}',
         )
-		{% elif entity.broker.__class__.__name__ == 'RedisBroker' %}
-		from commlib.transports.redis import ConnectionParameters
+        {% elif entity.broker.__class__.__name__ == 'RedisBroker' %}
+        from commlib.transports.redis import ConnectionParameters
         conn_params = ConnectionParameters(
             host='{{ entity.broker.host }}',
             port={{ entity.broker.port }},
             ssl={{ entity.broker.ssl }},
-            db={{ entity.broker.vhost }},
+            db={{ entity.broker.db }},
             username='{{ entity.broker.auth.username }}',
             password='{{ entity.broker.auth.password }}',
         )
-		{% elif entity.broker.__class__.__name__ == 'KafkaBroker' %}
-		from commlib.transports.kafka import ConnectionParameters
+        {% elif entity.broker.__class__.__name__ == 'KafkaBroker' %}
+        from commlib.transports.kafka import ConnectionParameters
         conn_params = ConnectionParameters(
             host='{{ entity.broker.host }}',
             port={{ entity.broker.port }},
@@ -369,7 +369,7 @@ class {{ entity.camel_name }}Node(Node):
             username='{{ entity.broker.auth.username }}',
             password='{{ entity.broker.auth.password }}',
         )
-		{% endif %}
+        {% endif %}
         super().__init__(
             node_name='entities.{{ entity.name.lower() }}',
             connection_params=conn_params,
@@ -499,27 +499,27 @@ class {{ entity.camel_name }}Node(Node):
             username='{{ entity.broker.auth.username }}',
             password='{{ entity.broker.auth.password }}',
         )
-		{% elif entity.broker.__class__.__name__ == 'AMQPBroker' %}
+        {% elif entity.broker.__class__.__name__ == 'AMQPBroker' %}
         from commlib.transports.amqp import ConnectionParameters
         conn_params = ConnectionParameters(
             host='{{ entity.broker.host }}',
             port={{ entity.broker.port }},
             ssl={{ entity.broker.ssl }},
-			vhost='{{ entity.broker.vhost }}',
+            vhost='{{ entity.broker.vhost }}',
             username='{{ entity.broker.auth.username }}',
             password='{{ entity.broker.auth.password }}',
         )
-		{% elif entity.broker.__class__.__name__ == 'RedisBroker' %}
+        {% elif entity.broker.__class__.__name__ == 'RedisBroker' %}
         from commlib.transports.redis import ConnectionParameters
         conn_params = ConnectionParameters(
             host='{{ entity.broker.host }}',
             port={{ entity.broker.port }},
             ssl={{ entity.broker.ssl }},
-            db={{ entity.broker.vhost }},
+            db={{ entity.broker.db }},
             username='{{ entity.broker.auth.username }}',
             password='{{ entity.broker.auth.password }}',
         )
-		{% elif entity.broker.__class__.__name__ == 'KafkaBroker' %}
+        {% elif entity.broker.__class__.__name__ == 'KafkaBroker' %}
         from commlib.transports.kafka import ConnectionParameters
         conn_params = ConnectionParameters(
             host='{{ entity.broker.host }}',
@@ -528,7 +528,7 @@ class {{ entity.camel_name }}Node(Node):
             username='{{ entity.broker.auth.username }}',
             password='{{ entity.broker.auth.password }}',
         )
-		{% endif %}
+        {% endif %}
         super().__init__(
             node_name='entities.{{ entity.name.lower() }}',
             connection_params=conn_params,
