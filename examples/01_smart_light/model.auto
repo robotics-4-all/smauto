@@ -1,0 +1,45 @@
+Metadata
+    name: SmartLight
+    version: "0.1.0"
+    description: "Motion-activated bedroom light — beginner example."
+    author: "smauto"
+    email: "smauto@2023"
+end
+
+Broker<MQTT> home_broker
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity motion_sensor
+    type: sensor
+    freq: 2
+    topic: "bedroom.motion"
+    broker: home_broker
+    attributes:
+        - detected: bool -> replay([false, false, false, true, true, false], -1)
+end
+
+Entity bedroom_light
+    type: actuator
+    topic: "bedroom.light"
+    broker: home_broker
+    attributes:
+        - power: bool
+        - brightness: int = 0
+end
+
+Automation turn_on_light
+    when
+        motion_sensor.detected is true
+    then
+        bedroom_light.power <- true
+        bedroom_light.brightness <- 100
+    config
+        description: "Turn on bedroom light when motion is detected"
+        enabled: true
+        continuous: true
+end

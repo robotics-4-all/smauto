@@ -1,10 +1,9 @@
-from os.path import basename
 import jinja2
-from rich import print, pretty
+from rich import print
 
 from smauto.language import build_model
 from smauto.definitions import TEMPLATES_PATH
-from textx import get_children_of_type
+from smauto.utils import select_clock_broker
 
 
 jinja_env = jinja2.Environment(
@@ -25,19 +24,6 @@ def build_source_code(sensors, actuators, hubrids, system_clock):
     }
     modelf = vent_tpl.render(context)
     return modelf
-
-
-def select_clock_broker(model):
-    brokers = []
-    for m in model._tx_model_repository.all_models:
-        brokers += get_children_of_type("MQTTBroker", m)
-        brokers += get_children_of_type("AMQPBroker", m)
-        brokers += get_children_of_type("RedisBroker", m)
-        brokers += get_children_of_type("KafkaBroker", m)
-    for broker in brokers:
-        if broker.name == "fake_broker":
-            brokers.remove(broker)
-    return brokers[0]
 
 
 def model_to_vent(model_path: str):

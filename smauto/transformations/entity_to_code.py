@@ -1,10 +1,8 @@
-from os.path import basename
 import jinja2
-from rich import print, pretty
 
 from smauto.language import build_model
 from smauto.definitions import TEMPLATES_PATH
-from textx import get_children_of_type
+from smauto.utils import select_clock_broker
 
 
 jinja_env = jinja2.Environment(
@@ -13,6 +11,7 @@ jinja_env = jinja2.Environment(
 
 sensor_tpl = jinja_env.get_template("sensor.py.jinja")
 actuator_tpl = jinja_env.get_template("actuator.py.jinja")
+hybrid_tpl = jinja_env.get_template("hybrid.py.jinja")
 clock_tpl = jinja_env.get_template("clock.py.jinja")
 
 
@@ -29,22 +28,10 @@ def build_entity_code(entity):
     elif _type == "actuator":
         modelf = actuator_tpl.render(context)
     elif _type == "hybrid":
-        raise NotImplementedError("Hybid Entities not yet supported")
+        modelf = hybrid_tpl.render(context)
     else:
         raise NotImplementedError(f"{_type} Entities not yet supported")
     return modelf
-
-
-def select_clock_broker(model):
-    brokers = []
-    for m in model._tx_model_repository.all_models:
-        brokers += get_children_of_type("MQTTBroker", m)
-        brokers += get_children_of_type("AMQPBroker", m)
-        brokers += get_children_of_type("RedisBroker", m)
-    for broker in brokers:
-        if broker.name == "fake_broker":
-            brokers.remove(broker)
-    return brokers[0]
 
 
 def model_to_vnodes(model_path: str):

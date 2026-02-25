@@ -1,0 +1,164 @@
+Metadata
+    name: SmartBuilding
+    version: "0.1.0"
+    description: "Multi-zone smart building management system."
+    author: "smauto"
+    email: "smauto@2023"
+end
+
+Broker<MQTT> building_broker
+    host: "mqtt.building.local"
+    port: 1883
+    auth:
+        username: "bms"
+        password: "bms2024"
+end
+
+// Lobby occupancy sensor with replay pattern
+Entity occupancy_sensor
+    type: sensor
+    freq: 2
+    topic: "lobby.occupancy"
+    broker: building_broker
+    attributes:
+        - occupied: bool -> replay([false, true, true, true, false], -1)
+        - count: int -> replay([0, 2, 5, 3, 0], -1)
+end
+
+// Building energy meter
+Entity energy_meter
+    type: sensor
+    freq: 5
+    topic: "building.energy"
+    broker: building_broker
+    attributes:
+        - consumption: float -> linear(0, 0.5) with noise gaussian(0, 0.1)
+        - power_factor: float -> constant(0.85) with noise gaussian(0, 0.1)
+end
+
+// Server room environmental sensor
+Entity server_room_sensor
+    type: sensor
+    freq: 10
+    topic: "server_room.environment"
+    broker: building_broker
+    attributes:
+        - temperature: float -> gaussian(22, 35, 5) with noise gaussian(0, 0.3)
+        - humidity: float -> saw(30, 70, 1) with noise uniform(-2, 2)
+end
+
+// Lobby HVAC
+Entity hvac_lobby
+    type: actuator
+    topic: "lobby.hvac"
+    broker: building_broker
+    attributes:
+        - power: bool
+        - setpoint: float
+        - mode: str
+end
+
+// Lobby lighting
+Entity lighting_lobby
+    type: actuator
+    topic: "lobby.lighting"
+    broker: building_broker
+    attributes:
+        - power: bool
+        - brightness: int
+        - schedule: list
+end
+
+// Server room cooling
+Entity server_cooling
+    type: actuator
+    topic: "server_room.cooling"
+    broker: building_broker
+    attributes:
+        - power: bool
+        - fan_speed: int
+end
+
+// Fire safety panel
+Entity fire_panel
+    type: actuator
+    topic: "building.fire"
+    broker: building_broker
+    attributes:
+        - alarm_active: bool
+end
+
+// Elevator control
+Entity elevator
+    type: actuator
+    topic: "building.elevator"
+    broker: building_broker
+    attributes:
+        - enabled: bool
+end
+
+// Comfort mode when lobby is occupied with 3+ people
+Automation occupied_comfort
+    when
+        (occupancy_sensor.occupied is true) AND
+        (occupancy_sensor.count > 2)
+    then
+        hvac_lobby.power <- true
+        hvac_lobby.setpoint <- 22.0
+        hvac_lobby.mode <- "auto"
+        lighting_lobby.power <- true
+        lighting_lobby.brightness <- 80
+    config
+        description: "Activate comfort when lobby has 3+ occupants"
+        continuous: true
+end
+
+// Energy saving at night when unoccupied
+Automation energy_saving
+    when
+        (occupancy_sensor.occupied is false) AND
+        (system_clock.time >= 20:00)
+    then
+        hvac_lobby.power <- false
+        lighting_lobby.brightness <- 10
+    config
+        continuous: true
+    terminates
+        occupied_comfort
+end
+
+// Reduce load during peak energy consumption
+Automation peak_shaving
+    when
+        mean(energy_meter.consumption, 15) > 100
+    then
+        lighting_lobby.brightness <- 50
+        hvac_lobby.setpoint <- 26.0
+    config
+        freq: 10
+        continuous: true
+end
+
+// Server room overheat protection
+Automation server_room_cooling
+    when
+        server_room_sensor.temperature > 28
+    then
+        server_cooling.power <- true
+        server_cooling.fan_speed <- 100
+    config
+        continuous: true
+end
+
+// Fire safety: detect power quality drop and shut down non-essentials
+Automation fire_safety
+    when
+        min(energy_meter.power_factor, 5) < 0.7
+    then
+        fire_panel.alarm_active <- true
+        elevator.enabled <- false
+    config
+        checkOnce: true
+    terminates
+        occupied_comfort, energy_saving
+end

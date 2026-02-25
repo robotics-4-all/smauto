@@ -1,18 +1,12 @@
 import click
-import os
 from rich import print, pretty
 
 from smauto.language import build_model
 from smauto.transformations import model_to_vnodes, smauto_m2t
 from smauto.transformations import model_to_vent
+from smauto.utils import make_executable
 
 pretty.install()
-
-
-def make_executable(path):
-    mode = os.stat(path).st_mode
-    mode |= (mode & 0o444) >> 2  # copy R bits to X
-    os.chmod(path, mode)
 
 
 @click.group()
@@ -25,7 +19,7 @@ def cli(ctx):
 @click.pass_context
 @click.argument("model_path")
 def validate(ctx, model_path):
-    model = build_model(model_path)
+    build_model(model_path)
     print("[*] Model validation success!!")
 
 

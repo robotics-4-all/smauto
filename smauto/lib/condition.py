@@ -1,6 +1,6 @@
 from textx import textx_isinstance, get_metamodel
 import statistics
-from smauto.lib.types import List, Dict, Time, Date
+from smauto.lib.types import List, Dict, Time
 
 
 # List of primitive types that can be directly printed
@@ -54,12 +54,12 @@ class Condition(object):
             else:
                 return node
         # If node is a List object just print it out. List has __repr()__ built in
-        elif type(node) == List:
+        elif type(node) is List:
             return node
         # If node is a Dict object just print it out. List has __repr()__ built in
-        elif type(node) == Dict:
+        elif type(node) is Dict:
             return node
-        elif type(node) == Time:
+        elif type(node) is Time:
             return node.to_int()
         # Node is an Attribute, print its full name including Entity
         elif textx_isinstance(
@@ -146,7 +146,7 @@ class Condition(object):
         return val
 
     def build(self):
-        self.process_node_condition(self)
+        Condition.process_node_condition(self)
         return self.cond_lambda
 
     # Post-Order traversal of Condition tree, generating the condition for each node
@@ -178,7 +178,8 @@ class Condition(object):
 
     def evaluate(self):
         if self.cond_lambda not in (None, ""):
-            # Evaluate condition providing the textX model as global context for evaluation
+            # Evaluate condition providing the textX model
+            # as global context for evaluation
             try:
                 entities = self.parent.parent.entities_dict
                 # print(entities['system_clock'].attributes_dict['time'].value.to_int())

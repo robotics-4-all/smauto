@@ -1,0 +1,134 @@
+Metadata
+    name: SmartGreenhouse
+    version: "0.1.0"
+    description: "Automated greenhouse with all generator types and advanced conditions."
+    author: "smauto"
+    email: "smauto@2023"
+end
+
+Broker<MQTT> greenhouse_broker
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+// Soil moisture with saw-tooth pattern (periodic drying cycle)
+Entity soil_moisture
+    type: sensor
+    freq: 1
+    topic: "greenhouse.soil"
+    broker: greenhouse_broker
+    attributes:
+        - moisture: float -> saw(20, 90, 2) with noise uniform(-1, 1)
+end
+
+// Ambient light with sinusoidal day/night cycle
+Entity light_sensor
+    type: sensor
+    freq: 1
+    topic: "greenhouse.light"
+    broker: greenhouse_broker
+    attributes:
+        - lux: float -> sinus(500, 400, 0.1) with noise gaussian(0, 10)
+        - uv_index: float -> constant(5.0)
+end
+
+// Air quality with linear CO2 buildup and gaussian temperature
+Entity air_quality
+    type: sensor
+    freq: 2
+    topic: "greenhouse.air"
+    broker: greenhouse_broker
+    attributes:
+        - co2: float -> linear(300, 5) with noise gaussian(0, 10)
+        - temperature: float -> gaussian(22, 38, 5) with noise gaussian(0, 0.5)
+end
+
+Entity irrigation
+    type: actuator
+    topic: "greenhouse.irrigation"
+    broker: greenhouse_broker
+    attributes:
+        - valve_open: bool
+        - flow_rate: float
+end
+
+Entity ventilation
+    type: actuator
+    topic: "greenhouse.ventilation"
+    broker: greenhouse_broker
+    attributes:
+        - fan_speed: int
+        - louver_open: bool
+end
+
+Entity grow_light
+    type: actuator
+    topic: "greenhouse.grow_light"
+    broker: greenhouse_broker
+    attributes:
+        - power: bool
+        - intensity: int
+end
+
+// Start irrigation when soil is too dry
+Automation start_irrigation
+    when
+        soil_moisture.moisture < 30
+    then
+        irrigation.valve_open <- true
+        irrigation.flow_rate <- 2.5
+    config
+        continuous: false
+        delay: 5.0
+    triggers
+        stop_irrigation
+end
+
+// Stop irrigation when soil is moist enough
+Automation stop_irrigation
+    when
+        soil_moisture.moisture > 70
+    then
+        irrigation.valve_open <- false
+        irrigation.flow_rate <- 0.0
+    config
+        enabled: false
+        continuous: false
+    triggers
+        start_irrigation
+end
+
+// Ventilate when CO2 levels are high
+Automation ventilate_high_co2
+    when
+        air_quality.co2 > 1000
+    then
+        ventilation.fan_speed <- 80
+        ventilation.louver_open <- true
+    config
+        continuous: true
+end
+
+// Keep temperature in the optimal growing range
+Automation optimal_temperature
+    when
+        air_quality.temperature in range [15, 30]
+    then
+        ventilation.fan_speed <- 40
+    config
+        continuous: true
+end
+
+// Supplement light when ambient light is too low
+Automation supplement_light
+    when
+        light_sensor.lux < 200
+    then
+        grow_light.power <- true
+        grow_light.intensity <- 80
+    config
+        continuous: true
+end
