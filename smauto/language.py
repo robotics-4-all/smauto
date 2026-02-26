@@ -27,8 +27,11 @@ from smauto.lib.broker import (
     AMQPBroker,
     Broker,
     BrokerAuthPlain,
+    EntitySource,
     MQTTBroker,
+    Property,
     RedisBroker,
+    RESTEndpoint,
 )
 from smauto.lib.entity import (
     Attribute,
@@ -54,6 +57,8 @@ from smauto.lib.condition import (
     DictCondition,
     InRangeCondition,
     ListCondition,
+    AutomationStatusCondition,
+    AutomationStatusRef,
 )
 
 
@@ -73,6 +78,8 @@ CUSTOM_CLASSES = [
     DictCondition,
     TimeCondition,
     InRangeCondition,
+    AutomationStatusCondition,
+    AutomationStatusRef,
     Attribute,
     IntAttribute,
     FloatAttribute,
@@ -85,6 +92,9 @@ CUSTOM_CLASSES = [
     MQTTBroker,
     AMQPBroker,
     RedisBroker,
+    RESTEndpoint,
+    EntitySource,
+    Property,
     BrokerAuthPlain,
     Action,
     SetAction,
@@ -107,8 +117,8 @@ ENTITY_BUILTINS = {
         name="system_clock",
         etype="sensor",
         freq=1,
-        topic="system.clock",
-        broker=MQTTBroker(None, name="fake", host="localhost", port=1883, auth=None),
+        uri="system.clock",
+        source=MQTTBroker(None, name="fake", host="localhost", port=1883, auth=None),
         attributes=[TimeAttribute(None, "time", None)],
     )
 }
@@ -141,17 +151,18 @@ def process_time_class(model):
             raise TextXSemanticError("Time.seconds must be in range [0, 60]")
 
 
-def verify_broker_names(model):
+def verify_source_names(model):
     _ids = []
-    brokers = get_children_of_type("MQTTBroker", model)
-    brokers += get_children_of_type("AMQPBroker", model)
-    brokers += get_children_of_type("RedisBroker", model)
-    for b in brokers:
-        if b.name in _ids:
+    sources = get_children_of_type("MQTTBroker", model)
+    sources += get_children_of_type("AMQPBroker", model)
+    sources += get_children_of_type("RedisBroker", model)
+    sources += get_children_of_type("RESTEndpoint", model)
+    for s in sources:
+        if s.name in _ids:
             raise TextXSemanticError(
-                f"Broker with name <{b.name}> already exists", **get_location(b)
+                f"Source with name <{s.name}> already exists", **get_location(s)
             )
-        _ids.append(b.name)
+        _ids.append(s.name)
 
 
 def verify_entity_names(model):
@@ -191,7 +202,7 @@ def model_proc(model, metamodel):
     process_time_class(model)
     verify_entity_names(model)
     verify_automation_names(model)
-    verify_broker_names(model)
+    verify_source_names(model)
 
 
 def get_metamodel(debug: bool = False, global_repo: bool = False):

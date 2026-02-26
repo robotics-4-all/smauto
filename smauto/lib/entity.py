@@ -39,32 +39,16 @@ class Entity:
 
     """
 
-    def __init__(self, parent, name, etype, freq, topic, broker, attributes, description=""):
-        """
-        Creates and returns an Entity object
-        :param name: Entity name. e.g: 'temperature_sensor'
-        :param topic: Topic on which entity communicates
-            using the Broker.
-            e.g: 'sensors.temp_sensor' -> sensors/temp_sensor
-        :param broker: Reference to the Broker used for communications
-        :param parent: Parameter required for Custom Class compatibility in textX
-        :param attributes: List of Attribute objects belonging to the Entity
-        """
-        # TextX parent attribute. Required to use Entity
-        # as a custom class during metamodel instantiation
+    def __init__(self, parent, name, etype, freq, uri, source, attributes, description=""):
         self.parent = parent
-        # Entity name
         self.name = name
         self.camel_name = self.to_camel_case(name)
         self.etype = etype
         self.freq = freq if freq not in (None, 0) else 1
-        # MQTT topic for Entity
-        self.topic = topic
-        # Entity state
+        self.uri = uri
         self.state = {}
-        # Set Entity's MQTT Broker
-        self.broker = broker
-        # Entity's Attributes
+        # Unwrap EntitySource to get the actual broker/endpoint object
+        self.source = source.ref if hasattr(source, "ref") else source
         self.attributes = attributes
         self.description = description
         self.attr_buffs = []

@@ -9,10 +9,10 @@ Modular textX grammar files defining SmAuto's concrete syntax. `smauto.tx` is th
 | File | DSL Concept | Key Rules |
 |------|-------------|-----------|
 | `smauto.tx` | Root model | `SmAutoModel`, `Metadata`, `RTMonitor` |
-| `entity.tx` | Entities + Attributes | `Entity`, `*Attribute`, `*ValueGen`, `Noise` |
+| `entity.tx` | Entities + Attributes | `Entity` (uses `uri:` + `source: EntitySource`), `*Attribute`, `*ValueGen`, `Noise` |
 | `automation.tx` | Automations + Actions | `Automation`, `*SetAction` (ECA: when/then/config/triggers/terminates) |
 | `condition.tx` | Conditions + Operators | `Condition`, `ConditionGroup`, `*Condition` variants, all operators |
-| `communication.tx` | Brokers + Auth | `MQTTBroker`, `AMQPBroker`, `RedisBroker`, `Auth*` |
+| `communication.tx` | Sources + Auth | `MQTTBroker`, `AMQPBroker`, `RedisBroker`, `RESTEndpoint`, `EntitySource`, `Property`, `Auth*` |
 | `types.tx` | Primitive types | `Time`, `Date`, `List`, `Dict` |
 | `utils.tx` | Shared rules | `FQN`, `Import`, `Comment` |
 
@@ -36,7 +36,9 @@ Modular textX grammar files defining SmAuto's concrete syntax. `smauto.tx` is th
 
 - Grammar comments use `//` and `/* */` (defined in `utils.tx`)
 - The `#` in `(...)#` is textX syntax for "unordered group" — allows properties in any order
-- Automation uses ECA (Event-Condition-Action) syntax: `Automation name when ... then ... config ... depends on ... triggers ... terminates ... end`
+- Automation uses ECA (Event-Condition-Action) syntax: `Automation name when ... then ... config ... triggers ... terminates ... end`
+- `AutomationStatusCondition` in `condition.tx` enables `automation_name.status == STATUS` conditions (STATUS: IDLE/RUNNING/SUCCESS/FAILED/FINISHED/TERMINATED)
+- `AutomationStatusRef` uses plain `ID` (not cross-reference) to avoid circular imports between `condition.tx` and `automation.tx`
 - Action assignment uses `<-` operator: `entity.attr <- value` (formal notation matching operational semantics $x.a \leftarrow e$)
 - `StartAction`/`StopAction` grammar rules were removed — replaced by declarative `triggers`/`terminates` lists on Automation
 - Migration scripts in `scripts/` handle syntax evolution (latest: `migrate_to_eca_syntax.py`)

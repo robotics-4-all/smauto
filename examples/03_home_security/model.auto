@@ -7,7 +7,7 @@ Metadata
 end
 
 RTMonitor
-    broker: home_broker
+    source: home_broker
     namespace: "smauto.security"
     eventTopic: "event"
     logsTopic: "logs"
@@ -24,8 +24,8 @@ end
 Entity motion_sensor
     type: sensor
     freq: 2
-    topic: "hallway.motion"
-    broker: home_broker
+    uri: "hallway.motion"
+    source: home_broker
     attributes:
         - detected: bool -> replay([false, false, false, true, false], -1)
 end
@@ -33,16 +33,16 @@ end
 Entity door_sensor
     type: sensor
     freq: 2
-    topic: "front_door.contact"
-    broker: home_broker
+    uri: "front_door.contact"
+    source: home_broker
     attributes:
         - open: bool -> replay([false, false, true, false], -1)
 end
 
 Entity alarm_siren
     type: actuator
-    topic: "security.siren"
-    broker: home_broker
+    uri: "security.siren"
+    source: home_broker
     attributes:
         - active: bool
         - volume: int = 0
@@ -50,8 +50,8 @@ end
 
 Entity smart_lock
     type: actuator
-    topic: "front_door.lock"
-    broker: home_broker
+    uri: "front_door.lock"
+    source: home_broker
     attributes:
         - locked: bool
 end
@@ -67,11 +67,12 @@ Automation arm_system
         continuous: true
 end
 
-// Detect intrusion: motion OR door opened (depends on system being armed)
+// Detect intrusion: motion OR door opened (only after system is armed)
 Automation detect_intrusion
     when
-        (motion_sensor.detected is true) OR
-        (door_sensor.open is true)
+        (arm_system.status == SUCCESS) AND
+        ((motion_sensor.detected is true) OR
+         (door_sensor.open is true))
     then
         alarm_siren.active <- true
         alarm_siren.volume <- 100
@@ -79,8 +80,6 @@ Automation detect_intrusion
         description: "Trigger alarm on intrusion detection"
         checkOnce: true
         continuous: false
-    depends on
-        arm_system
 end
 
 // Disarm in the morning — silence alarm and unlock

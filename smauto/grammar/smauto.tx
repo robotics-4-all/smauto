@@ -10,6 +10,7 @@ SmAutoModel:
     (metadata=Metadata)?
     (monitor=RTMonitor)?
     brokers*=MessageBroker
+    endpoints*=RESTEndpoint
     entities*=Entity
     automations*=Automation
     )#
@@ -30,7 +31,7 @@ Metadata:
 RTMonitor:
     'RTMonitor'
     (
-        ('broker:' broker=[MessageBroker])
+        ('source:' source=[MessageBroker])
 		('namespace:' ns=STRING)?
 		('eventTopic:' eTopic=STRING)?
 		('logsTopic:' lTopic=STRING)?

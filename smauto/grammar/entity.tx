@@ -6,10 +6,10 @@ Entity:
     'Entity' name=ID
         (
 			('type:' etype=EntityType)
-			('topic:' topic=STRING)
+			('uri:' uri=STRING)
             ('description:' description=STRING)?
 			('freq:' freq=NUMBER)?
-			('broker:' broker=[MessageBroker])
+			('source:' source=EntitySource)
 			('attributes:' '-' attributes*=Attribute['-'])
 		)#
     'end'

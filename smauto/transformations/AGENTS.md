@@ -16,7 +16,7 @@ Model-to-Text transformations. Takes a parsed SmAuto model and generates executa
 
 1. `build_model(model_path)` → parsed model object
 2. `select_clock_broker(model)` → picks first non-fake broker for system_clock
-3. Inject `system_clock` entity from built-in model, swap its broker
+3. Inject `system_clock` entity from built-in model, swap its source
 4. For automations: call `auto.condition.build()` to generate expression strings
 5. Render Jinja2 template with model context → Python source code string
 

@@ -17,16 +17,16 @@ end
 Entity motion_sensor
     type: sensor
     freq: 2
-    topic: "bedroom.motion"
-    broker: home_broker
+    uri: "bedroom.motion"
+    source: home_broker
     attributes:
         - detected: bool -> replay([false, false, false, true, true, false], -1)
 end
 
 Entity bedroom_light
     type: actuator
-    topic: "bedroom.light"
-    broker: home_broker
+    uri: "bedroom.light"
+    source: home_broker
     attributes:
         - power: bool
         - brightness: int = 0

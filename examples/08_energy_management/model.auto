@@ -1,0 +1,163 @@
+Metadata
+    name: SmartEnergy
+    version: "0.1.0"
+    description: "Smart energy management mixing automation status and entity conditions."
+    author: "smauto"
+    email: "smauto@2023"
+end
+
+RTMonitor
+    source: energy_broker
+    namespace: "smauto.energy"
+    eventTopic: "event"
+    logsTopic: "logs"
+end
+
+Broker<MQTT> energy_broker
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity solar_panel
+    type: sensor
+    freq: 5
+    uri: "energy.solar"
+    source: energy_broker
+    attributes:
+        - power_output: float -> gaussian(300, 500, 100) with noise gaussian(0, 10)
+        - efficiency: float -> constant(0.85) with noise uniform(-0.05, 0.05)
+end
+
+Entity battery_monitor
+    type: sensor
+    freq: 5
+    uri: "energy.battery"
+    source: energy_broker
+    attributes:
+        - charge_level: float -> saw(20, 100, 2)
+        - temperature: float -> gaussian(30, 50, 5) with noise gaussian(0, 1)
+end
+
+Entity grid_meter
+    type: sensor
+    freq: 10
+    uri: "energy.grid"
+    source: energy_broker
+    attributes:
+        - consumption: float -> linear(100, 5) with noise uniform(-10, 10)
+        - voltage: float -> constant(230) with noise gaussian(0, 2)
+end
+
+Entity inverter
+    type: actuator
+    uri: "energy.inverter"
+    source: energy_broker
+    attributes:
+        - mode: str
+        - power_limit: float
+end
+
+Entity load_controller
+    type: actuator
+    uri: "energy.load"
+    source: energy_broker
+    attributes:
+        - priority_mode: str
+        - max_load: float
+end
+
+Entity backup_generator
+    type: actuator
+    uri: "energy.backup"
+    source: energy_broker
+    attributes:
+        - active: bool
+        - fuel_rate: float
+end
+
+// Detect solar power availability (pure entity condition — bootstrap)
+Automation monitor_solar
+    when
+        solar_panel.power_output > 100
+    then
+        inverter.mode <- "solar"
+        inverter.power_limit <- 5000.0
+    config
+        description: "Detect sufficient solar power for operations"
+        continuous: true
+    triggers
+        charge_battery
+end
+
+// MIXED: Solar available AND battery needs charging (status + numeric)
+Automation charge_battery
+    when
+        (monitor_solar.status == SUCCESS) AND
+        (battery_monitor.charge_level < 80)
+    then
+        inverter.mode <- "charge"
+        load_controller.priority_mode <- "battery_first"
+    config
+        enabled: false
+        continuous: true
+    triggers
+        peak_shaving
+end
+
+// MIXED: Battery charged AND high grid consumption (status + aggregate)
+Automation peak_shaving
+    when
+        (charge_battery.status == SUCCESS) AND
+        (mean(grid_meter.consumption, 10) > 500)
+    then
+        load_controller.max_load <- 3000.0
+        load_controller.priority_mode <- "shed_non_critical"
+    config
+        enabled: false
+        freq: 5
+        continuous: true
+end
+
+// MIXED: Charging failed AND battery critically low (FAILED + numeric)
+Automation emergency_backup
+    when
+        (charge_battery.status == FAILED) AND
+        (battery_monitor.charge_level < 20)
+    then
+        backup_generator.active <- true
+        backup_generator.fuel_rate <- 5.0
+        load_controller.priority_mode <- "emergency"
+        load_controller.max_load <- 1000.0
+    config
+        continuous: false
+end
+
+// MIXED: Solar available AND battery nearly full (status + numeric)
+Automation export_surplus
+    when
+        (monitor_solar.status == SUCCESS) AND
+        (battery_monitor.charge_level > 95)
+    then
+        inverter.mode <- "export"
+        inverter.power_limit <- 8000.0
+    config
+        continuous: true
+end
+
+// MIXED: Charging active AND battery overheating (status + numeric)
+Automation thermal_protection
+    when
+        (charge_battery.status == SUCCESS) AND
+        (battery_monitor.temperature > 45)
+    then
+        inverter.mode <- "reduced"
+        inverter.power_limit <- 2000.0
+    config
+        description: "Reduce charging power to protect battery from overheating"
+        continuous: true
+    terminates
+        charge_battery
+end

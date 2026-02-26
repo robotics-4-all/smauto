@@ -20,6 +20,8 @@ Jinja2 templates rendered by `transformations/` to produce executable Python cod
 - All generated code imports from `commlib.node.Node`, `commlib.msg.PubSubMessage`
 - Broker type determines `commlib.transports.{mqtt|amqp|redis}.ConnectionParameters`
 - Entity names are CamelCased via `entity.camel_name` for class names (e.g., `weather_station` → `WeatherStationMsg`)
+- Entity source/URI accessed as `entity.source.name`, `entity.source.host`, `entity.uri` (NOT `entity.broker` or `entity.topic`)
+- RTMonitor source accessed as `rt_monitor.source.name` (NOT `rt_monitor.broker`)
 - Condition expressions are inlined as strings: `{{ auto.condition.cond_lambda.replace('.value', '') }}`
 
 ## ANTI-PATTERNS

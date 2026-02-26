@@ -11,6 +11,7 @@ ConditionGroup:
 ;
 
 PrimitiveCondition:
+    AutomationStatusCondition |
     TimeCondition       |
     NumericCondition    |
     BoolCondition       |
@@ -18,6 +19,22 @@ PrimitiveCondition:
     ListCondition       |
     DictCondition
 ;
+
+AutomationStatusCondition:
+    operand1=AutomationStatusRef
+    operator=StatusOperator
+    operand2=AutomationStatus
+;
+
+AutomationStatusRef:
+    automation=ID '.status'
+;
+
+AutomationStatus:
+    'IDLE' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'FINISHED' | 'TERMINATED'
+;
+
+StatusOperator: '==' | '!=' ;
 
 AdvancedCondition: InRangeCondition | MathExpression;
 

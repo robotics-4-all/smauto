@@ -9,11 +9,11 @@ import time
 import numpy as np
 from typing import Optional
 
-{% if entity.broker.__class__.__name__ == 'MQTTBroker' %}
+{% if entity.source.__class__.__name__ == 'MQTTBroker' %}
 from commlib.transports.mqtt import ConnectionParameters
-{% elif entity.broker.__class__.__name__ == 'AMQPBroker' %}
+{% elif entity.source.__class__.__name__ == 'AMQPBroker' %}
 from commlib.transports.amqp import ConnectionParameters
-{% elif entity.broker.__class__.__name__ == 'RedisBroker' %}
+{% elif entity.source.__class__.__name__ == 'RedisBroker' %}
 from commlib.transports.redis import ConnectionParameters
 {% endif %}
 from rich import print, console, pretty
@@ -210,12 +210,12 @@ class {{ entity.camel_name }}Msg(PubSubMessage):
 class {{ entity.camel_name }}Node(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = {{ entity.freq }}
-        self.topic = '{{ entity.topic }}'
+        self.topic = '{{ entity.uri }}'
         conn_params = ConnectionParameters(
-            host='{{ entity.broker.host }}',
-            port={{ entity.broker.port }},
-            username='{{ entity.broker.auth.username }}',
-            password='{{ entity.broker.auth.password }}',
+            host='{{ entity.source.host }}',
+            port={{ entity.source.port }},
+            username='{{ entity.source.auth.username }}',
+            password='{{ entity.source.auth.password }}',
         )
         super().__init__(
             node_name='entities.{{ entity.name.lower() }}',

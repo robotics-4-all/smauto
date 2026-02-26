@@ -66,7 +66,7 @@ class {{ entity.camel_name }}Msg(PubSubMessage):
 # ============================================================================
 
 class StateChangeMsg(PubSubMessage):
-    state: int
+    state: str
     automation: str
     msg: str = ""
 
@@ -184,11 +184,11 @@ class Condition:
     def __init__(self, expression):
         self.expression = expression
 
-    def evaluate(self, entities):
+    def evaluate(self, entities, automations=None):
         try:
             return bool(eval(
                 self.expression,
-                {'entities': entities},
+                {'entities': entities, 'automations': automations or {}},
                 {
                     'std': statistics.stdev,
                     'var': statistics.variance,
@@ -217,17 +217,17 @@ class SetAction:
 # Automation (ECA Rule)
 # ============================================================================
 
-class AutomationState:
-    IDLE = 0
-    RUNNING = 1
-    EXITED_SUCCESS = 2
-    EXITED_FAILURE = 3
-
-
 class Automation:
+    IDLE = 'IDLE'
+    RUNNING = 'RUNNING'
+    SUCCESS = 'SUCCESS'
+    FAILED = 'FAILED'
+    FINISHED = 'FINISHED'
+    TERMINATED = 'TERMINATED'
+
     def __init__(self, name, condition, actions, triggers, terminates,
                  freq, enabled, continuous, checkOnce, delay,
-                 dependencies, entities, rtm=None):
+                 entities, rtm=None):
         self.name = name
         self.condition = condition
         self.actions = actions
@@ -238,8 +238,7 @@ class Automation:
         self.checkOnce = False if checkOnce is None else checkOnce
         self.freq = 1 if freq in (None, 0) else freq
         self.delay = 0 if delay is None else delay
-        self.dependencies = dependencies
-        self.state = AutomationState.IDLE
+        self.status = Automation.IDLE
         self.entities = entities
         self.autos_map = {}
         self.rtm = rtm
@@ -249,14 +248,10 @@ class Automation:
 
     def evaluate_condition(self):
         if self.enabled:
-            return self.condition.evaluate(self.entities)
+            return self.condition.evaluate(self.entities, self.autos_map)
         return False
 
     def print_info(self):
-        deps = '\n'.join(
-            f"      - {self.autos_map[dep].name}"
-            for dep in self.dependencies
-        ) or '      (none)'
         trigs = '\n'.join(
             f"      - {self.autos_map[t].name}"
             for t in self.triggers
@@ -272,7 +267,7 @@ class Automation:
             f"    Continuous: {self.continuous}\n"
             f"    CheckOnce: {self.checkOnce}\n"
             f"    Delay: {self.delay}s\n"
-            f"    Dependencies:\n{deps}\n"
+            f"    Status: {self.status}\n"
             f"    Triggers:\n{trigs}\n"
             f"    Terminates:\n{terms}\n"
         )
@@ -280,7 +275,6 @@ class Automation:
     def trigger_actions(self):
         if not self.continuous:
             self.enabled = False
-        # Execute set actions — group by entity for batch publishing
         messages = {}
         for action in self.actions:
             entity = action.entity
@@ -289,12 +283,10 @@ class Automation:
             setattr(messages[entity], action.attribute, action.value)
         for entity, message in messages.items():
             entity.change_state(message)
-        # ECA: trigger dependent automations
         for auto_name in self.triggers:
             self.autos_map[auto_name].enable()
-        # ECA: terminate dependent automations
         for auto_name in self.terminates:
-            self.autos_map[auto_name].disable()
+            self.autos_map[auto_name].terminate()
 
     def enable(self):
         self.enabled = True
@@ -304,9 +296,13 @@ class Automation:
         self.enabled = False
         self.log(f"Disabled Automation: {self.name}")
 
-    def state_change(self, new_state, msg=""):
-        self.state = new_state
-        event = StateChangeMsg(state=new_state, msg=msg, automation=self.name)
+    def terminate(self):
+        self.enabled = False
+        self.status = Automation.TERMINATED
+        self.log(f"Terminated Automation: {self.name}")
+
+    def send_event(self, msg=""):
+        event = StateChangeMsg(state=self.status, msg=msg, automation=self.name)
         if self.rtm:
             self.rtm.send_event(event)
 
@@ -317,45 +313,35 @@ class Automation:
         print(f'[Automation: {self.name}] {msg}')
 
     def start(self):
-        self.state_change(AutomationState.IDLE)
+        self.status = Automation.IDLE
         self.print_info()
         self.log(f"Starting Automation: {self.name}")
         while not terminate_event.is_set():
-            # Transition to RUNNING if no dependencies
-            if len(self.dependencies) == 0:
-                self.state_change(AutomationState.RUNNING)
-            # Wait for dependent automations to finish
-            while self.state == AutomationState.IDLE and \
-                    not terminate_event.is_set():
-                wait_for = [
-                    dep for dep in self.dependencies
-                    if self.autos_map[dep].state == AutomationState.RUNNING
-                ]
-                if len(wait_for) == 0:
-                    self.state_change(AutomationState.RUNNING)
-                else:
-                    self.log(f'Waiting for dependencies: {wait_for}')
-                time.sleep(1)
-            # Evaluate condition and trigger actions
-            while self.state == AutomationState.RUNNING and \
-                    not terminate_event.is_set():
-                try:
-                    if self.evaluate_condition():
-                        self.log(f"Condition met: {self.condition.expression}")
-                        if self.delay > 0:
-                            self.log(f"Delaying actions by {self.delay}s")
-                            time.sleep(self.delay)
-                        self.trigger_actions()
-                        self.state_change(AutomationState.EXITED_SUCCESS)
-                    if self.checkOnce:
-                        self.disable()
-                        self.state_change(AutomationState.EXITED_SUCCESS)
-                    time.sleep(1 / self.freq)
-                except Exception as e:
-                    self.log(f'[ERROR] {e}')
-                    self.state_change(AutomationState.EXITED_FAILURE)
-                    return
-            self.state_change(AutomationState.IDLE)
+            self.status = Automation.RUNNING
+            self.send_event()
+            try:
+                if self.evaluate_condition():
+                    self.log(f"Condition met: {self.condition.expression}")
+                    if self.delay > 0:
+                        self.log(f"Delaying actions by {self.delay}s")
+                        time.sleep(self.delay)
+                    self.trigger_actions()
+                    self.status = Automation.SUCCESS
+                    self.send_event()
+                if self.checkOnce:
+                    self.disable()
+                    self.status = Automation.FINISHED
+                    self.send_event()
+                time.sleep(1 / self.freq)
+            except Exception as e:
+                self.log(f'[ERROR] {e}')
+                self.status = Automation.FAILED
+                self.send_event()
+                return
+            if self.status in (Automation.SUCCESS, Automation.FINISHED):
+                self.status = Automation.FINISHED
+                self.send_event()
+                self.status = Automation.IDLE
 
 
 # ============================================================================
@@ -377,7 +363,7 @@ class Executor(Node):
         super().__init__(
             node_name=self.name,
             debug=True,
-            connection_params=self._broker_params['{{ rt_monitor.broker.name }}']
+            connection_params=self._broker_params['{{ rt_monitor.source.name }}']
         )
         self._etopic = f'{self.namespace}.{self.event_topic}'
         self._ltopic = f'{self.namespace}.{self.logs_topic}'
@@ -462,11 +448,6 @@ class Executor(Node):
             continuous={{ auto.continuous }},
             checkOnce={{ auto.checkOnce }},
             delay={{ auto.delay }},
-            dependencies=[
-            {% for dep in auto.dependencies %}
-                '{{ dep.name }}',
-            {% endfor %}
-            ],
             entities=entities,
             rtm=self.rtm
         ))
@@ -478,8 +459,8 @@ class Executor(Node):
     {% for e in entities %}
         entities.append(Entity(
             name='{{ e.name }}',
-            topic='{{ e.topic }}',
-            conn_params=self._broker_params['{{ e.broker.name }}'],
+            topic='{{ e.uri }}',
+            conn_params=self._broker_params['{{ e.source.name }}'],
             attributes={
             {% for attr in e.attributes %}
             {% if attr.type == "time" %}

@@ -19,8 +19,8 @@ end
 Entity temperature_sensor
     type: sensor
     freq: 5
-    topic: "living_room.temperature"
-    broker: home_broker
+    uri: "living_room.temperature"
+    source: home_broker
     attributes:
         - temperature: float -> linear(18, 0.5) with noise gaussian(0, 0.2)
 end
@@ -29,8 +29,8 @@ end
 Entity humidity_sensor
     type: sensor
     freq: 5
-    topic: "living_room.humidity"
-    broker: home_broker
+    uri: "living_room.humidity"
+    source: home_broker
     attributes:
         - humidity: float -> gaussian(40, 80, 10) with noise uniform(-2, 2)
 end
@@ -38,8 +38,8 @@ end
 // HVAC actuator with multiple control attributes
 Entity hvac
     type: actuator
-    topic: "living_room.hvac"
-    broker: home_broker
+    uri: "living_room.hvac"
+    source: home_broker
     attributes:
         - power: bool
         - target_temp: float

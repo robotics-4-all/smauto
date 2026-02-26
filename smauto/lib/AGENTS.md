@@ -8,10 +8,10 @@ Python classes mapped to textX grammar rules. These ARE the metamodel — textX 
 
 | File | Domain | Key Classes |
 |------|--------|-------------|
-| `automation.py` | Automation logic | `Automation`, `AutomationState`, `Action`, `SetAction` (+ typed variants) |
+| `automation.py` | Automation logic | `Automation`, `Action`, `SetAction` (+ typed variants) |
 | `entity.py` | Smart devices | `Entity`, `Attribute` (+ typed variants: `IntAttribute`, `FloatAttribute`, etc.) |
-| `broker.py` | Communication | `Broker`, `MQTTBroker`, `AMQPBroker`, `RedisBroker`, `BrokerAuthPlain` |
-| `condition.py` | Condition evaluation | `Condition`, `ConditionGroup`, `PrimitiveCondition`, `AdvancedCondition`, `InRangeCondition`, typed `*Condition` |
+| `broker.py` | Communication | `Broker`, `MQTTBroker`, `AMQPBroker`, `RedisBroker`, `BrokerAuthPlain`, `RESTEndpoint`, `EntitySource`, `Property` |
+| `condition.py` | Condition evaluation | `Condition`, `ConditionGroup`, `PrimitiveCondition`, `AdvancedCondition`, `InRangeCondition`, `AutomationStatusCondition`, `AutomationStatusRef`, typed `*Condition` |
 | `types.py` | Value types | `List`, `Dict`, `Time`, `Date` |
 
 ## CONVENTIONS
@@ -19,16 +19,16 @@ Python classes mapped to textX grammar rules. These ARE the metamodel — textX 
 - **Constructor signature**: `(self, parent, ...grammar_fields)` — `parent` is always first (textX tree navigation)
 - **Default handling**: Classes must set defaults manually since `auto_init_attributes=False` (e.g., `enabled = True if enabled is None else enabled`)
 - **Inheritance maps to grammar alternatives**: `SetAction` → `IntSetAction | FloatSetAction | ...` mirrors `SetAction: IntSetAction | FloatSetAction | ...` in grammar
-- **ECA parameters**: `Automation` uses `dependencies` (depends on), `triggers`, `terminates` as lists of Automation references — replaces old `after`/`StartAction`/`StopAction` pattern
+- **ECA parameters**: `Automation` uses `triggers` and `terminates` as lists of Automation references, plus string-based `status` (IDLE/RUNNING/SUCCESS/FAILED/FINISHED/TERMINATED) for inter-automation coordination via `AutomationStatusCondition`
 - **No ABC/Protocol**: Base classes are plain `object` subclasses, no abstract methods
 
 ## CRITICAL PATTERNS
 
 - **Condition.build()**: Post-order tree traversal that builds Python expression strings. Called before evaluation. The `cond_lambda` attribute holds the generated expression string.
-- **Condition.evaluate()**: Calls `eval(self.cond_lambda, {"entities": ...}, {...})` — the entity dict is the runtime context
+- **Condition.evaluate()**: Calls `eval(self.cond_lambda, {"entities": ..., "automations": ...}, {...})` — entity and automation dicts are the runtime context
 - **Entity.update_state()**: Callback for `commlib-py` subscriber — updates attribute values from incoming messages
 - **Entity.attributes_dict**: `{name: Attribute}` mapping built at init — used by condition evaluation at runtime
-- **Automation.start()**: Blocking event loop — checks dependencies, evaluates conditions, triggers actions in a `while True` loop
+- **Automation.start()**: Blocking event loop — evaluates conditions, triggers actions, manages status transitions in a `while True` loop
 
 ## ANTI-PATTERNS
 
