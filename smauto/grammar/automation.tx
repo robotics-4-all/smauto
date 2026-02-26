@@ -19,7 +19,6 @@ Automation:
                 ('delay:' delay=FLOAT)?
             )#
         )?
-        ('depends' 'on' dependencies*=[Automation:FQN|+m:automations][','])?
         ('triggers' triggers*=[Automation:FQN|+m:automations][','])?
         ('terminates' terminates*=[Automation:FQN|+m:automations][','])?
     )#

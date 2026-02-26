@@ -67,11 +67,12 @@ Automation arm_system
         continuous: true
 end
 
-// Detect intrusion: motion OR door opened (depends on system being armed)
+// Detect intrusion: motion OR door opened (only after system is armed)
 Automation detect_intrusion
     when
-        (motion_sensor.detected is true) OR
-        (door_sensor.open is true)
+        (arm_system.status == SUCCESS) AND
+        ((motion_sensor.detected is true) OR
+         (door_sensor.open is true))
     then
         alarm_siren.active <- true
         alarm_siren.volume <- 100
@@ -79,8 +80,6 @@ Automation detect_intrusion
         description: "Trigger alarm on intrusion detection"
         checkOnce: true
         continuous: false
-    depends on
-        arm_system
 end
 
 // Disarm in the morning — silence alarm and unlock

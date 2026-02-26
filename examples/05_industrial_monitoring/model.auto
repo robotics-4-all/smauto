@@ -173,16 +173,15 @@ Automation shift_start
         continuous: true
 end
 
-// Variance-based anomaly detection (depends on shift being active)
+// Variance-based anomaly detection (only after shift has started)
 Automation variance_monitor
     when
-        var(vibration_sensor.amplitude, 30) > 2.0
+        (shift_start.status == SUCCESS) AND
+        (var(vibration_sensor.amplitude, 30) > 2.0)
     then
         emergency_stop.triggered <- true
         data_logger.alert_level <- 3
     config
         freq: 2
         continuous: true
-    depends on
-        shift_start
 end

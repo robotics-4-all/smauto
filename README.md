@@ -352,13 +352,35 @@ end
     - **freq**: The evaluation frequency in Hz.
     - **delay**: Delay in seconds before executing actions after the condition is met (debounce).
     - **description**: A textual description of the automation.
-- **depends on**: The automation will not start
-    and will be held at the IDLE state until termination of the automations
-    listed here as dependencies.
-- **triggers**: Enables other automations after termination of the current
-  automation.
-- **terminates**: Disables other automations after termination of the current
-  automation.
+- **triggers**: Enables other automations after the current automation's actions execute.
+- **terminates**: Disables other automations and sets their status to TERMINATED after the current automation's actions execute.
+
+#### Automation Status Conditions
+
+Automations track their execution status, which can be used in conditions to coordinate between automations. The available statuses are:
+
+| Status | Meaning |
+|--------|---------|
+| `IDLE` | Not yet started or waiting to re-evaluate |
+| `RUNNING` | Condition is being evaluated |
+| `SUCCESS` | Condition was met, actions executed successfully |
+| `FAILED` | Error during condition evaluation or action execution |
+| `FINISHED` | Actions completed |
+| `TERMINATED` | Explicitly disabled by another automation via `terminates` |
+
+Use `automation_name.status == STATUS` in the `when` block:
+
+```
+Automation comfort_adjust
+    when
+        (hvac_startup.status == SUCCESS) AND
+        (occupancy.detected is true)
+    then
+        hvac.temperature <- 23.0
+end
+```
+
+This replaces the old `depends on` keyword — instead of blocking until a dependency completes, the condition simply evaluates to false until the referenced automation reaches the desired status.
 
 ![CheckOnceExample](assets/images/checkOnce_example_1.png)
 

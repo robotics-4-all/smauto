@@ -54,6 +54,8 @@ from smauto.lib.condition import (
     DictCondition,
     InRangeCondition,
     ListCondition,
+    AutomationStatusCondition,
+    AutomationStatusRef,
 )
 
 
@@ -73,6 +75,8 @@ CUSTOM_CLASSES = [
     DictCondition,
     TimeCondition,
     InRangeCondition,
+    AutomationStatusCondition,
+    AutomationStatusRef,
     Attribute,
     IntAttribute,
     FloatAttribute,

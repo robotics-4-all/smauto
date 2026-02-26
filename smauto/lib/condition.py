@@ -144,6 +144,13 @@ class Condition(object):
             )
         elif textx_isinstance(cond_node, metamodel.namespaces["condition"]["InRangeCondition"]):
             cond_node.process_node_condition()
+        elif textx_isinstance(
+            cond_node, metamodel.namespaces["condition"]["AutomationStatusCondition"]
+        ):
+            auto_name = cond_node.operand1.automation
+            status_val = cond_node.operand2
+            op = OPERATORS[cond_node.operator]
+            cond_node.cond_lambda = op(f"automations['{auto_name}'].status", f"'{status_val}'")
         else:
             operand1 = Condition.transform_operand(cond_node.operand1)
             operand2 = Condition.transform_operand(cond_node.operand2)
@@ -151,14 +158,13 @@ class Condition(object):
 
     def evaluate(self):
         if self.cond_lambda not in (None, ""):
-            # Evaluate condition providing the textX model
-            # as global context for evaluation
             try:
-                entities = self.parent.parent.entities_dict
-                # print(entities['system_clock'].attributes_dict['time'].value.to_int())
+                model = self.parent.parent
+                entities = model.entities_dict
+                automations = getattr(model, "automations_dict", {})
                 if eval(
                     self.cond_lambda,
-                    {"entities": entities},
+                    {"entities": entities, "automations": automations},
                     {
                         "std": statistics.stdev,
                         "var": statistics.variance,
@@ -253,4 +259,18 @@ class TimeCondition(PrimitiveCondition):
         self.operand1 = operand1
         self.operand2 = operand2
         self.operator = operator
+        super().__init__(parent)
+
+
+class AutomationStatusRef:
+    def __init__(self, parent, automation):
+        self.parent = parent
+        self.automation = automation
+
+
+class AutomationStatusCondition(PrimitiveCondition):
+    def __init__(self, parent, operand1, operator, operand2):
+        self.operand1 = operand1
+        self.operator = operator
+        self.operand2 = operand2
         super().__init__(parent)
