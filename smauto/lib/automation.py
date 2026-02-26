@@ -156,9 +156,7 @@ class Automation(object):
             # Wait for dependent automations to finish
             while self.state == AutomationState.IDLE:
                 wait_for = [
-                    dep.name
-                    for dep in self.dependencies
-                    if dep.state == AutomationState.RUNNING
+                    dep.name for dep in self.dependencies if dep.state == AutomationState.RUNNING
                 ]
                 if len(wait_for) == 0:
                     self.state = AutomationState.RUNNING
@@ -172,19 +170,12 @@ class Automation(object):
                     triggered, msg = self.evaluate_condition()
                     if triggered:
                         print(
-                            f"[bold yellow][*] Automation <{self.name}> "
-                            f"Triggered![/bold yellow]"
+                            f"[bold yellow][*] Automation <{self.name}> Triggered![/bold yellow]"
                         )
-                        print(
-                            f"[bold blue][*] Condition met: "
-                            f"{self.condition.cond_lambda}"
-                        )
+                        print(f"[bold blue][*] Condition met: {self.condition.cond_lambda}")
                         # Apply delay before triggering actions (debounce)
                         if self.delay > 0:
-                            print(
-                                f"[bold cyan][*] Delaying actions by "
-                                f"{self.delay}s[/bold cyan]"
-                            )
+                            print(f"[bold cyan][*] Delaying actions by {self.delay}s[/bold cyan]")
                             time.sleep(self.delay)
                         # If automation triggered run its actions
                         self.trigger_actions()

@@ -213,21 +213,13 @@ def get_metamodel(debug: bool = False, global_repo: bool = False):
 def get_scope_providers():
     sp = {"*.*": scoping_providers.FQNImportURI(importAs=True)}
     if BUILTIN_MODELS:
-        sp["brokers*"] = scoping_providers.FQNGlobalRepo(
-            join(BUILTIN_MODELS, "broker", "*.br")
-        )
-        sp["entities*"] = scoping_providers.FQNGlobalRepo(
-            join(BUILTIN_MODELS, "entity", "*.ent")
-        )
+        sp["brokers*"] = scoping_providers.FQNGlobalRepo(join(BUILTIN_MODELS, "broker", "*.br"))
+        sp["entities*"] = scoping_providers.FQNGlobalRepo(join(BUILTIN_MODELS, "entity", "*.ent"))
         # sp["automations*"] = scoping_providers.FQNGlobalRepo(
         #     join(BUILTIN_MODELS, "automations", "*.smauto"))
     if MODEL_REPO_PATH:
-        sp["brokers*"] = scoping_providers.FQNGlobalRepo(
-            join(MODEL_REPO_PATH, "broker", "*.br")
-        )
-        sp["entities*"] = scoping_providers.FQNGlobalRepo(
-            join(MODEL_REPO_PATH, "entity", "*.ent")
-        )
+        sp["brokers*"] = scoping_providers.FQNGlobalRepo(join(MODEL_REPO_PATH, "broker", "*.br"))
+        sp["entities*"] = scoping_providers.FQNGlobalRepo(join(MODEL_REPO_PATH, "entity", "*.ent"))
         # sp["automations*"] = scoping_providers.FQNGlobalRepo(
         #     join(BUILTIN_MODELS, "automations", "*.smauto"))
     return sp

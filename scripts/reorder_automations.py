@@ -30,9 +30,7 @@ def reorder_automation(filepath):
 
         # Build new structure: AUTO name WITH ... ON condition DO ...
         if with_block:
-            return (
-                f"AUTO {name}\nWITH\n{with_block}\nON {on_condition}\nDO\n{do_block}\n;"
-            )
+            return f"AUTO {name}\nWITH\n{with_block}\nON {on_condition}\nDO\n{do_block}\n;"
         else:
             return f"AUTO {name}\nON {on_condition}\nDO\n{do_block}\n;"
 

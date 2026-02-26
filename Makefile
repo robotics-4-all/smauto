@@ -7,7 +7,20 @@ LOG_LEVEL ?= INFO
 
 export API_PORT LSP_PORT API_KEY LOG_LEVEL
 
-.PHONY: build rebuild up down restart logs shell clean
+.PHONY: lint validate ci build rebuild up down restart logs shell clean
+
+# ── Development ────────────────────────────────────────────────
+
+lint:
+	ruff check .
+	ruff format --check .
+
+validate:
+	bash scripts/run_all_validations.sh
+
+ci: lint validate
+
+# ── Docker ─────────────────────────────────────────────────────
 
 build:
 	$(COMPOSE) build
