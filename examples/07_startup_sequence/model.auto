@@ -1,0 +1,157 @@
+Metadata
+    name: FactoryStartup
+    version: "0.1.0"
+    description: "Multi-stage factory startup pipeline using automation status conditions."
+    author: "smauto"
+    email: "smauto@2023"
+end
+
+RTMonitor
+    broker: factory_broker
+    namespace: "smauto.factory_startup"
+    eventTopic: "event"
+    logsTopic: "logs"
+end
+
+Broker<MQTT> factory_broker
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity control_panel
+    type: actuator
+    topic: "factory.control_panel"
+    broker: factory_broker
+    attributes:
+        - phase: str
+        - progress: int = 0
+end
+
+Entity production_line
+    type: actuator
+    topic: "factory.production"
+    broker: factory_broker
+    attributes:
+        - running: bool
+        - speed: int = 0
+end
+
+Entity safety_system
+    type: actuator
+    topic: "factory.safety"
+    broker: factory_broker
+    attributes:
+        - armed: bool
+        - beacon: bool
+end
+
+// ============================================================
+// BOOTSTRAP: Time-triggered start of the initialization chain
+// ============================================================
+
+Automation morning_init
+    when
+        system_clock.time >= 06:00
+    then
+        control_panel.phase <- "init"
+        control_panel.progress <- 10
+    config
+        description: "Bootstrap the factory startup sequence at 06:00"
+        continuous: true
+    triggers
+        power_up
+end
+
+// ============================================================
+// STATUS-ONLY CONDITIONS: Each stage depends on the previous
+// ============================================================
+
+// Stage 2: Power up subsystems after initialization
+Automation power_up
+    when
+        morning_init.status == SUCCESS
+    then
+        control_panel.phase <- "power_up"
+        control_panel.progress <- 30
+        safety_system.armed <- true
+    config
+        enabled: false
+        continuous: false
+    triggers
+        run_diagnostics
+end
+
+// Stage 3: Run system diagnostics after power-up
+Automation run_diagnostics
+    when
+        power_up.status == SUCCESS
+    then
+        control_panel.phase <- "diagnostics"
+        control_panel.progress <- 60
+    config
+        enabled: false
+        continuous: false
+    triggers
+        start_production
+end
+
+// Stage 4: Begin production after diagnostics pass
+Automation start_production
+    when
+        run_diagnostics.status == SUCCESS
+    then
+        production_line.running <- true
+        production_line.speed <- 100
+        control_panel.phase <- "running"
+        control_panel.progress <- 100
+    config
+        enabled: false
+        continuous: false
+end
+
+// Error handler: react to diagnostic failure
+Automation handle_failure
+    when
+        run_diagnostics.status == FAILED
+    then
+        safety_system.beacon <- true
+        production_line.running <- false
+        production_line.speed <- 0
+        control_panel.phase <- "error"
+    config
+        checkOnce: true
+end
+
+// Recovery: failure was handled AND production never started
+Automation recovery_restart
+    when
+        (handle_failure.status == SUCCESS) AND
+        (start_production.status == IDLE)
+    then
+        control_panel.phase <- "retrying"
+        control_panel.progress <- 50
+        safety_system.beacon <- false
+    config
+        continuous: false
+    triggers
+        run_diagnostics
+end
+
+// Evening shutdown: terminates the production chain
+Automation evening_shutdown
+    when
+        system_clock.time >= 22:00
+    then
+        production_line.running <- false
+        production_line.speed <- 0
+        safety_system.armed <- false
+        control_panel.phase <- "shutdown"
+        control_panel.progress <- 0
+    config
+        continuous: true
+    terminates
+        start_production, morning_init
+end
