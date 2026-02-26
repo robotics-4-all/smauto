@@ -2,39 +2,19 @@
 
 ![SmAutoLogo](assets/images/smauto_logo.png)
 
-## Description
-Smart environments are becoming quite popular in the home setting consisting of a broad range of connected devices. While offering a novel set of possibilities, this also contributes to the complexity of the environment, posing new challenges to allowing the full potential of a sensorized home to be made available to users.
-
-SmAuto is a Domain Specific Language (DSL) that enables users to program complex 
-automation scenarios, for connected IoT devices in smart environments,
-that go beyond simple tasks. 
-
-![SmartHomeImage](assets/images/smart_home.png)
-
-
-The DSL is developed using Python and TextX and includes a meta-model and a grammar, that is
-specialized for smart environments, while it also provides the following features:
-
-- **Command-line Interface**. Used to call the validator and the 
-code generators explicitely.
-- **Generate Virtual Entities**. A code generator is provided that transforms
-Entity model definitions into executable code with enhanced value generation with
-optional noise functions applied on. This can be very usefull to automatically
-generate the source code of virtual entities which simulate the behaviour of physical
-sensors.
-- **Compile Models**. Models are transformed (Model-to-Text) into executable Python source code implementing the Automations logic.
-- **Generate Visualization graphs of Automations**. A generator is provided 
-which takes a model as input and generates an image
-of the automation graph.
+A Domain-Specific Language for programming IoT automation scenarios in smart environments. Built with Python and [textX](https://textx.github.io/textX/).
 
 ![SmAutoArchitecture](assets/images/SmAutoArchitecture.png)
 
+## Features
+
+- **ECA Automations** — Event-Condition-Action rules with `triggers`, `terminates`, and status-based coordination
+- **Multi-Protocol Brokers** — MQTT, AMQP, and Redis
+- **Virtual Entity Generation** — Generate executable sensor simulators with configurable value and noise generators
+- **Model Compilation** — Compile `.auto` models into executable Python
+- **CLI** — Validate, compile, and generate from the command line
+
 ## Installation
-
-### Source Installation
-
-This project is delivered as a python package. To install, simply clone this
-repository and install using pip.
 
 ```bash
 git clone https://github.com/robotics-4-all/smauto-dsl
@@ -42,69 +22,7 @@ cd smauto-dsl
 pip install .
 ```
 
-### Docker
-
-SmAuto ships with a Docker image that bundles [tx-lsp](https://github.com/robotics-4-all/tx-lsp), a generic Language Server for textX-based DSLs. The container exposes both an LSP server (TCP on port 2087) and a REST API (HTTP on port 8080).
-
-Build and run using Docker Compose via the provided Makefile:
-
-```bash
-make build                           # Build image (requires SSH key for tx-lsp repo)
-make up                              # Start services (API on :8080, LSP on :2087)
-make up API_KEY=mysecret             # Start with API key authentication
-make down                            # Stop and remove containers
-make restart                         # Restart services
-make logs                            # Tail container logs
-make rebuild                         # Rebuild from scratch (no cache)
-make clean                           # Stop, remove containers and images
-```
-
-Ports are configurable:
-
-```bash
-make up API_PORT=9090 LSP_PORT=3000
-```
-
-REST API usage:
-
-```bash
-# Validate a model file
-curl -X POST http://localhost:8080/validate/file -F "file=@model.auto"
-
-# Generate automations
-curl -X POST "http://localhost:8080/generate/file?target=automations" -F "file=@model.auto"
-
-# Generate virtual entities
-curl -X POST "http://localhost:8080/generate/file?target=ventities" -F "file=@model.auto"
-
-# Generate merged virtual entities
-curl -X POST "http://localhost:8080/generate/file?target=ventities_merged" -F "file=@model.auto"
-```
-
-## SmAuto Overview
-
-The Root Metamodel of the DSL is evident below.
-
-![SmAUtoRootMM](assets/images/SMAutoRootMM.png)
-
-The main concepts of the language are:
-
-- **Broker**
-- **Entity**
-- **Automation**
-- **Condition**
-- **Action**
-
-An SmAuto model is composed of `one-or-more` brokers, `*` entities and
-`*` automations.
-
-Each one of the main concepts define an internal metamodel.
-An SmAuto Model contains information about the various devices in
-the smart environment (e.g: lights, thermostats, smart fridges etc.),
-the way they communicate and the automation tasks.
-
-Bellow is a simple example  model in which the air conditioner is turned on according to the
-temperature and humidity measurements:
+## Quick Example
 
 ```
 Broker<MQTT> home_broker
@@ -115,539 +33,89 @@ Broker<MQTT> home_broker
         password: ""
 end
 
-Entity weather_station
+Entity motion_sensor
     type: sensor
-    topic: "porch.weather_station"
+    freq: 2
+    topic: "bedroom.motion"
     broker: home_broker
     attributes:
-        - temperature: float
-        - humidity: int
+        - detected: bool -> replay([false, false, true, true, false], -1)
 end
 
-Entity aircondition
+Entity bedroom_light
     type: actuator
-    topic: "bedroom.aircondition"
+    topic: "bedroom.light"
     broker: home_broker
-    attributes:
-        - temperature: float
-        - mode: str
-        - on: bool
-end
-
-Automation start_aircondition
-    when
-        (weather_station.temperature > 32) AND
-        (aircondition.on is true)
-    then
-        aircondition.temperature <- 25.0
-        aircondition.mode <- "cool"
-        aircondition.on <- true
-    config
-        enabled: true
-        continuous: false
-end
-```
-
-For more examples, see the `examples/` directory (e.g., `examples/01_smart_light`)
-
-### Entities
-
-Entities are your connected smart devices that send and receive information
-using a message broker. Entities have the following required properties:
-
-- A unique name
-- A broker to connect to
-- A topic to send/receive messages
-- A set of attributes
-
-**Attributes** are what define the structure and the type of information in the
-messages the Entity sends to the communication broker.
-
-Entity definitions follow the syntax of the below examples, for both sensor and actuator types. The difference between the two is that sensors are considered "Producers" while actuators are "Consumers" in the environment. Sensor Entities have an extra property, that is the `freq` to set the publishing frequency of either physical or virtual.
-
-```
-Entity weather_station
-    type: sensor
-    freq: 5
-    topic: "bedroom.weather_station"
-    broker: cloud_broker
-    attributes:
-        - temperature: float
-        - humidity: float
-        - pressure: float
-end
-```
-
-```
-Entity bedroom_lamp
-    type: actuator
-    topic: "bedroom.lamp"
-    broker: cloud_platform_issel
     attributes:
         - power: bool
+        - brightness: int = 0
 end
-```
 
-- **type**: The Entity type. Currently supports `sensor`, `actuator` or `hybrid`
-- **topic**: The Topic in the Broker used by the Entity to send and receive
-messages. Note that / should be substituted with .
-(e.g: bedroom/aircondition -> bedroom.aircondition).
-- **broker**: The name property of a previously defined Broker which the
-Entity uses to communicate.
-- **attributes**: Attributes have a name and a type. As can be seen in the above
-example, HA-Auto supports int, float, string, bool, list and dictionary types.
-Note that nested dictionaries are also supported.
-- **description (Optional)**: A description of the Entity
-- **freq (Optional)**: Used for Entities of type "**sensor**" to set the msg publishing rate
-
-Notice that each Entity has it's own reference to a Broker, thus the metamodel
-allows for communicating with Entities which are connected to different message
-brokers. This allows for definining automation for multi-broker architectures.
-
-Supported data types for Attributes:
-
-- **int**: Integer numerical values
-- **float**: Floating point numerical values
-- **bool**: Boolean (true/false) values
-- **str**: String values
-- **time**: Time values (e.g. `01:25`)
-- **list**: List / Array
-- **dict**: Dictionary
-
-#### Attribute value generation for virtual Entities
-
-SmAuto provides a code generator which can be utilized to transform Entities models
-into executable source code in Python.
-This feature of the language enables end-to-end generation of the objects (sensors, actuators, robots)
-which send and receive data based on their models. Thus it can be used to 
-generate while virtual smart environments and directly dig into defining and
-testing automations.
-
-For this purpose, the language supports (Optional) definition of a `Value Generator` and a `Noise` to be applied on each attribute of an Entity of type **sensor** separately.
-
-```
-Entity weather_station
-    type: sensor
-    freq: 5
-    topic: "smauto.bme"
-    broker: home_mqtt_broker
-    attributes:
-        - temperature: float -> gaussian(10, 20, 5) with noise gaussian(1,1)
-        - humidity: float -> linear(1, 0.2) with noise uniform (0, 1)
-        - pressure: float -> constant(0.5)
-end
-```
-
-The above example utilizes this feature of the language. Each attribute can define
-it's own value and noise generators, using a simple grammar as evident below:
-
-```
--> <ValueGenerator> with noise <NoiseGenerator>
-```
-
-**Supported Value Generators:**
-
-- **Constant**: `constant(value)`. Constant value
-- **Linear**: `linear(min, step)`. Linear function
-- **Saw**: `saw(min, max, step)`. Saw function.
-- **Gaussian**: `gaussian(value, maxValue, sigma)`. Gaussian function
-- **Replay**: `replay([values], times)`. Replay from a list of values. The `times` parameter can be used to force replay iterations to a specific value. If `times=-1` then values will be replayed infinitely.
-- **ReplayFile**: `replayFile("FILE_PATH")`. Replay data from a file.
-
-
-**Supported Noise Generators:**
-
-- **Uniform**: `uniform(min, max)`.
-- **Gaussian**: `gaussian(mean, sigma)`.
-
-Value generation and Noise are optional in the language and are features used
-by the Virtual Entity generator to transform Entity models into executable code.
-
-![SmAutoValueGenA](assets/images/Smauto_ValueGen_1.png)
-
-### Brokers
-
-The Broker acts as the communication layer for messages where each device has
-its own Topic which is basically a mailbox for sending and receiving messages.
-SmartAutomation DSL supports Brokers which support the MQTT, AMQP and Redis
-protocols. You can define a Broker using the syntax in the following example:
-
-```
-Broker<MQTT> upstairs_broker
-    host: "localhost"
-    port: 1883
-    auth:
-        username: "my_username"
-        password: "my_password"
-end
-```
-
-- **type**: The first line can be `MQTT`, `AMQP` or `Redis` according to the Broker type
-- **host**: Host IP address or hostname for the Broker
-- **port**: Broker Port number
-- **auth**: Authentication credentials. Unified for all communication brokers.
-    - **username**: Username used for authentication
-    - **password**: Password used for authentication
-- **vhost (Optional)**: Vhost parameter. Only for AMQP brokers
-- **vhost (Optional)**: Vhost parameter. Only for AMQP brokers
-- **topicExchange (Optional)**: (Optional) Exchange parameter. Only for AMQP brokers.
-- **rpcExchange (FUTURE SUPPORT)**: Exchange parameter. Only for AMQP brokers.
-- **db (Optional)**: Database number parameter. Only for Redis brokers.
-
-### Automations
-
-Automations allow the execution of a set of actions when a condition is met.
-Actions are performed by sending messages to Entities.
-
-![SmAutoExample1](assets/images/SmAutoExample1.png)
-
-Automations follow an **ECA (Event-Condition-Action)** formalism. You can define an Automation using the syntax in the following example:
-
-```
-Automation start_aircondition
+Automation turn_on_light
     when
-        (
-            (thermometer.temperature > 32) AND
-            (humidity.humidity > 30)
-        ) AND (aircondition.on == true)
+        motion_sensor.detected is true
     then
-        aircondition.temperature <- 25.0
-        aircondition.mode <- "cool"
-        aircondition.on <- true
+        bedroom_light.power <- true
+        bedroom_light.brightness <- 100
     config
-        enabled: true
-        continuous: false
+        continuous: true
 end
+```
 
-Automation start_humidifier
+## Automation Coordination
+
+Automations track execution status (`IDLE`, `RUNNING`, `SUCCESS`, `FAILED`, `FINISHED`, `TERMINATED`), enabling inter-automation coordination:
+
+```
+Automation arm_system
     when
-        bedroom_humidity_sensor.humidity > 0.6
+        system_clock.time >= 22:00
     then
-        bedroom_humidifier.power <- true
-        bedroom_humidifier.timer <- -1
+        smart_lock.locked <- true
     config
-        enabled: true
+        continuous: true
     triggers
-        stop_humidifier
+        detect_intrusion
 end
 
-Automation stop_humidifier
+Automation detect_intrusion
     when
-        bedroom_humidity_sensor.humidity < 0.3
+        (arm_system.status == SUCCESS) AND
+        (motion_sensor.detected is true)
     then
-        bedroom_humidifier.power <- false
+        alarm.active <- true
     config
         enabled: false
-    triggers
-        start_humidifier
 end
 ```
 
-- **when**: The condition block used to determine if actions should be run.
-- **then**: The action block executed when the condition is met. Actions use the `<-` operator (see Writing Actions).
-- **config**: Configuration block containing the following optional properties:
-    - **enabled**: Whether the Automation should be run or not.
-    - **continuous**: Whether the Automation should automatically remain enabled once its actions have been executed.
-    - **checkOnce**: The condition of the automation will run **ONLY ONCE** and exit.
-    - **freq**: The evaluation frequency in Hz.
-    - **delay**: Delay in seconds before executing actions after the condition is met (debounce).
-    - **description**: A textual description of the automation.
-- **triggers**: Enables other automations after the current automation's actions execute.
-- **terminates**: Disables other automations and sets their status to TERMINATED after the current automation's actions execute.
+See [`examples/`](examples/) for 8 progressive real-world scenarios.
 
-#### Automation Status Conditions
-
-Automations track their execution status, which can be used in conditions to coordinate between automations. The available statuses are:
-
-| Status | Meaning |
-|--------|---------|
-| `IDLE` | Not yet started or waiting to re-evaluate |
-| `RUNNING` | Condition is being evaluated |
-| `SUCCESS` | Condition was met, actions executed successfully |
-| `FAILED` | Error during condition evaluation or action execution |
-| `FINISHED` | Actions completed |
-| `TERMINATED` | Explicitly disabled by another automation via `terminates` |
-
-Use `automation_name.status == STATUS` in the `when` block:
-
-```
-Automation comfort_adjust
-    when
-        (hvac_startup.status == SUCCESS) AND
-        (occupancy.detected is true)
-    then
-        hvac.temperature <- 23.0
-end
-```
-
-This replaces the old `depends on` keyword — instead of blocking until a dependency completes, the condition simply evaluates to false until the referenced automation reaches the desired status.
-
-![CheckOnceExample](assets/images/checkOnce_example_1.png)
-
-
-### Conditions
-
-Conditions are very similar to conditions in imperative programming languages
-such as Python, Java, C++ or JavaScript. You can use Entity Attributes in a
-condition just like a variable by referencing it in the Condition using 
-it's Fully-Qualified Name (FQN) in dot (.) notation.
-
-```
-entity_name.attribute_name
-```
-
-![ConditionMM](assets/images/SmAutoConditionMM.png)
-
-Below is an example of a Condition that references several attributes of
-more-than-one Entities.
-
-```
-Entity corridor_temperature
-    type: sensor
-    topic: "corridor.temperature"
-    broker: home_mqtt_broker
-    freq: 10
-    attributes:
-        - temperature: float
-end
-
-Entity kitchen_temperature
-    type: sensor
-    topic: "kitchen.temperature"
-    broker: home_mqtt_broker
-    freq: 10
-    attributes:
-        - temperature: float
-end
-
-Entity aircondition
-    type: actuator
-    topic: "bedroom.aircondition"
-    broker: home_broker
-    attributes:
-        - temperature: float
-        - mode: str
-        - on: bool
-end
-
-Automation start_aircondition
-    when
-        (corridor_temperature.temperature > 30) AND
-        (kitchen_temperature.temperature > 30)
-    then
-        aircondition.temperature <- 25.0
-        aircondition.mode <- "cool"
-        aircondition.power <- true
-        window.state <- 1
-end
-```
-
-#### Condition Formatting:
-
-You can combine two conditions into a more complex one using logical operators.
-The general format of the Condition is:
-
-`(condition_1) LOGICAL_OP (condition_2)`
-
-Make sure to not forget the parenthesis.
-
-`condition_1 AND condition_2 AND condition_3`
-
-will have to be rephrased to an equivalent like:
-
-`((condition_1) AND (condition_2)) AND (condition_3)`
-
-
-#### Lists and Dictionaries:
-
-The language has support for Lists and Dictionaries and even nesting them.
-However, for now the use of lists and dictionaries in conditions are treated
-as full objects and their individual elements cannot be accessed and used in
-conditions. This means that you can compare a List to a full other List, but
-cannot compare individual list items. Similarly, you can compare a full
-dictionary to another but cannot use individual dictionary items in conditions.
-
-Nested in-language reference to Dict and List items will be supported in a future release
-of the language.
-
-#### Operators
-
-- String Operators: `~`, `!~`, `==`, `!=`, `has`
-- Numeric Operators: `>`, `>=`, `<`, `<=`, `==`, `!=`
-- Logical Operators: `AND`, `OR`, `NOT`, `XOR`, `NOR`, `XNOR`, `NAND`
-- BooleanValueOperator: `is` , `is not`;
-- List and Dictionary Operators: `==`, `!=`
-
-#### Build-in attribute processing functions
-
-The language provides buildi-in functions which can be applied to attribute references
-when defining a Condition.
-
-```
-when
-    (mean(bedroom_temp_sensor.temperature, 10) > 28) AND
-    (std(bedroom_temp_sensor.temperature, 10) > 1)
-
-when
-    bedroom_humidity_sensor.humidity in range [30, 60]
-
-when
-    bedroom_temp_sensor.temperature in range [24, 26] AND
-    bedroom_humidity_sensor.humidity in range [30, 60]
-
-when
-    var(mean(bedroom_temp_sensor.temperature, 10), 10) >= 0.1
-```
-
-
-**Supported Functions:**
-
-- **mean**: The mean of the attribute buffer
-- **std**: The standard deviation of the attribute buffer
-- **var**: The variance of the attribute buffer
-- **min**: The minimum value in the attribute buffer
-- **max**: The maximum value in the attribute buffer
-
-#### Writing Conditions
-
-Bellow you will find some example conditions.
-
-```
-(bedroom_humidity.humidity < 0.3) AND (bedroom_humidifier.state == 0)
-
-((bedroom_human_detector.position != []) AND 
-    (bedroom_thermometer.temperature < 27.5)
-) AND (bedroom_thermostat.state == 0)
-```
-
-### Actions
-
-Actions are essentially messages to actuators in your setup such as
-air conditioners, lights or speakers. Actions use the `<-` assignment
-operator and are listed inside the `then` block. Each action takes a
-single line and has the following format:
-
-```
-entity_name.attribute_name <- value
-```
-
-Where value can be a string, number, boolean (true/false), list or dictionary.
-
-```
-aircondition.temperature <- 25.0
-aircondition.mode <- "cool"
-aircondition.power <- true
-```
-
-### Metadata
-
-An SmAuto model can use the **Metadata** concept of the language to define meta-information as below
-
-```
-Metadata
-    name: SimpleHomeAutomation
-    version: "0.1.0"
-    description: "Simple home automation model."
-    author: "klpanagi"
-    email: "klpanagi@gmail.com"
-end
-```
-
-The properties of the **Metadata** concept are:
-- **name**: The name of the model
-- **description**: The standard deviation of the attribute buffer
-- **author**: The variance of the attribute buffer
-- **email**: The minimum value in the attribute buffer
-- **extraAttr: (UNDER DEVELOPMENT)**: Include user-defined attributes/properties which can be used by M2M and M2T transformations and custom scripts.
-
-
-### RTMonitor
-
-RTMonitor is used to define the monitoring parameters of an SmAuto runtime. Compiled Automations are handled by an executor that is also configured to feed runtime information, such as logs and events (automation-related states etc).
-
-```
-RTMonitor
-    broker: default_broker
-    namespace: "smauto.simple_home_auto"
-    eventTopic: "event"
-    logsTopic: "logs"
-end
-```
-
-The properties of **RTMonitor** are:
-- **broker**: Reference to a Broker definition
-- **namespace**: A namespace used for constructing the URIs (prefix)
-- **eventsTopic**: Topic to send events
-- **logsTopic**: Topic to send logs
-- **extraAttr: (UNDER DEVELOPMENT)**: Include user-defined attributes/properties which can be used by M2M and M2T transformations and custom scripts.
-
-
-## Constraints
-
-The language includes constraints applied to models after initialization.
-These constraints refer to domain-specific logical rules.
-
-```
-Value and Noise Generators can only be applied to Entities of type "sensor" or 
-"robot".
-
-```
-
-```
-Actions can only refer Attributes of "actuator" and "robot" Entities.
-```
-
-```
-Only "actuator" and "robot" Attributes can have default values.
-```
-
-```
-The freq property can only be set only for sensor and robot Entities.
-```
-
-## Command-Line-Interface
+## CLI
 
 ```bash
-➜ smauto --help         
-Usage: smauto [OPTIONS] COMMAND [ARGS]...
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  gen        Generate in Python
-  genv       Entities to Code - Generate executable virtual entities
-  graph      Graph generator - Generate automation visualization graphs
-  validate   Model Validation
+smauto validate model.auto          # Validate a model
+smauto gen model.auto               # Compile automations to Python
+smauto genv model.auto              # Generate virtual entities (per-entity)
+smauto genv -m model.auto           # Generate virtual entities (merged)
 ```
 
+## Docker
 
-### Compile Virtual Entities
-
-To compile SmAuto Entity models into Virtual Entities as explained above, use the CLI. The compiler (code generator) can be configured to either generate a single Python executable for each Entity definition, or compile into a merged executable (use the `--merged/-m` flag) that includes all VEntities.
+Ships with [tx-lsp](https://github.com/robotics-4-all/tx-lsp) for LSP and REST API support.
 
 ```bash
-venv [I] ➜ smauto genv model.auto
-[CLI] Compiled virtual Entity: system_clock.py
-[CLI] Compiled virtual Entity: bedroom_lamp.py
-[CLI] Compiled virtual Entity: motion_detector.py
+make build                           # Build image
+make up                              # Start (API :8080, LSP :2087)
+make up API_KEY=mysecret             # With authentication
+make down                            # Stop
 ```
 
-```bash
-venv [I] ➜ smauto genv -m model.auto
-[CLI] Compiled virtual Entities: simplehomeautomation_entities.py
-```
+See [Deployment Guide](docs/deployment.md) for REST API usage and configuration.
 
-## Compile Automations
+## Documentation
 
-
-To compile SmAuto models into executable Python programs which run the Automations, use the CLI.
-
-```bash
-venv [I] ➜ smauto gen model.auto
-[CLI] Compiled Automations: SimpleHomeAutomation.py
-```
-
-## Generate Graphs of Automations (Under Development)
-
-The CLI provides a command for generating visualization graphs of input models. Generated graphs are used for the evaluation of conditions and actions of the defined automation, before performing model execution. The automated creation of graph images is performed in two steps; initially, a M2M transformation is performed on the input SmAuto model and the output is a PlantUML model in textual format. Afterwards, an M2T transformation takes place to transform the PlantUML model into the output diagram
+- [Language Reference](docs/language-reference.md) — Brokers, Entities, Automations, Conditions, Actions, Value Generators
+- [Deployment Guide](docs/deployment.md) — Docker, REST API, Makefile targets
+- [Formal Semantics](smauto/grammar/README.md) — Abstract syntax, type system, operational semantics
+- [Examples](examples/) — 8 progressive IoT automation scenarios
