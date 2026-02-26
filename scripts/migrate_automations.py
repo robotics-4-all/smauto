@@ -74,9 +74,7 @@ def migrate_file(filepath):
             # Handle lists (starts, stops, after)
             if k in ["starts", "stops", "after"]:
                 # Convert "- item" lines to comma separated
-                items = [
-                    item.strip("- ").strip() for item in v.split("\n") if item.strip()
-                ]
+                items = [item.strip("- ").strip() for item in v.split("\n") if item.strip()]
                 v = ", ".join(items)
                 new_block += f"    {k}: {v}\n"
             else:

@@ -39,9 +39,7 @@ class Entity:
 
     """
 
-    def __init__(
-        self, parent, name, etype, freq, topic, broker, attributes, description=""
-    ):
+    def __init__(self, parent, name, etype, freq, topic, broker, attributes, description=""):
         """
         Creates and returns an Entity object
         :param name: Entity name. e.g: 'temperature_sensor'
@@ -71,9 +69,7 @@ class Entity:
         self.description = description
         self.attr_buffs = []
         # Attributes Dictionary
-        self.attributes_dict = {
-            attribute.name: attribute for attribute in self.attributes
-        }
+        self.attributes_dict = {attribute.name: attribute for attribute in self.attributes}
         self.attributes_buff = {attribute.name: None for attribute in self.attributes}
 
         # Inspect Attributes and if an attribute is a DictAttribute,
@@ -83,10 +79,7 @@ class Entity:
                 attribute.items_dict = {item.name: item for item in attribute.items}
 
     def get_buffer(self, attr_name):
-        if (
-            len(self.attributes_buff[attr_name])
-            != self.attributes_buff[attr_name].maxlen
-        ):
+        if len(self.attributes_buff[attr_name]) != self.attributes_buff[attr_name].maxlen:
             return [0] * self.attributes_buff[attr_name].maxlen
         else:
             return self.attributes_buff[attr_name]

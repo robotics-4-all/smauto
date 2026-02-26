@@ -27,9 +27,7 @@ class Dict:
     def __repr__(self):
         final_str = "{"
         for index, item in enumerate(self.items):
-            final_str = (
-                final_str + f"'{item.name}'" + ":" + str(self.print_item(item.value))
-            )
+            final_str = final_str + f"'{item.name}'" + ":" + str(self.print_item(item.value))
             if index != (len(self.items) - 1):
                 final_str = final_str + ","
         final_str = final_str + "}"

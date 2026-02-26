@@ -7,23 +7,22 @@ runs the entity generator on each one (both merged and individual modes),
 and validates the generated Python code using syntax and compilation checks.
 """
 
-import os
-import sys
 import ast
+import os
 import py_compile
+import sys
 import tempfile
 from pathlib import Path
 from typing import List, Tuple
-from rich.console import Console
-from rich.table import Table
-from rich.progress import Progress
 
-# Add the parent directory to the path to import smauto
+from rich.console import Console
+from rich.progress import Progress
+from rich.table import Table
+
+from smauto.transformations import model_to_vent, model_to_vnodes
+
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
-from smauto.transformations import model_to_vnodes, model_to_vent
 
 
 console = Console()
@@ -207,14 +206,11 @@ def main():
 
     if total_failed > 0:
         console.print(
-            f"\n[red]Entity generation validation"
-            f" failed with {total_failed} error(s)[/red]"
+            f"\n[red]Entity generation validation failed with {total_failed} error(s)[/red]"
         )
         return 1
     else:
-        console.print(
-            "\n[green]All entity generators validated successfully! ✓[/green]"
-        )
+        console.print("\n[green]All entity generators validated successfully! ✓[/green]")
         return 0
 
 

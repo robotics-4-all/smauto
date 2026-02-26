@@ -1,40 +1,47 @@
-IMAGE_NAME ?= smauto
-CONTAINER_NAME ?= smauto
+COMPOSE = docker compose -f docker/docker-compose.yml
+
 API_PORT ?= 8080
 LSP_PORT ?= 2087
 API_KEY ?=
+LOG_LEVEL ?= INFO
 
-DOCKER_BUILD = DOCKER_BUILDKIT=1 docker build --ssh default -f docker/Dockerfile -t $(IMAGE_NAME) .
+export API_PORT LSP_PORT API_KEY LOG_LEVEL
 
-DOCKER_RUN_FLAGS = -d --name $(CONTAINER_NAME) \
-	-p $(API_PORT):8080 \
-	-p $(LSP_PORT):2087
+.PHONY: lint validate ci build rebuild up down restart logs shell clean
 
-ifdef API_KEY
-DOCKER_RUN_FLAGS += -e TX_LSP_API_KEY=$(API_KEY)
-endif
+# ── Development ────────────────────────────────────────────────
 
-.PHONY: docker-build docker-rebuild docker-run docker-stop docker-restart docker-logs docker-shell docker-clean
+lint:
+	ruff check .
+	ruff format --check .
 
-docker-build:
-	$(DOCKER_BUILD)
+validate:
+	bash scripts/run_all_validations.sh
 
-docker-rebuild:
-	$(DOCKER_BUILD) --no-cache
+ci: lint validate
 
-docker-run:
-	docker run $(DOCKER_RUN_FLAGS) $(IMAGE_NAME)
+# ── Docker ─────────────────────────────────────────────────────
 
-docker-stop:
-	docker stop $(CONTAINER_NAME) && docker rm $(CONTAINER_NAME)
+build:
+	$(COMPOSE) build
 
-docker-restart: docker-stop docker-run
+rebuild:
+	$(COMPOSE) build --no-cache
 
-docker-logs:
-	docker logs -f $(CONTAINER_NAME)
+up:
+	$(COMPOSE) up -d
 
-docker-shell:
-	docker exec -it $(CONTAINER_NAME) /bin/bash
+down:
+	$(COMPOSE) down
 
-docker-clean: docker-stop
-	docker rmi $(IMAGE_NAME)
+restart:
+	$(COMPOSE) restart
+
+logs:
+	$(COMPOSE) logs -f
+
+shell:
+	$(COMPOSE) exec smauto /bin/bash
+
+clean:
+	$(COMPOSE) down --rmi all --volumes
