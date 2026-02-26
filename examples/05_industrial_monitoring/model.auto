@@ -7,7 +7,7 @@ Metadata
 end
 
 RTMonitor
-    broker: factory_mqtt
+    source: factory_mqtt
     namespace: "smauto.factory"
     eventTopic: "event"
     logsTopic: "logs"
@@ -48,8 +48,8 @@ end
 Entity vibration_sensor
     type: sensor
     freq: 10
-    topic: "cnc.vibration"
-    broker: factory_mqtt
+    uri: "cnc.vibration"
+    source: factory_mqtt
     attributes:
         - amplitude: float -> gaussian(0.5, 5, 2) with noise gaussian(0, 0.1)
         - frequency_hz: float -> saw(10, 100, 5)
@@ -59,8 +59,8 @@ end
 Entity temperature_probe
     type: sensor
     freq: 5
-    topic: "press.temperature"
-    broker: scada_amqp
+    uri: "press.temperature"
+    source: scada_amqp
     attributes:
         - temperature: float -> linear(60, 0.5) with noise uniform(-1, 1)
 end
@@ -69,8 +69,8 @@ end
 Entity pressure_gauge
     type: sensor
     freq: 5
-    topic: "pneumatic.pressure"
-    broker: cache_redis
+    uri: "pneumatic.pressure"
+    source: cache_redis
     attributes:
         - pressure: float -> sinus(100, 20, 0.05) with noise gaussian(0, 2)
 end
@@ -78,8 +78,8 @@ end
 // Emergency stop actuator (MQTT)
 Entity emergency_stop
     type: actuator
-    topic: "factory.emergency"
-    broker: factory_mqtt
+    uri: "factory.emergency"
+    source: factory_mqtt
     attributes:
         - triggered: bool
 end
@@ -87,8 +87,8 @@ end
 // Cooling system (AMQP)
 Entity cooling_system
     type: actuator
-    topic: "press.cooling"
-    broker: scada_amqp
+    uri: "press.cooling"
+    source: scada_amqp
     attributes:
         - power: bool
         - flow_rate: float
@@ -97,8 +97,8 @@ end
 // Data logger for alerts (Redis)
 Entity data_logger
     type: actuator
-    topic: "factory.logger"
-    broker: cache_redis
+    uri: "factory.logger"
+    source: cache_redis
     attributes:
         - recording: bool
         - alert_level: int = 0

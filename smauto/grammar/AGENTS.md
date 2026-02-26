@@ -9,10 +9,10 @@ Modular textX grammar files defining SmAuto's concrete syntax. `smauto.tx` is th
 | File | DSL Concept | Key Rules |
 |------|-------------|-----------|
 | `smauto.tx` | Root model | `SmAutoModel`, `Metadata`, `RTMonitor` |
-| `entity.tx` | Entities + Attributes | `Entity`, `*Attribute`, `*ValueGen`, `Noise` |
+| `entity.tx` | Entities + Attributes | `Entity` (uses `uri:` + `source: EntitySource`), `*Attribute`, `*ValueGen`, `Noise` |
 | `automation.tx` | Automations + Actions | `Automation`, `*SetAction` (ECA: when/then/config/triggers/terminates) |
 | `condition.tx` | Conditions + Operators | `Condition`, `ConditionGroup`, `*Condition` variants, all operators |
-| `communication.tx` | Brokers + Auth | `MQTTBroker`, `AMQPBroker`, `RedisBroker`, `Auth*` |
+| `communication.tx` | Sources + Auth | `MQTTBroker`, `AMQPBroker`, `RedisBroker`, `RESTEndpoint`, `EntitySource`, `Property`, `Auth*` |
 | `types.tx` | Primitive types | `Time`, `Date`, `List`, `Dict` |
 | `utils.tx` | Shared rules | `FQN`, `Import`, `Comment` |
 

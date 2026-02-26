@@ -7,7 +7,7 @@ Metadata
 end
 
 RTMonitor
-    broker: energy_broker
+    source: energy_broker
     namespace: "smauto.energy"
     eventTopic: "event"
     logsTopic: "logs"
@@ -24,8 +24,8 @@ end
 Entity solar_panel
     type: sensor
     freq: 5
-    topic: "energy.solar"
-    broker: energy_broker
+    uri: "energy.solar"
+    source: energy_broker
     attributes:
         - power_output: float -> gaussian(300, 500, 100) with noise gaussian(0, 10)
         - efficiency: float -> constant(0.85) with noise uniform(-0.05, 0.05)
@@ -34,8 +34,8 @@ end
 Entity battery_monitor
     type: sensor
     freq: 5
-    topic: "energy.battery"
-    broker: energy_broker
+    uri: "energy.battery"
+    source: energy_broker
     attributes:
         - charge_level: float -> saw(20, 100, 2)
         - temperature: float -> gaussian(30, 50, 5) with noise gaussian(0, 1)
@@ -44,8 +44,8 @@ end
 Entity grid_meter
     type: sensor
     freq: 10
-    topic: "energy.grid"
-    broker: energy_broker
+    uri: "energy.grid"
+    source: energy_broker
     attributes:
         - consumption: float -> linear(100, 5) with noise uniform(-10, 10)
         - voltage: float -> constant(230) with noise gaussian(0, 2)
@@ -53,8 +53,8 @@ end
 
 Entity inverter
     type: actuator
-    topic: "energy.inverter"
-    broker: energy_broker
+    uri: "energy.inverter"
+    source: energy_broker
     attributes:
         - mode: str
         - power_limit: float
@@ -62,8 +62,8 @@ end
 
 Entity load_controller
     type: actuator
-    topic: "energy.load"
-    broker: energy_broker
+    uri: "energy.load"
+    source: energy_broker
     attributes:
         - priority_mode: str
         - max_load: float
@@ -71,8 +71,8 @@ end
 
 Entity backup_generator
     type: actuator
-    topic: "energy.backup"
-    broker: energy_broker
+    uri: "energy.backup"
+    source: energy_broker
     attributes:
         - active: bool
         - fuel_rate: float

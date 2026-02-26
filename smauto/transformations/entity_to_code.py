@@ -41,7 +41,7 @@ def model_to_vnodes(model_path: str):
     for m in model._tx_model_repository.all_models:
         if m.metadata:
             if m.metadata.name == "SystemClock":
-                m.entities[0].broker = broker
+                m.entities[0].source = broker
                 ent = m.entities[0]
                 ecode = build_system_clock(ent)
                 vnodes.append((ent, ecode))

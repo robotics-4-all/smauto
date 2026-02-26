@@ -9,8 +9,8 @@ end
 
 Entity system_clock
     type: sensor
-    topic: "system.clock"
-    broker: fake_broker
+    uri: "system.clock"
+    source: fake_broker
     attributes:
         - time: time
 end

@@ -12,7 +12,7 @@ def _inject_system_clock(model):
     clock_broker = select_clock_broker(model)
     for m in model._tx_model_repository.all_models:
         if m.metadata and m.metadata.name == "SystemClock":
-            m.entities[0].broker = clock_broker
+            m.entities[0].source = clock_broker
             ent = m.entities[0]
             if ent not in model.entities:
                 model.entities.append(ent)

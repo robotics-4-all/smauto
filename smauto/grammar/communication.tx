@@ -5,12 +5,6 @@ MessageBroker:
 ;
 
 
-BrokerConnection:
-    'ref' ':' ref=[MessageBroker:FQN|+m:brokers]
-    'auth' ':' auth=Authentication
-;
-
-
 Authentication: AuthPlain | AuthApiKey | AuthCert;
 
 AuthPlain:
@@ -64,4 +58,43 @@ RedisBroker:
         ('auth' ':' auth=Authentication)?
     )#
     'end'
+;
+
+
+RESTEndpoint:
+    'RESTEndpoint' name=ID
+    (
+        ('verb:' verb=RESTVerb)
+        ('host:' host=STRING)
+        ('port:' port=INT)
+        ('path:' path=STRING)
+        ('base_url:' baseUrl=STRING)?
+        (
+        'params:'
+            ('query:' '-' queryParams*=Property['-'])?
+            ('path:' '-' pathParams*=Property['-'])?
+            ('body:' '-' bodyParams*=Property['-'])?
+        ('headers:' '-' headers*=Property['-'])?
+        )?
+    )#
+    'end'
+;
+
+RESTVerb:
+    'GET'       |
+    'POST'      |
+    'PUT'       |
+    'DELETE'
+;
+
+PropertyType: 'int' | 'float' | 'str' | 'bool' | 'list' | 'dict';
+
+Property:
+    name=ID ':' type=PropertyType
+;
+
+
+EntitySource:
+    (ref=[MessageBroker])       |
+    (ref=[RESTEndpoint])
 ;

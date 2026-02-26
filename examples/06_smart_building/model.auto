@@ -18,8 +18,8 @@ end
 Entity occupancy_sensor
     type: sensor
     freq: 2
-    topic: "lobby.occupancy"
-    broker: building_broker
+    uri: "lobby.occupancy"
+    source: building_broker
     attributes:
         - occupied: bool -> replay([false, true, true, true, false], -1)
         - count: int -> replay([0, 2, 5, 3, 0], -1)
@@ -29,8 +29,8 @@ end
 Entity energy_meter
     type: sensor
     freq: 5
-    topic: "building.energy"
-    broker: building_broker
+    uri: "building.energy"
+    source: building_broker
     attributes:
         - consumption: float -> linear(0, 0.5) with noise gaussian(0, 0.1)
         - power_factor: float -> constant(0.85) with noise gaussian(0, 0.1)
@@ -40,8 +40,8 @@ end
 Entity server_room_sensor
     type: sensor
     freq: 10
-    topic: "server_room.environment"
-    broker: building_broker
+    uri: "server_room.environment"
+    source: building_broker
     attributes:
         - temperature: float -> gaussian(22, 35, 5) with noise gaussian(0, 0.3)
         - humidity: float -> saw(30, 70, 1) with noise uniform(-2, 2)
@@ -50,8 +50,8 @@ end
 // Lobby HVAC
 Entity hvac_lobby
     type: actuator
-    topic: "lobby.hvac"
-    broker: building_broker
+    uri: "lobby.hvac"
+    source: building_broker
     attributes:
         - power: bool
         - setpoint: float
@@ -61,8 +61,8 @@ end
 // Lobby lighting
 Entity lighting_lobby
     type: actuator
-    topic: "lobby.lighting"
-    broker: building_broker
+    uri: "lobby.lighting"
+    source: building_broker
     attributes:
         - power: bool
         - brightness: int
@@ -72,8 +72,8 @@ end
 // Server room cooling
 Entity server_cooling
     type: actuator
-    topic: "server_room.cooling"
-    broker: building_broker
+    uri: "server_room.cooling"
+    source: building_broker
     attributes:
         - power: bool
         - fan_speed: int
@@ -82,8 +82,8 @@ end
 // Fire safety panel
 Entity fire_panel
     type: actuator
-    topic: "building.fire"
-    broker: building_broker
+    uri: "building.fire"
+    source: building_broker
     attributes:
         - alarm_active: bool
 end
@@ -91,8 +91,8 @@ end
 // Elevator control
 Entity elevator
     type: actuator
-    topic: "building.elevator"
-    broker: building_broker
+    uri: "building.elevator"
+    source: building_broker
     attributes:
         - enabled: bool
 end

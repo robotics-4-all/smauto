@@ -10,7 +10,7 @@ Python classes mapped to textX grammar rules. These ARE the metamodel — textX 
 |------|--------|-------------|
 | `automation.py` | Automation logic | `Automation`, `Action`, `SetAction` (+ typed variants) |
 | `entity.py` | Smart devices | `Entity`, `Attribute` (+ typed variants: `IntAttribute`, `FloatAttribute`, etc.) |
-| `broker.py` | Communication | `Broker`, `MQTTBroker`, `AMQPBroker`, `RedisBroker`, `BrokerAuthPlain` |
+| `broker.py` | Communication | `Broker`, `MQTTBroker`, `AMQPBroker`, `RedisBroker`, `BrokerAuthPlain`, `RESTEndpoint`, `EntitySource`, `Property` |
 | `condition.py` | Condition evaluation | `Condition`, `ConditionGroup`, `PrimitiveCondition`, `AdvancedCondition`, `InRangeCondition`, `AutomationStatusCondition`, `AutomationStatusRef`, typed `*Condition` |
 | `types.py` | Value types | `List`, `Dict`, `Time`, `Date` |
 

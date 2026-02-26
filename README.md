@@ -9,7 +9,7 @@ A Domain-Specific Language for programming IoT automation scenarios in smart env
 ## Features
 
 - **ECA Automations** — Event-Condition-Action rules with `triggers`, `terminates`, and status-based coordination
-- **Multi-Protocol Brokers** — MQTT, AMQP, and Redis
+- **Multi-Protocol Sources** — MQTT, AMQP, Redis brokers and REST endpoints
 - **Virtual Entity Generation** — Generate executable sensor simulators with configurable value and noise generators
 - **Model Compilation** — Compile `.auto` models into executable Python
 - **CLI** — Validate, compile, and generate from the command line
@@ -36,16 +36,16 @@ end
 Entity motion_sensor
     type: sensor
     freq: 2
-    topic: "bedroom.motion"
-    broker: home_broker
+    uri: "bedroom.motion"
+    source: home_broker
     attributes:
         - detected: bool -> replay([false, false, true, true, false], -1)
 end
 
 Entity bedroom_light
     type: actuator
-    topic: "bedroom.light"
-    broker: home_broker
+    uri: "bedroom.light"
+    source: home_broker
     attributes:
         - power: bool
         - brightness: int = 0
@@ -115,7 +115,7 @@ See [Deployment Guide](docs/deployment.md) for REST API usage and configuration.
 
 ## Documentation
 
-- [Language Reference](docs/language-reference.md) — Brokers, Entities, Automations, Conditions, Actions, Value Generators
+- [Language Reference](docs/language-reference.md) — Brokers, REST Endpoints, Entities, Automations, Conditions, Actions, Value Generators
 - [Deployment Guide](docs/deployment.md) — Docker, REST API, Makefile targets
 - [Formal Semantics](smauto/grammar/README.md) — Abstract syntax, type system, operational semantics
 - [Examples](examples/) — 8 progressive IoT automation scenarios

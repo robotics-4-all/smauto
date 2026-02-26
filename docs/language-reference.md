@@ -1,8 +1,12 @@
 # SmAuto Language Reference
 
-## Brokers
+## Sources
 
-Brokers define the communication layer. Each entity connects to a broker via a topic. Supported protocols: MQTT, AMQP, Redis.
+Entities connect to external systems via **sources**. A source is either a message broker or a REST endpoint.
+
+### Message Brokers
+
+Message brokers provide pub/sub communication. Supported protocols: MQTT, AMQP, Redis.
 
 ```
 Broker<MQTT> home_broker
@@ -49,16 +53,52 @@ end
 | `topicExchange` | No | AMQP | Topic exchange name |
 | `db` | No | Redis | Database number |
 
+### REST Endpoints
+
+REST endpoints define HTTP API sources for entities.
+
+```
+RESTEndpoint weather_api
+    verb: GET
+    host: "api.weather.com"
+    port: 443
+    path: "/v1/current"
+    base_url: "https://api.weather.com"
+    params:
+        query:
+            - city: str
+            - units: str
+        path:
+            - region: str
+        body:
+            - payload: dict
+    headers:
+        - authorization: str
+end
+```
+
+| Property | Required | Description |
+|----------|----------|-------------|
+| `verb` | Yes | HTTP method: `GET`, `POST`, `PUT`, or `DELETE` |
+| `host` | Yes | Hostname |
+| `port` | Yes | Port number |
+| `path` | Yes | URL path |
+| `base_url` | No | Base URL prefix |
+| `params` | No | Query, path, and body parameters |
+| `headers` | No | HTTP headers |
+
+Parameters and headers are typed properties (`int`, `float`, `str`, `bool`, `list`, `dict`).
+
 ## Entities
 
-Entities represent connected devices. Sensors produce data, actuators consume commands, hybrids do both.
+Entities represent connected devices. Sensors produce data, actuators consume commands, hybrids do both. Each entity connects to a **source** (message broker or REST endpoint) via a **URI**.
 
 ```
 Entity weather_station
     type: sensor
     freq: 5
-    topic: "porch.weather_station"
-    broker: home_broker
+    uri: "porch.weather_station"
+    source: home_broker
     attributes:
         - temperature: float
         - humidity: int
@@ -67,8 +107,8 @@ end
 
 Entity aircondition
     type: actuator
-    topic: "bedroom.aircondition"
-    broker: home_broker
+    uri: "bedroom.aircondition"
+    source: home_broker
     attributes:
         - temperature: float
         - mode: str
@@ -79,13 +119,13 @@ end
 | Property | Required | Description |
 |----------|----------|-------------|
 | `type` | Yes | `sensor`, `actuator`, or `hybrid` |
-| `topic` | Yes | Broker topic (use `.` notation, e.g. `bedroom.lamp`) |
-| `broker` | Yes | Reference to a defined Broker |
+| `uri` | Yes | Resource identifier (use `.` notation for broker topics, e.g. `bedroom.lamp`) |
+| `source` | Yes | Reference to a defined Broker or RESTEndpoint |
 | `attributes` | Yes | List of typed attributes |
 | `freq` | No | Publishing frequency in Hz (sensor/hybrid only) |
 | `description` | No | Text description |
 
-Each entity references its own broker, enabling multi-broker architectures.
+Each entity references its own source, enabling multi-source architectures (e.g., some entities on MQTT, others on a REST API).
 
 ### Attribute Types
 
@@ -387,7 +427,7 @@ Configures runtime monitoring for compiled automations.
 
 ```
 RTMonitor
-    broker: home_broker
+    source: home_broker
     namespace: "smauto.home"
     eventTopic: "event"
     logsTopic: "logs"
@@ -396,7 +436,7 @@ end
 
 | Property | Description |
 |----------|-------------|
-| `broker` | Reference to a defined Broker |
+| `source` | Reference to a defined Broker (message brokers only) |
 | `namespace` | URI prefix for runtime topics |
 | `eventTopic` | Topic for automation events |
 | `logsTopic` | Topic for runtime logs |

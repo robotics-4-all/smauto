@@ -7,7 +7,7 @@ Metadata
 end
 
 RTMonitor
-    broker: factory_broker
+    source: factory_broker
     namespace: "smauto.factory_startup"
     eventTopic: "event"
     logsTopic: "logs"
@@ -23,8 +23,8 @@ end
 
 Entity control_panel
     type: actuator
-    topic: "factory.control_panel"
-    broker: factory_broker
+    uri: "factory.control_panel"
+    source: factory_broker
     attributes:
         - phase: str
         - progress: int = 0
@@ -32,8 +32,8 @@ end
 
 Entity production_line
     type: actuator
-    topic: "factory.production"
-    broker: factory_broker
+    uri: "factory.production"
+    source: factory_broker
     attributes:
         - running: bool
         - speed: int = 0
@@ -41,8 +41,8 @@ end
 
 Entity safety_system
     type: actuator
-    topic: "factory.safety"
-    broker: factory_broker
+    uri: "factory.safety"
+    source: factory_broker
     attributes:
         - armed: bool
         - beacon: bool

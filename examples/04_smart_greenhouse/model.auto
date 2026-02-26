@@ -18,8 +18,8 @@ end
 Entity soil_moisture
     type: sensor
     freq: 1
-    topic: "greenhouse.soil"
-    broker: greenhouse_broker
+    uri: "greenhouse.soil"
+    source: greenhouse_broker
     attributes:
         - moisture: float -> saw(20, 90, 2) with noise uniform(-1, 1)
 end
@@ -28,8 +28,8 @@ end
 Entity light_sensor
     type: sensor
     freq: 1
-    topic: "greenhouse.light"
-    broker: greenhouse_broker
+    uri: "greenhouse.light"
+    source: greenhouse_broker
     attributes:
         - lux: float -> sinus(500, 400, 0.1) with noise gaussian(0, 10)
         - uv_index: float -> constant(5.0)
@@ -39,8 +39,8 @@ end
 Entity air_quality
     type: sensor
     freq: 2
-    topic: "greenhouse.air"
-    broker: greenhouse_broker
+    uri: "greenhouse.air"
+    source: greenhouse_broker
     attributes:
         - co2: float -> linear(300, 5) with noise gaussian(0, 10)
         - temperature: float -> gaussian(22, 38, 5) with noise gaussian(0, 0.5)
@@ -48,8 +48,8 @@ end
 
 Entity irrigation
     type: actuator
-    topic: "greenhouse.irrigation"
-    broker: greenhouse_broker
+    uri: "greenhouse.irrigation"
+    source: greenhouse_broker
     attributes:
         - valve_open: bool
         - flow_rate: float
@@ -57,8 +57,8 @@ end
 
 Entity ventilation
     type: actuator
-    topic: "greenhouse.ventilation"
-    broker: greenhouse_broker
+    uri: "greenhouse.ventilation"
+    source: greenhouse_broker
     attributes:
         - fan_speed: int
         - louver_open: bool
@@ -66,8 +66,8 @@ end
 
 Entity grow_light
     type: actuator
-    topic: "greenhouse.grow_light"
-    broker: greenhouse_broker
+    uri: "greenhouse.grow_light"
+    source: greenhouse_broker
     attributes:
         - power: bool
         - intensity: int

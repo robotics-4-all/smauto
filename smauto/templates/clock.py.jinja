@@ -31,12 +31,12 @@ class ClockMsg(PubSubMessage):
 class SystemClock(Node):
     def __init__(self, *args, **kwargs):
         self.pub_freq = {{ entity.freq }}
-        self.topic = '{{ entity.topic }}'
+        self.topic = '{{ entity.uri }}'
         conn_params = ConnectionParameters(
-            host='{{ entity.broker.host }}',
-            port={{ entity.broker.port }},
-            username='{{ entity.broker.auth.username }}',
-            password='{{ entity.broker.auth.password }}',
+            host='{{ entity.source.host }}',
+            port={{ entity.source.port }},
+            username='{{ entity.source.auth.username }}',
+            password='{{ entity.source.auth.password }}',
         )
         super().__init__(
             node_name='{{ entity.name }}',

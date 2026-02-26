@@ -1,7 +1,7 @@
 # SmAuto DSL — Project Knowledge Base
 
-**Generated:** 2026-02-23
-**Commit:** 5760888
+**Generated:** 2026-02-26
+**Commit:** 83c4f3d (pending entity-source refactoring)
 **Branch:** devel
 
 ## OVERVIEW
@@ -13,14 +13,14 @@ SmAuto is a Domain-Specific Language for programming IoT automation scenarios in
 ```
 smauto/                  # Main Python package
 ├── grammar/             # textX grammar files (.tx) — the language definition
-├── lib/                 # Domain model classes (Automation, Entity, Broker, Condition)
+├── lib/                 # Domain model classes (Automation, Entity, Broker, RESTEndpoint, Condition)
 ├── transformations/     # M2T code generators (model → Python)
 ├── templates/           # Jinja2 templates for generated code
 ├── cli/                 # Click-based CLI (`smauto` command)
 ├── builtin_models/      # Built-in .br/.ent models (fake_broker, system_clock)
 ├── utils.py             # Shared utilities (select_clock_broker, make_executable)
 └── definitions.py       # Path constants (TEMPLATES_PATH, BUILTIN_MODELS)
-examples/                # Sample .auto models (6 progressive real-world IoT scenarios)
+examples/                # Sample .auto models (8 progressive real-world IoT scenarios)
 scripts/                 # Validation scripts (model, entity gen, automations gen)
 ```
 
@@ -63,7 +63,7 @@ scripts/                 # Validation scripts (model, entity gen, automations ge
 ## ANTI-PATTERNS (THIS PROJECT)
 
 - Do NOT add grammar rules without corresponding Python classes in `smauto/lib/` and registration in `CUSTOM_CLASSES`
-- Do NOT use `/` in topic strings — use `.` notation (e.g., `bedroom.lamp` not `bedroom/lamp`)
+- Do NOT use `/` in URI strings — use `.` notation (e.g., `bedroom.lamp` not `bedroom/lamp`)
 - Do NOT apply Value/Noise generators to actuator entities — only `sensor` and `robot` types
 - Do NOT define actions targeting sensor-only attributes — actions target `actuator`/`robot` entities
 - Do NOT set `freq` on actuator entities — only for `sensor`/`robot`
@@ -94,7 +94,7 @@ bash scripts/run_all_validations.sh              # Run all validation scripts
 
 - **No tests exist** — `pytest` is in `setup.cfg[test]` extras but no test files or `tests/` dir
 - CI pipeline is **deploy-only** (SSH on push to `main`) — no test step
-- The `system_clock` entity is a built-in injected at codegen time, its broker is swapped to the first real broker in the model
+- The `system_clock` entity is a built-in injected at codegen time, its source is swapped to the first real broker in the model
 - `commlib-py` is required at **runtime** by generated code, but NOT in `requirements.txt` (it's a generated-code dependency)
 - The `graph` CLI command referenced in README is not implemented in `cli.py`
 - `ventities_merged.py` references `KafkaBroker` but no Kafka support exists in the grammar or broker classes

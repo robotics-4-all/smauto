@@ -51,7 +51,7 @@ def smauto_m2t(model_path: str, outdir: str = ""):
     for m in model._tx_model_repository.all_models:
         if m.metadata:
             if m.metadata.name == "SystemClock":
-                m.entities[0].broker = clock_broker
+                m.entities[0].source = clock_broker
                 ent = m.entities[0]
                 model.entities.append(ent)
                 model.system_clock = ent

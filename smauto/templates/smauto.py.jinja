@@ -363,7 +363,7 @@ class Executor(Node):
         super().__init__(
             node_name=self.name,
             debug=True,
-            connection_params=self._broker_params['{{ rt_monitor.broker.name }}']
+            connection_params=self._broker_params['{{ rt_monitor.source.name }}']
         )
         self._etopic = f'{self.namespace}.{self.event_topic}'
         self._ltopic = f'{self.namespace}.{self.logs_topic}'
@@ -459,8 +459,8 @@ class Executor(Node):
     {% for e in entities %}
         entities.append(Entity(
             name='{{ e.name }}',
-            topic='{{ e.topic }}',
-            conn_params=self._broker_params['{{ e.broker.name }}'],
+            topic='{{ e.uri }}',
+            conn_params=self._broker_params['{{ e.source.name }}'],
             attributes={
             {% for attr in e.attributes %}
             {% if attr.type == "time" %}

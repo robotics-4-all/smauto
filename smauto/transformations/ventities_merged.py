@@ -15,7 +15,7 @@ clock_tpl = jinja_env.get_template("clock.py.jinja")
 
 
 def build_source_code(sensors, actuators, hubrids, system_clock):
-    print(system_clock.broker.host)
+    print(system_clock.source.host)
     context = {
         "sensors": sensors,
         "actuators": actuators,
@@ -33,7 +33,7 @@ def model_to_vent(model_path: str):
     for m in model._tx_model_repository.all_models:
         if m.metadata:
             if m.metadata.name == "SystemClock":
-                m.entities[0].broker = broker
+                m.entities[0].source = broker
                 ent = m.entities[0]
                 system_clock = ent
     sensors = []
