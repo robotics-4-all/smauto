@@ -46,36 +46,39 @@ pip install .
 
 SmAuto ships with a Docker image that bundles [tx-lsp](https://github.com/robotics-4-all/tx-lsp), a generic Language Server for textX-based DSLs. The container exposes both an LSP server (TCP on port 2087) and a REST API (HTTP on port 8080).
 
-Build and run using the provided Makefile:
+Build and run using Docker Compose via the provided Makefile:
 
 ```bash
-make docker-build                    # Build image (requires SSH key for tx-lsp repo)
-make docker-run                      # Run (API on :8080, LSP on :2087)
-make docker-run API_KEY=mysecret     # Run with API key authentication
-make docker-stop                     # Stop and remove container
-make docker-restart                  # Restart container
-make docker-logs                     # Tail container logs
-make docker-rebuild                  # Rebuild from scratch (no cache)
-make docker-clean                    # Stop container and remove image
+make build                           # Build image (requires SSH key for tx-lsp repo)
+make up                              # Start services (API on :8080, LSP on :2087)
+make up API_KEY=mysecret             # Start with API key authentication
+make down                            # Stop and remove containers
+make restart                         # Restart services
+make logs                            # Tail container logs
+make rebuild                         # Rebuild from scratch (no cache)
+make clean                           # Stop, remove containers and images
 ```
 
-Ports and image name are configurable:
+Ports are configurable:
 
 ```bash
-make docker-run API_PORT=9090 LSP_PORT=3000 IMAGE_NAME=my-smauto
+make up API_PORT=9090 LSP_PORT=3000
 ```
 
 REST API usage:
 
 ```bash
 # Validate a model file
-curl -X POST http://localhost:8080/api/v1/validate/file -F "file=@model.auto"
+curl -X POST http://localhost:8080/validate/file -F "file=@model.auto"
 
-# Generate code
-curl -X POST http://localhost:8080/api/v1/generate/dot/file -F "file=@model.auto"
+# Generate automations
+curl -X POST "http://localhost:8080/generate/file?target=automations" -F "file=@model.auto"
 
-# List available generators
-curl http://localhost:8080/api/v1/generators
+# Generate virtual entities
+curl -X POST "http://localhost:8080/generate/file?target=ventities" -F "file=@model.auto"
+
+# Generate merged virtual entities
+curl -X POST "http://localhost:8080/generate/file?target=ventities_merged" -F "file=@model.auto"
 ```
 
 ## SmAuto Overview

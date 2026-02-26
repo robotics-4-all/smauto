@@ -49,6 +49,11 @@ smauto = "smauto.cli.cli:main"
 [project.entry-points."textx_languages"]
 smauto = "smauto:smauto_language"
 
+[project.entry-points."textx_generators"]
+smauto_automations = "smauto.transformations.generators:smauto_gen_automations"
+smauto_ventities = "smauto.transformations.generators:smauto_gen_ventities"
+smauto_ventities_merged = "smauto.transformations.generators:smauto_gen_ventities_merged"
+
 [tool.setuptools.packages.find]
 include = ["smauto*"]
 
