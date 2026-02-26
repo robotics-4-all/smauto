@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-Script to validate all SMAuto model examples.
-
-This script discovers all .auto files in the examples/ directory
-and validates them using the SMAuto language parser.
-"""
-
 import sys
 from pathlib import Path
 from typing import List, Tuple
@@ -13,12 +6,10 @@ from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress
 
-# Add the parent directory to the path to import smauto
+from smauto.language import build_model
+
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
-from smauto.language import build_model
 
 
 console = Console()

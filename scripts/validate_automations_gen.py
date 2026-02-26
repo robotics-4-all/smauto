@@ -7,23 +7,22 @@ runs the automations generator on each one, and validates the generated
 Python code using syntax and compilation checks.
 """
 
-import os
-import sys
 import ast
+import os
 import py_compile
+import sys
 import tempfile
 from pathlib import Path
 from typing import List, Tuple
-from rich.console import Console
-from rich.table import Table
-from rich.progress import Progress
 
-# Add the parent directory to the path to import smauto
-SCRIPT_DIR = Path(__file__).parent.resolve()
-PROJECT_ROOT = SCRIPT_DIR.parent
-sys.path.insert(0, str(PROJECT_ROOT))
+from rich.console import Console
+from rich.progress import Progress
+from rich.table import Table
 
 from smauto.transformations import smauto_m2t
+
+SCRIPT_DIR = Path(__file__).parent.resolve()
+PROJECT_ROOT = SCRIPT_DIR.parent
 
 
 console = Console()
@@ -142,9 +141,7 @@ def main():
     for model_path, success, error, status in results:
         if success:
             if status == "no_automations":
-                table.add_row(
-                    str(model_path), "[yellow]● SKIP[/yellow]", "No automations"
-                )
+                table.add_row(str(model_path), "[yellow]● SKIP[/yellow]", "No automations")
                 skipped += 1
             else:
                 table.add_row(str(model_path), "[green]✓ PASS[/green]", "")
@@ -164,14 +161,11 @@ def main():
 
     if failed > 0:
         console.print(
-            f"\n[red]Automations generation validation"
-            f" failed with {failed} error(s)[/red]"
+            f"\n[red]Automations generation validation failed with {failed} error(s)[/red]"
         )
         return 1
     else:
-        console.print(
-            "\n[green]All automations generators validated successfully! ✓[/green]"
-        )
+        console.print("\n[green]All automations generators validated successfully! ✓[/green]")
         return 0
 
 
