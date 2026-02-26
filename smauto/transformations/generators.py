@@ -5,20 +5,7 @@ from textx import generator
 from smauto.transformations.smauto_m2t import build_smauto_code, rtm_set_defaults
 from smauto.transformations.entity_to_code import build_entity_code, build_system_clock
 from smauto.transformations.ventities_merged import build_source_code
-from smauto.utils import select_clock_broker, make_executable
-
-
-def _inject_system_clock(model):
-    clock_broker = select_clock_broker(model)
-    for m in model._tx_model_repository.all_models:
-        if m.metadata and m.metadata.name == "SystemClock":
-            m.entities[0].source = clock_broker
-            ent = m.entities[0]
-            if ent not in model.entities:
-                model.entities.append(ent)
-            model.system_clock = ent
-            return ent
-    return None
+from smauto.utils import make_executable, inject_system_clock
 
 
 def _write(content, filepath):
@@ -33,7 +20,7 @@ def smauto_gen_automations(metamodel, model, output_path, overwrite, debug, **kw
     if not model.automations:
         return
 
-    _inject_system_clock(model)
+    inject_system_clock(model)
     for auto in model.automations:
         auto.condition.build()
 
@@ -47,7 +34,7 @@ def smauto_gen_automations(metamodel, model, output_path, overwrite, debug, **kw
 @generator("smauto", "ventities")
 def smauto_gen_ventities(metamodel, model, output_path, overwrite, debug, **kwargs):
     """Generate one Python file per entity (virtual entity simulators)."""
-    system_clock = _inject_system_clock(model)
+    system_clock = inject_system_clock(model)
 
     if system_clock:
         code = build_system_clock(system_clock)
@@ -63,7 +50,7 @@ def smauto_gen_ventities(metamodel, model, output_path, overwrite, debug, **kwar
 @generator("smauto", "ventities_merged")
 def smauto_gen_ventities_merged(metamodel, model, output_path, overwrite, debug, **kwargs):
     """Generate a single Python file with all virtual entities merged."""
-    system_clock = _inject_system_clock(model)
+    system_clock = inject_system_clock(model)
 
     sensors = [e for e in model.entities if e.etype == "sensor" and e is not system_clock]
     actuators = [e for e in model.entities if e.etype == "actuator"]

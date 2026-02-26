@@ -4,7 +4,7 @@ import jinja2
 
 from smauto.language import build_model
 from smauto.definitions import TEMPLATES_PATH
-from smauto.utils import select_clock_broker, make_executable
+from smauto.utils import make_executable, inject_system_clock
 
 
 jinja_env = jinja2.Environment(
@@ -47,14 +47,7 @@ def smauto_m2t(model_path: str, outdir: str = ""):
     model = build_model(model_path)
     if len(model.automations) < 1:
         raise ValueError("Model does not include any Automations")
-    clock_broker = select_clock_broker(model)
-    for m in model._tx_model_repository.all_models:
-        if m.metadata:
-            if m.metadata.name == "SystemClock":
-                m.entities[0].source = clock_broker
-                ent = m.entities[0]
-                model.entities.append(ent)
-                model.system_clock = ent
+    inject_system_clock(model)
     for auto in model.automations:
         auto.condition.build()
     scode = build_smauto_code(model)

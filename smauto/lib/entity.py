@@ -185,11 +185,10 @@ class ListAttribute(Attribute):
 
 class DictAttribute(Attribute):
     def __init__(self, parent, name, items, generator):
-        # Create dictionary structure from items
+        if items is None:
+            items = []
         value = {item.name: item for item in items}
         self.generator = generator
         self.type = "dict"
         super().__init__(parent, name, value=value)
         self.items = items
-        if self.items is None:
-            self.items = []

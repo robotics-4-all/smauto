@@ -58,7 +58,7 @@ class TestOperators:
         r = OPERATORS["NAND"]("a", "b")
         assert "not" in r and "and" in r
         r = OPERATORS["XNOR"]("a", "b")
-        assert "or" in r and "not" in r
+        assert r == "((a and b) or (not a and not b))"
 
     def test_inrange(self):
         r = OPERATORS["InRange"]("x", 0, 100)

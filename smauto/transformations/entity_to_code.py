@@ -2,7 +2,7 @@ import jinja2
 
 from smauto.language import build_model
 from smauto.definitions import TEMPLATES_PATH
-from smauto.utils import select_clock_broker
+from smauto.utils import inject_system_clock
 
 
 jinja_env = jinja2.Environment(
@@ -37,16 +37,13 @@ def build_entity_code(entity):
 def model_to_vnodes(model_path: str):
     model = build_model(model_path)
     vnodes = []
-    broker = select_clock_broker(model)
-    for m in model._tx_model_repository.all_models:
-        if m.metadata:
-            if m.metadata.name == "SystemClock":
-                m.entities[0].source = broker
-                ent = m.entities[0]
-                ecode = build_system_clock(ent)
-                vnodes.append((ent, ecode))
+    system_clock = inject_system_clock(model)
+    if system_clock:
+        ecode = build_system_clock(system_clock)
+        vnodes.append((system_clock, ecode))
     for e in model.entities:
+        if e is system_clock:
+            continue
         ecode = build_entity_code(e)
-        # print(ecode)
         vnodes.append((e, ecode))
     return vnodes

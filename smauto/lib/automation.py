@@ -126,7 +126,6 @@ class Automation(object):
                 self.status = Automation.FAILED
                 return
             if self.status in (Automation.SUCCESS, Automation.FINISHED):
-                self.status = Automation.FINISHED
                 self.status = Automation.IDLE
 
     def enable(self):

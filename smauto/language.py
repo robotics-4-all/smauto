@@ -1,4 +1,6 @@
 from os.path import join
+
+from rich import print
 from textx import (
     language,
     metamodel_from_file,
@@ -198,11 +200,30 @@ def verify_automation_names(model):
         _ids.append(a.name)
 
 
+def verify_entity_semantics(model):
+    entities = get_children_of_type("Entity", model)
+    for e in entities:
+        if e.etype == "actuator":
+            for attr in e.attributes:
+                if hasattr(attr, "generator") and attr.generator is not None:
+                    raise TextXSemanticError(
+                        f"Actuator entity '{e.name}' attribute '{attr.name}' "
+                        f"cannot have a value generator",
+                        **get_location(attr),
+                    )
+            if e.freq not in (None, 0, 1):
+                print(
+                    f"[bold yellow][WARNING] Actuator entity '{e.name}' has freq={e.freq} "
+                    f"which is semantically meaningless for actuators[/bold yellow]"
+                )
+
+
 def model_proc(model, metamodel):
     process_time_class(model)
     verify_entity_names(model)
     verify_automation_names(model)
     verify_source_names(model)
+    verify_entity_semantics(model)
 
 
 def get_metamodel(debug: bool = False, global_repo: bool = False):
@@ -240,12 +261,6 @@ def build_model(model_path):
     mm = get_metamodel(debug=False)
     model = mm.model_from_file(model_path)
     return model
-
-
-def get_model_grammar(model_path):
-    mm = get_metamodel()
-    grammar_model = mm.grammar_model_from_file(model_path)
-    return grammar_model
 
 
 @language("smauto", "*.smauto")

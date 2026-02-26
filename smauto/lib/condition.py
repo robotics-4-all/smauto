@@ -31,7 +31,7 @@ OPERATORS = {
     "NOT": lambda left, right: f"({left} is not {right})",
     "XOR": lambda left, right: f"({left} ^ {right})",
     "NOR": lambda left, right: f"(not ({left} or {right}))",
-    "XNOR": lambda left, right: f"(({left} or {right}) and (not {left} or not {right}))",
+    "XNOR": lambda left, right: f"(({left} and {right}) or (not {left} and not {right}))",
     "NAND": lambda left, right: f"(not ({left} and {right}))",
     # Advanced
     "InRange": lambda attr, min, max: f"({attr} > {min} and {attr} < {max})",
@@ -73,54 +73,55 @@ class Condition(object):
             val = f"entities['{node.parent.name}']." + f"attributes_dict['{node.name}'].value"
             return val
 
+    _BUFFERED_PARENTS = frozenset(("StdAttr", "MeanAttr", "VarAttr", "MinAttr", "MaxAttr"))
+    _SIMPLE_ATTR_TYPES = frozenset(
+        (
+            "SimpleBoolAttr",
+            "SimpleStringAttr",
+            "SimpleDictAttr",
+            "SimpleListAttr",
+        )
+    )
+    _AGG_FUNCS = {
+        "StdAttr": "std",
+        "MeanAttr": "mean",
+        "VarAttr": "var",
+        "MaxAttr": "max",
+        "MinAttr": "min",
+    }
+
+    @staticmethod
+    def _attr_value_expr(entity_name, attr_name):
+        return f"entities['{entity_name}'].attributes_dict['{attr_name}'].value"
+
+    @staticmethod
+    def _buffer_expr(entity_name, attr_name):
+        return f"entities['{entity_name}'].get_buffer('{attr_name}')"
+
     @staticmethod
     def transform_augmented_attr(aattr) -> str:
+        cls_name = aattr.__class__.__name__
         parent = aattr.parent
-        val: str = ""
-        if aattr.__class__.__name__ == "SimpleNumericAttr":
+
+        if cls_name == "SimpleNumericAttr":
             attr_ref = aattr.attribute
             entity_ref = aattr.attribute.parent
-            if parent.__class__.__name__ in (
-                "StdAttr",
-                "MeanAttr",
-                "VarAttr",
-                "MinAttr",
-                "MaxAttr",
-            ):  # Have buffer
+            if parent.__class__.__name__ in Condition._BUFFERED_PARENTS:
                 entity_ref.init_attr_buffer(attr_ref.name, parent.size)
                 entity_ref.attr_buffs.append((attr_ref.name, parent.size))
-                val = f"entities['{entity_ref.name}']." + f"get_buffer('{attr_ref.name}')"
-            else:
-                val = (
-                    f"entities['{entity_ref.name}']." + f"attributes_dict['{attr_ref.name}'].value"
-                )
-        elif aattr.__class__.__name__ == "SimpleBoolAttr":
+                return Condition._buffer_expr(entity_ref.name, attr_ref.name)
+            return Condition._attr_value_expr(entity_ref.name, attr_ref.name)
+
+        if cls_name in Condition._SIMPLE_ATTR_TYPES:
             attr_ref = aattr.attribute
             entity_ref = aattr.attribute.parent
-            val = f"entities['{entity_ref.name}']." + f"attributes_dict['{attr_ref.name}'].value"
-        elif aattr.__class__.__name__ == "SimpleStringAttr":
-            attr_ref = aattr.attribute
-            entity_ref = aattr.attribute.parent
-            val = f"entities['{entity_ref.name}']." + f"attributes_dict['{attr_ref.name}'].value"
-        elif aattr.__class__.__name__ == "SimpleDictAttr":
-            attr_ref = aattr.attribute
-            entity_ref = aattr.attribute.parent
-            val = f"entities['{entity_ref.name}']." + f"attributes_dict['{attr_ref.name}'].value"
-        elif aattr.__class__.__name__ == "SimpleListAttr":
-            attr_ref = aattr.attribute
-            entity_ref = aattr.attribute.parent
-            val = f"entities['{entity_ref.name}']." + f"attributes_dict['{attr_ref.name}'].value"
-        elif aattr.__class__.__name__ in "StdAttr":
-            val = f"std({Condition.transform_augmented_attr(aattr.attribute)})"
-        elif aattr.__class__.__name__ == "MeanAttr":
-            val = f"mean({Condition.transform_augmented_attr(aattr.attribute)})"
-        elif aattr.__class__.__name__ == "VarAttr":
-            val = f"var({Condition.transform_augmented_attr(aattr.attribute)})"
-        elif aattr.__class__.__name__ == "MaxAttr":
-            val = f"max({Condition.transform_augmented_attr(aattr.attribute)})"
-        elif aattr.__class__.__name__ == "MinAttr":
-            val = f"min({Condition.transform_augmented_attr(aattr.attribute)})"
-        return val
+            return Condition._attr_value_expr(entity_ref.name, attr_ref.name)
+
+        if cls_name in Condition._AGG_FUNCS:
+            func = Condition._AGG_FUNCS[cls_name]
+            return f"{func}({Condition.transform_augmented_attr(aattr.attribute)})"
+
+        return ""
 
     def build(self):
         Condition.process_node_condition(self)

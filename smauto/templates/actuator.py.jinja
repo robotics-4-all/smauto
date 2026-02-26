@@ -11,8 +11,12 @@ from typing import Optional
 
 {% if entity.source.__class__.__name__ == 'MQTTBroker' %}
 from commlib.transports.mqtt import ConnectionParameters
-from rich import print, console, pretty
+{% elif entity.source.__class__.__name__ == 'AMQPBroker' %}
+from commlib.transports.amqp import ConnectionParameters
+{% elif entity.source.__class__.__name__ == 'RedisBroker' %}
+from commlib.transports.redis import ConnectionParameters
 {% endif %}
+from rich import print, console, pretty
 from commlib.msg import PubSubMessage
 from commlib.utils import Rate
 from commlib.node import Node

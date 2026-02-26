@@ -16,9 +16,9 @@ from smauto.transformations.ventities_merged import (
     model_to_vent,
 )
 from smauto.transformations.generators import (
-    _inject_system_clock,
     _write,
 )
+from smauto.utils import inject_system_clock
 from smauto.language import build_model
 
 
@@ -249,18 +249,18 @@ class TestVentitiesMerged:
 
 
 class TestGeneratorsModule:
-    def test_inject_system_clock(self, smart_light_path):
+    def testinject_system_clock(self, smart_light_path):
         model = build_model(smart_light_path)
-        ent = _inject_system_clock(model)
+        ent = inject_system_clock(model)
         assert ent is not None
         assert ent.name == "system_clock"
         assert hasattr(model, "system_clock")
 
-    def test_inject_system_clock_idempotent(self, smart_light_path):
+    def testinject_system_clock_idempotent(self, smart_light_path):
         model = build_model(smart_light_path)
-        _inject_system_clock(model)
+        inject_system_clock(model)
         count_before = len(model.entities)
-        _inject_system_clock(model)
+        inject_system_clock(model)
         assert len(model.entities) == count_before
 
     def test_write_helper(self, tmp_path):
