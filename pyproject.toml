@@ -38,7 +38,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["wheel", "twine"]
-test = ["pytest", "coverage"]
+test = ["pytest", "pytest-cov", "coverage"]
 
 [project.urls]
 Repository = "https://github.com/robotics-4-all/smauto"
@@ -62,6 +62,16 @@ include = ["smauto*"]
 "smauto.templates" = ["*.jinja"]
 "smauto.builtin_models.broker" = ["*.br"]
 "smauto.builtin_models.entity" = ["*.ent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.coverage.run]
+source = ["smauto"]
+omit = ["smauto/templates/*"]
 
 [tool.ruff]
 line-length = 99
