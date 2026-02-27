@@ -1,3 +1,4 @@
+import constants
 import entity
 import condition
 import types
@@ -8,8 +9,8 @@ Automation:
     'Automation' name=ID
     (
         ('when' condition=Condition)?
-        ('then' actions*=SetAction)?
-        ('else' elseActions*=SetAction)?
+        ('then' actions*=Action)?
+        ('else' elseActions*=Action)?
         ('config'
             (
                 ('description:' description=STRING)?
@@ -28,13 +29,60 @@ Automation:
 ;
 
 
+// === Scene Definition ===
+SceneDef:
+    'Scene' name=ID
+        actions+=Action
+    'end'
+;
+
 // === Actions ===
 Action:
-    SetAction
+    HttpAction | LogAction | WaitAction | ApplySceneAction | GroupSetAction | SetAction
+;
+
+// === HTTP / Webhook Action ===
+HttpAction:
+    'http' method=HttpMethod url=STRING
+    (
+        ('headers:' headers*=HttpHeader)?
+        ('body:' body=STRING)?
+        ('timeout:' timeout=NUMBER)?
+    )#
+    'end'
+;
+
+HttpMethod: 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+HttpHeader:
+    '-' key=STRING '=' value=STRING
+;
+
+
+GroupSetAction:
+    'set' group=[EntityGroup:ID|+m:groups] '.' attr=ID '<-' (value=BOOL | value=STRING | value=NUMBER)
+;
+
+ApplySceneAction:
+    'apply' name=ID
+;
+
+LogAction:
+    'log' message=STRING ('level' level=LogLevel)?
+;
+
+LogLevel: 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR';
+
+WaitAction:
+    'wait' duration=NUMBER
 ;
 
 SetAction:
-    FloatSetAction | IntSetAction | BoolSetAction | StringSetAction | ListSetAction | DictSetAction | ExprSetAction
+    FloatSetAction | IntSetAction | BoolSetAction | StringSetAction | ListSetAction | DictSetAction | ExprSetAction | ConstSetAction
+;
+
+ConstSetAction:
+    attribute=[Attribute:FQN|+m:entities.attributes] '<-' value=ConstRef
 ;
 
 ExprSetAction:

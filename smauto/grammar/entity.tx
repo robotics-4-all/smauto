@@ -124,3 +124,9 @@ UniformNoise:
 GaussianNoise:
     'gaussian' '(' mu=NUMBER ',' sigma=NUMBER ')'
 ;
+
+EntityGroup:
+    'Group' name=ID
+        members+=[Entity:FQN][',']
+    'end'
+;

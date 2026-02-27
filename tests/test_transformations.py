@@ -237,6 +237,182 @@ end
         code = build_entity_code(entity)
         assert entity.camel_name in code
 
+    def test_hybrid_has_publisher_and_subscriber(self, tmp_model):
+        """Hybrid codegen should produce both pub (sensor) and sub (actuator) code."""
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity hvac_unit
+    type: hybrid
+    freq: 2
+    uri: "building.hvac"
+    source: b
+    attributes:
+        - temperature: float -> gaussian(22, 35, 5)
+        - power: bool
+        - setpoint: float
+end
+"""
+        path = tmp_model(content)
+        model = build_model(path)
+        entity = model.entities[0]
+        code = build_entity_code(entity)
+        # Should have publisher (sensor side)
+        assert "create_publisher" in code
+        # Should have subscriber (actuator side)
+        assert "create_subscriber" in code
+        assert "_on_message" in code
+        # Should have value generator components
+        assert "init_gen_components" in code
+        assert "ValueGenerator" in code
+
+    def test_hybrid_with_generators_and_noise(self, tmp_model):
+        """Hybrid entity with generators and noise should generate complete code."""
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity smart_valve
+    type: hybrid
+    freq: 1
+    uri: "pipe.valve"
+    source: b
+    attributes:
+        - flow_rate: float -> linear(0, 0.5) with noise uniform(-0.1, 0.1)
+        - position: int
+end
+"""
+        path = tmp_model(content)
+        model = build_model(path)
+        entity = model.entities[0]
+        code = build_entity_code(entity)
+        assert "SmartValve" in code
+        assert "ValueGeneratorType.Linear" in code
+        assert "NoiseType.Uniform" in code
+
+    def test_hybrid_in_automation_codegen(self, tmp_model):
+        """Hybrid entities should work in automation codegen (both condition and action)."""
+        content = """\
+Metadata
+    name: HybridTest
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity temp_sensor
+    type: sensor
+    freq: 1
+    uri: "room.temp"
+    source: b
+    attributes:
+        - temperature: float -> constant(25)
+end
+
+Entity smart_ac
+    type: hybrid
+    freq: 1
+    uri: "room.ac"
+    source: b
+    attributes:
+        - current_temp: float -> gaussian(22, 30, 3)
+        - power: bool
+        - mode: str
+end
+
+Automation ac_control
+    when
+        smart_ac.current_temp > 28
+    then
+        smart_ac.power <- true
+        smart_ac.mode <- "cooling"
+    config
+        continuous: true
+end
+"""
+        code = smauto_m2t(tmp_model(content))
+        assert "SmartAcMsg" in code
+        assert "'power'" in code or "power" in code
+
+    def test_hybrid_merged_codegen(self, tmp_model):
+        """Hybrid entities should appear in merged ventities codegen."""
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity sensor1
+    type: sensor
+    freq: 1
+    uri: "s1"
+    source: b
+    attributes:
+        - v: int -> constant(10)
+end
+
+Entity hybrid1
+    type: hybrid
+    freq: 1
+    uri: "h1"
+    source: b
+    attributes:
+        - reading: float -> saw(0, 100, 1)
+        - command: int
+end
+
+Entity actuator1
+    type: actuator
+    uri: "a1"
+    source: b
+    attributes:
+        - on: bool
+end
+"""
+        code = model_to_vent(tmp_model(content))
+        # All three entity types should appear
+        assert "Sensor1" in code
+        assert "Hybrid1" in code
+        assert "Actuator1" in code
+        # Hybrid should have both pub and sub
+        assert "create_publisher" in code
+        assert "create_subscriber" in code
+
 
 class TestVentitiesMerged:
     def test_model_to_vent(self, smart_light_path):

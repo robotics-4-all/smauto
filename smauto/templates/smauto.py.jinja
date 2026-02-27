@@ -7,6 +7,8 @@
 import time
 import signal
 import statistics
+import urllib.request
+import urllib.error
 from typing import Optional
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
@@ -188,27 +190,79 @@ class Condition:
         'bool': bool, 'len': len,
     }
 
-    def __init__(self, expression):
+    def __init__(self, expression, deactivate_expression=None, for_duration=0):
         self.expression = expression
         self._compiled = compile(expression, '<smauto-condition>', 'eval')
+        self._deactivate = deactivate_expression
+        self._compiled_deactivate = (
+            compile(deactivate_expression, '<smauto-condition-deactivate>', 'eval')
+            if deactivate_expression else None
+        )
+        self._hysteresis_active = False
+        self.for_duration = for_duration
+        self._duration_start = None
+
+    @staticmethod
+    def _delta(buf):
+        if not buf or len(buf) < 2:
+            return 0
+        return buf[-1] - buf[0]
+
+    @staticmethod
+    def _rate(buf):
+        if not buf or len(buf) < 2:
+            return 0
+        return (buf[-1] - buf[0]) / max(len(buf) - 1, 1)
+
+    def _eval_expr(self, code, entities, automations):
+        return eval(
+            code,
+            {
+                '__builtins__': Condition._SAFE_BUILTINS,
+                'entities': entities,
+                'automations': automations,
+            },
+            {
+                'std': statistics.stdev,
+                'var': statistics.variance,
+                'mean': statistics.mean,
+                'min': min,
+                'max': max,
+                'delta': Condition._delta,
+                'rate': Condition._rate,
+            }
+        )
+
+    def _apply_duration_gate(self, raw_result):
+        if not self.for_duration:
+            return raw_result
+        if raw_result:
+            if self._duration_start is None:
+                self._duration_start = time.time()
+            if time.time() - self._duration_start >= self.for_duration:
+                return True
+            return False
+        else:
+            self._duration_start = None
+            return False
 
     def evaluate(self, entities, automations=None):
+        automations = automations or {}
         try:
-            return bool(eval(
-                self._compiled,
-                {
-                    '__builtins__': Condition._SAFE_BUILTINS,
-                    'entities': entities,
-                    'automations': automations or {},
-                },
-                {
-                    'std': statistics.stdev,
-                    'var': statistics.variance,
-                    'mean': statistics.mean,
-                    'min': min,
-                    'max': max,
-                }
-            ))
+            if self._compiled_deactivate is not None:
+                if self._hysteresis_active:
+                    if self._eval_expr(self._compiled_deactivate, entities, automations):
+                        self._hysteresis_active = False
+                        raw = False
+                    else:
+                        raw = True
+                else:
+                    raw = bool(self._eval_expr(self._compiled, entities, automations))
+                    if raw:
+                        self._hysteresis_active = True
+            else:
+                raw = bool(self._eval_expr(self._compiled, entities, automations))
+            return self._apply_duration_gate(raw)
         except Exception as e:
             print(f'[Condition] Evaluation error: {e}')
             return False
@@ -223,6 +277,40 @@ class SetAction:
         self.attribute = attribute
         self.value = value
         self.entity = entity
+
+
+class WaitAction:
+    def __init__(self, duration):
+        self.duration = duration
+
+
+class LogAction:
+    def __init__(self, message, level='INFO'):
+        self.message = message
+        self.level = level
+
+
+class HttpAction:
+    def __init__(self, method, url, headers=None, body='', timeout=10):
+        self.method = method
+        self.url = url
+        self.headers = headers or {}
+        self.body = body
+        self.timeout = timeout
+
+    def execute(self):
+        data = self.body.encode('utf-8') if self.body else None
+        req = urllib.request.Request(
+            self.url,
+            data=data,
+            headers=self.headers,
+            method=self.method,
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                print(f'[HTTP] {self.method} {self.url} -> {resp.status}')
+        except urllib.error.URLError as e:
+            print(f'[HTTP] {self.method} {self.url} FAILED: {e}')
 
 
 class ExprAction:
@@ -314,9 +402,23 @@ class Automation:
         )
 
     def _execute_actions(self, action_list):
-        """Build and publish messages for a list of actions."""
+        """Build and publish messages for a list of actions, with wait support."""
         messages = {}
         for action in action_list:
+            if isinstance(action, HttpAction):
+                action.execute()
+                continue
+            if isinstance(action, LogAction):
+                self.log(action.message, action.level)
+                continue
+            if isinstance(action, WaitAction):
+                # Flush pending messages before waiting
+                for entity, message in messages.items():
+                    entity.change_state(message)
+                messages = {}
+                self.log(f"Waiting {action.duration}s")
+                time.sleep(action.duration)
+                continue
             entity = action.entity
             if entity not in messages:
                 messages[entity] = entity.dstate
@@ -482,11 +584,23 @@ class Executor(Node):
         autos.append(Automation(
             name='{{ auto.name }}',
             condition=Condition(
-                expression="{{ auto.condition.cond_lambda.replace('.value', '') }}"
+                expression="{{ auto.condition.cond_lambda.replace('.value', '') }}",
+                {% if auto.condition.cond_deactivate %}
+                deactivate_expression="{{ auto.condition.cond_deactivate.replace('.value', '') }}",
+                {% endif %}
+                {% if auto.condition.forDuration %}
+                for_duration={{ auto.condition.forDuration }},
+                {% endif %}
             ),
             actions=[
             {% for action in auto.actions %}
-                {% if action.__class__.__name__ == 'ExprSetAction' %}
+                {% if action.__class__.__name__ == 'HttpAction' %}
+                HttpAction('{{ action.method }}', '{{ action.url }}', {{ '{' }}{% for h in action.headers %}'{{ h.key }}': '{{ h.value }}'{% if not loop.last %}, {% endif %}{% endfor %}{{ '}' }}, '{{ action.body }}', {{ action.timeout }}),
+                {% elif action.__class__.__name__ == 'LogAction' %}
+                LogAction('{{ action.message }}', '{{ action.level }}'),
+                {% elif action.__class__.__name__ == 'WaitAction' %}
+                WaitAction({{ action.duration }}),
+                {% elif action.__class__.__name__ == 'ExprSetAction' %}
                 ExprAction('{{ action.attribute.name }}', "{{ action.value }}", entities['{{ action.attribute.parent.name }}'], entities),
                 {% elif action.attribute.type == "str" %}
                 SetAction('{{ action.attribute.name }}', '{{ action.value }}', entities['{{ action.attribute.parent.name }}']),
@@ -497,7 +611,13 @@ class Executor(Node):
             ],
             else_actions=[
             {% for action in auto.elseActions %}
-                {% if action.__class__.__name__ == 'ExprSetAction' %}
+                {% if action.__class__.__name__ == 'HttpAction' %}
+                HttpAction('{{ action.method }}', '{{ action.url }}', {{ '{' }}{% for h in action.headers %}'{{ h.key }}': '{{ h.value }}'{% if not loop.last %}, {% endif %}{% endfor %}{{ '}' }}, '{{ action.body }}', {{ action.timeout }}),
+                {% elif action.__class__.__name__ == 'LogAction' %}
+                LogAction('{{ action.message }}', '{{ action.level }}'),
+                {% elif action.__class__.__name__ == 'WaitAction' %}
+                WaitAction({{ action.duration }}),
+                {% elif action.__class__.__name__ == 'ExprSetAction' %}
                 ExprAction('{{ action.attribute.name }}', "{{ action.value }}", entities['{{ action.attribute.parent.name }}'], entities),
                 {% elif action.attribute.type == "str" %}
                 SetAction('{{ action.attribute.name }}', '{{ action.value }}', entities['{{ action.attribute.parent.name }}']),

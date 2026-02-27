@@ -63,8 +63,26 @@ def smart_hvac_path():
 
 
 @pytest.fixture
+def constants_demo_path():
+    """Path to example showcasing model-level constants."""
+    return _example_path("10_constants_demo")
+
+
+@pytest.fixture
+def entity_groups_path():
+    """Path to example showcasing entity groups."""
+    return _example_path("11_entity_groups")
+
+
+@pytest.fixture
+def webhook_actions_path():
+    """Path to example showcasing webhook/HTTP actions."""
+    return _example_path("12_webhook_actions")
+
+
+@pytest.fixture
 def all_example_paths():
-    """All 9 example model paths."""
+    """All example model paths."""
     return [
         _example_path(f"{i:02d}_{name}")
         for i, name in [
@@ -77,6 +95,9 @@ def all_example_paths():
             (7, "startup_sequence"),
             (8, "energy_management"),
             (9, "smart_hvac"),
+            (10, "constants_demo"),
+            (11, "entity_groups"),
+            (12, "webhook_actions"),
         ]
     ]
 

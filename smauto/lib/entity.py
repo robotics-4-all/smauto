@@ -122,6 +122,15 @@ class Entity:
                 root[attribute].value = value
 
 
+class EntityGroup:
+    """A named group of entities for batch action targeting."""
+
+    def __init__(self, parent, name, members):
+        self.parent = parent
+        self.name = name
+        self.members = members if members else []
+
+
 class Attribute:
     def __init__(self, parent, name, value=None):
         self.parent = parent

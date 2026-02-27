@@ -1,4 +1,6 @@
 import time
+import urllib.request
+import urllib.error
 from rich import print, pretty
 from smauto.lib.types import List, Dict
 
@@ -61,9 +63,22 @@ class Automation(object):
             return False, f"{self.name}: Automation disabled."
 
     def _execute_actions(self, action_list):
-        """Build and publish messages for a list of actions."""
+        """Build and publish messages for a list of actions, with wait support."""
         messages = {}
         for action in action_list:
+            if isinstance(action, HttpAction):
+                self._execute_http_action(action)
+                continue
+            if isinstance(action, LogAction):
+                print(f"[bold blue][LOG:{action.level}] {action.message}[/bold blue]")
+                continue
+            if isinstance(action, WaitAction):
+                for entity, message in messages.items():
+                    entity.publisher.publish(message)
+                messages = {}
+                print(f"[bold cyan][*] Waiting {action.duration}s[/bold cyan]")
+                time.sleep(action.duration)
+                continue
             value = action.value
             if type(value) is Dict:
                 value = value.to_dict()
@@ -78,6 +93,26 @@ class Automation(object):
 
         for entity, message in messages.items():
             entity.publisher.publish(message)
+
+    @staticmethod
+    def _execute_http_action(action):
+        """Execute an HTTP webhook action."""
+        headers = {h.key: h.value for h in action.headers}
+        data = action.body.encode("utf-8") if action.body else None
+        req = urllib.request.Request(
+            action.url,
+            data=data,
+            headers=headers,
+            method=action.method,
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=action.timeout) as resp:
+                print(
+                    f"[bold green][HTTP] {action.method} {action.url} "
+                    f"-> {resp.status}[/bold green]"
+                )
+        except urllib.error.URLError as e:
+            print(f"[bold red][HTTP] {action.method} {action.url} FAILED: {e}[/bold red]")
 
     def trigger_actions(self):
         if not self.continuous:
@@ -171,6 +206,57 @@ class Action:
         self.parent = parent
 
 
+class WaitAction(Action):
+    def __init__(self, parent, duration):
+        super().__init__(parent)
+        self.duration = duration
+
+
+class LogAction(Action):
+    def __init__(self, parent, message, level):
+        super().__init__(parent)
+        self.message = message
+        self.level = level if level else "INFO"
+
+
+class ApplySceneAction(Action):
+    def __init__(self, parent, name):
+        super().__init__(parent)
+        self.name = name
+
+
+class HttpAction(Action):
+    def __init__(self, parent, method, url, headers, body, timeout):
+        super().__init__(parent)
+        self.method = method if method else "GET"
+        self.url = url
+        self.headers = headers if headers else []
+        self.body = body if body else ""
+        self.timeout = timeout if timeout else 10
+
+
+class HttpHeader:
+    def __init__(self, parent, key, value):
+        self.parent = parent
+        self.key = key
+        self.value = value
+
+
+class GroupSetAction(Action):
+    def __init__(self, parent, group, attr, value):
+        super().__init__(parent)
+        self.group = group
+        self.attr = attr
+        self.value = value
+
+
+class SceneDef:
+    def __init__(self, parent, name, actions):
+        self.parent = parent
+        self.name = name
+        self.actions = actions if actions else []
+
+
 class SetAction(Action):
     def __init__(self, parent, attribute, value):
         super(SetAction, self).__init__(parent)
@@ -206,6 +292,11 @@ class ListSetAction(SetAction):
 class DictSetAction(SetAction):
     def __init__(self, parent, attribute, value):
         super(DictSetAction, self).__init__(parent, attribute, value)
+
+
+class ConstSetAction(SetAction):
+    def __init__(self, parent, attribute, value):
+        super().__init__(parent, attribute, value)
 
 
 class ExprSetAction(Action):

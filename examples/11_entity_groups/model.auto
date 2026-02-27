@@ -1,0 +1,77 @@
+Metadata
+    name: EntityGroupsDemo
+    version: "0.1.0"
+    description: "Demonstrates entity groups for batch control."
+    author: "smauto"
+    email: "smauto@2023"
+end
+
+Broker<MQTT> home_broker
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity motion_sensor
+    type: sensor
+    freq: 2
+    uri: "home.motion"
+    source: home_broker
+    attributes:
+        - detected: bool -> replay([false, false, true, true, false], -1)
+end
+
+Entity bedroom_light
+    type: actuator
+    uri: "home.bedroom_light"
+    source: home_broker
+    attributes:
+        - power: bool
+        - brightness: int
+end
+
+Entity kitchen_light
+    type: actuator
+    uri: "home.kitchen_light"
+    source: home_broker
+    attributes:
+        - power: bool
+        - brightness: int
+end
+
+Entity bathroom_light
+    type: actuator
+    uri: "home.bathroom_light"
+    source: home_broker
+    attributes:
+        - power: bool
+        - brightness: int
+end
+
+// Group: all lights in the house
+Group all_lights
+    bedroom_light, kitchen_light, bathroom_light
+end
+
+// Turn all lights on when motion detected
+Automation motion_lights_on
+    when
+        motion_sensor.detected is true
+    then
+        set all_lights.power <- true
+        set all_lights.brightness <- 80
+    config
+        continuous: true
+end
+
+// Turn all lights off when no motion
+Automation motion_lights_off
+    when
+        motion_sensor.detected is false
+    then
+        set all_lights.power <- false
+    config
+        continuous: true
+end
