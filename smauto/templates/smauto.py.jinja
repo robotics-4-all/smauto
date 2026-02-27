@@ -181,14 +181,26 @@ class RTMonitor:
 # ============================================================================
 
 class Condition:
+    # Restricted builtins whitelist — no __import__, exec, open, etc.
+    _SAFE_BUILTINS = {
+        'True': True, 'False': False, 'None': None,
+        'abs': abs, 'round': round, 'int': int, 'float': float,
+        'bool': bool, 'len': len,
+    }
+
     def __init__(self, expression):
         self.expression = expression
+        self._compiled = compile(expression, '<smauto-condition>', 'eval')
 
     def evaluate(self, entities, automations=None):
         try:
             return bool(eval(
-                self.expression,
-                {'entities': entities, 'automations': automations or {}},
+                self._compiled,
+                {
+                    '__builtins__': Condition._SAFE_BUILTINS,
+                    'entities': entities,
+                    'automations': automations or {},
+                },
                 {
                     'std': statistics.stdev,
                     'var': statistics.variance,
@@ -213,6 +225,33 @@ class SetAction:
         self.entity = entity
 
 
+class ExprAction:
+    """Action with a runtime-evaluated expression value."""
+    _SAFE_BUILTINS = {
+        'True': True, 'False': False, 'None': None,
+        'abs': abs, 'round': round, 'int': int, 'float': float,
+    }
+
+    def __init__(self, attribute, expression, entity, entities_map):
+        self.attribute = attribute
+        self.expression = expression
+        self.entity = entity
+        self.entities_map = entities_map
+        self._compiled = compile(expression, '<smauto-expr-action>', 'eval')
+
+    @property
+    def value(self):
+        try:
+            return eval(
+                self._compiled,
+                {'__builtins__': ExprAction._SAFE_BUILTINS, 'entities': self.entities_map},
+                {},
+            )
+        except Exception as e:
+            print(f'[ExprAction] Evaluation error: {e}')
+            return 0
+
+
 # ============================================================================
 # Automation (ECA Rule)
 # ============================================================================
@@ -225,12 +264,13 @@ class Automation:
     FINISHED = 'FINISHED'
     TERMINATED = 'TERMINATED'
 
-    def __init__(self, name, condition, actions, triggers, terminates,
-                 freq, enabled, continuous, checkOnce, delay,
+    def __init__(self, name, condition, actions, else_actions, triggers, terminates,
+                 freq, enabled, continuous, checkOnce, delay, cooldown,
                  entities, rtm=None):
         self.name = name
         self.condition = condition
         self.actions = actions
+        self.else_actions = else_actions or []
         self.triggers = triggers
         self.terminates = terminates
         self.enabled = True if enabled is None else enabled
@@ -238,6 +278,7 @@ class Automation:
         self.checkOnce = False if checkOnce is None else checkOnce
         self.freq = 1 if freq in (None, 0) else freq
         self.delay = 0 if delay is None else delay
+        self.cooldown = 0 if cooldown is None else cooldown
         self.status = Automation.IDLE
         self.entities = entities
         self.autos_map = {}
@@ -272,21 +313,30 @@ class Automation:
             f"    Terminates:\n{terms}\n"
         )
 
-    def trigger_actions(self):
-        if not self.continuous:
-            self.enabled = False
+    def _execute_actions(self, action_list):
+        """Build and publish messages for a list of actions."""
         messages = {}
-        for action in self.actions:
+        for action in action_list:
             entity = action.entity
             if entity not in messages:
                 messages[entity] = entity.dstate
             setattr(messages[entity], action.attribute, action.value)
         for entity, message in messages.items():
             entity.change_state(message)
+
+    def trigger_actions(self):
+        if not self.continuous:
+            self.enabled = False
+        self._execute_actions(self.actions)
         for auto_name in self.triggers:
             self.autos_map[auto_name].enable()
         for auto_name in self.terminates:
             self.autos_map[auto_name].terminate()
+
+    def trigger_else_actions(self):
+        """Execute the else branch actions (no trigger/terminate side-effects)."""
+        if self.else_actions:
+            self._execute_actions(self.else_actions)
 
     def enable(self):
         self.enabled = True
@@ -316,11 +366,18 @@ class Automation:
         self.status = Automation.IDLE
         self.print_info()
         self.log(f"Starting Automation: {self.name}")
+        _last_trigger_time = 0
         while not terminate_event.is_set():
             self.status = Automation.RUNNING
             self.send_event()
             try:
                 if self.evaluate_condition():
+                    # Cooldown check: skip if triggered too recently
+                    if self.cooldown > 0:
+                        elapsed = time.time() - _last_trigger_time
+                        if elapsed < self.cooldown:
+                            time.sleep(1 / self.freq)
+                            continue
                     self.log(f"Condition met: {self.condition.expression}")
                     if self.delay > 0:
                         self.log(f"Delaying actions by {self.delay}s")
@@ -328,6 +385,9 @@ class Automation:
                     self.trigger_actions()
                     self.status = Automation.SUCCESS
                     self.send_event()
+                    _last_trigger_time = time.time()
+                else:
+                    self.trigger_else_actions()
                 if self.checkOnce:
                     self.disable()
                     self.status = Automation.FINISHED
@@ -426,7 +486,20 @@ class Executor(Node):
             ),
             actions=[
             {% for action in auto.actions %}
-                {% if action.attribute.type == "str" %}
+                {% if action.__class__.__name__ == 'ExprSetAction' %}
+                ExprAction('{{ action.attribute.name }}', "{{ action.value }}", entities['{{ action.attribute.parent.name }}'], entities),
+                {% elif action.attribute.type == "str" %}
+                SetAction('{{ action.attribute.name }}', '{{ action.value }}', entities['{{ action.attribute.parent.name }}']),
+                {% else %}
+                SetAction('{{ action.attribute.name }}', {{ action.value }}, entities['{{ action.attribute.parent.name }}']),
+                {% endif %}
+            {% endfor %}
+            ],
+            else_actions=[
+            {% for action in auto.elseActions %}
+                {% if action.__class__.__name__ == 'ExprSetAction' %}
+                ExprAction('{{ action.attribute.name }}', "{{ action.value }}", entities['{{ action.attribute.parent.name }}'], entities),
+                {% elif action.attribute.type == "str" %}
                 SetAction('{{ action.attribute.name }}', '{{ action.value }}', entities['{{ action.attribute.parent.name }}']),
                 {% else %}
                 SetAction('{{ action.attribute.name }}', {{ action.value }}, entities['{{ action.attribute.parent.name }}']),
@@ -448,6 +521,7 @@ class Executor(Node):
             continuous={{ auto.continuous }},
             checkOnce={{ auto.checkOnce }},
             delay={{ auto.delay }},
+            cooldown={{ auto.cooldown }},
             entities=entities,
             rtm=self.rtm
         ))

@@ -21,11 +21,13 @@ class Automation(object):
         name,
         condition,
         actions,
+        elseActions,
         freq,
         enabled,
         continuous,
         checkOnce,
         delay,
+        cooldown,
         triggers,
         terminates,
         description="",
@@ -35,6 +37,7 @@ class Automation(object):
         checkOnce = False if checkOnce is None else checkOnce
         freq = 1 if freq in (None, 0) else freq
         delay = 0 if not delay else delay
+        cooldown = 0 if not cooldown else cooldown
         self.parent = parent
         self.name = name
         self.condition = condition
@@ -43,11 +46,13 @@ class Automation(object):
         self.checkOnce = checkOnce
         self.freq = freq
         self.actions = actions
+        self.elseActions = elseActions if elseActions else []
         self.triggers = triggers if triggers else []
         self.terminates = terminates if terminates else []
         self.status = Automation.IDLE
         self.description = description if description else ""
         self.delay = delay
+        self.cooldown = cooldown
 
     def evaluate_condition(self):
         if self.enabled:
@@ -55,11 +60,10 @@ class Automation(object):
         else:
             return False, f"{self.name}: Automation disabled."
 
-    def trigger_actions(self):
-        if not self.continuous:
-            self.enabled = False
+    def _execute_actions(self, action_list):
+        """Build and publish messages for a list of actions."""
         messages = {}
-        for action in self.actions:
+        for action in action_list:
             value = action.value
             if type(value) is Dict:
                 value = value.to_dict()
@@ -75,11 +79,21 @@ class Automation(object):
         for entity, message in messages.items():
             entity.publisher.publish(message)
 
+    def trigger_actions(self):
+        if not self.continuous:
+            self.enabled = False
+        self._execute_actions(self.actions)
+
         for auto in self.triggers:
             auto.enable()
 
         for auto in self.terminates:
             auto.terminate()
+
+    def trigger_else_actions(self):
+        """Execute the else branch actions (no trigger/terminate side-effects)."""
+        if self.elseActions:
+            self._execute_actions(self.elseActions)
 
     def build_condition(self):
         self.condition.build()
@@ -105,11 +119,18 @@ class Automation(object):
         self.build_condition()
         self.print_info()
         print(f"[bold yellow][*] Executing Automation: {self.name}[/bold yellow]")
+        _last_trigger_time = 0
         while True:
             self.status = Automation.RUNNING
             try:
                 triggered, msg = self.evaluate_condition()
                 if triggered:
+                    # Cooldown check: skip if triggered too recently
+                    if self.cooldown > 0:
+                        elapsed = time.time() - _last_trigger_time
+                        if elapsed < self.cooldown:
+                            time.sleep(1 / self.freq)
+                            continue
                     print(f"[bold yellow][*] Automation <{self.name}> Triggered![/bold yellow]")
                     print(f"[bold blue][*] Condition met: {self.condition.cond_lambda}")
                     if self.delay > 0:
@@ -117,6 +138,9 @@ class Automation(object):
                         time.sleep(self.delay)
                     self.trigger_actions()
                     self.status = Automation.SUCCESS
+                    _last_trigger_time = time.time()
+                else:
+                    self.trigger_else_actions()
                 if self.checkOnce:
                     self.disable()
                     self.status = Automation.FINISHED
@@ -182,3 +206,52 @@ class ListSetAction(SetAction):
 class DictSetAction(SetAction):
     def __init__(self, parent, attribute, value):
         super(DictSetAction, self).__init__(parent, attribute, value)
+
+
+class ExprSetAction(Action):
+    """Action with a computed expression value (e.g., entity.attr <- expr(other.val * 0.8))."""
+
+    def __init__(self, parent, attribute, expr):
+        super().__init__(parent)
+        self.attribute = attribute
+        self.expr = expr
+        self._expr_str = None
+
+    @property
+    def value(self):
+        """For backward compat with codegen that reads action.value."""
+        return self._expr_str
+
+    def build_expr(self):
+        """Walk the ActionExpr tree and produce a Python expression string."""
+        self._expr_str = self._build_node(self.expr)
+        return self._expr_str
+
+    @staticmethod
+    def _build_node(node):
+        cls = node.__class__.__name__
+        if cls == "ActionExpr":
+            return ExprSetAction._build_op_list(node.op)
+        elif cls == "ActionTerm":
+            return ExprSetAction._build_op_list(node.op)
+        elif cls == "ActionFactor":
+            return ExprSetAction._build_node(node.op)
+        elif cls == "NumberOperand":
+            return str(node.val)
+        elif cls == "AttrRefOperand":
+            entity_name = node.ref.parent.name
+            attr_name = node.ref.name
+            return f"entities['{entity_name}'].attributes_dict['{attr_name}']"
+        elif isinstance(node, str):
+            # Operator string (+, -, *, /)
+            return node
+        else:
+            return str(node)
+
+    @staticmethod
+    def _build_op_list(op_list):
+        """Build expression from flat [operand, op, operand, op, ...] list."""
+        if not isinstance(op_list, list):
+            return ExprSetAction._build_node(op_list)
+        parts = [ExprSetAction._build_node(item) for item in op_list]
+        return "(" + " ".join(parts) + ")"

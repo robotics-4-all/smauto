@@ -36,11 +36,16 @@ AutomationStatus:
 
 StatusOperator: '==' | '!=' ;
 
-AdvancedCondition: InRangeCondition | MathExpression;
+AdvancedCondition: TimeRangeCondition | InRangeCondition | MathExpression;
 
 InRangeCondition:
     attribute=AugmentedNumericAttr  'in range'
         '[' min=NUMBER ',' max=NUMBER ']'
+;
+
+TimeRangeCondition:
+    attribute=SimpleTimeAttr 'in range'
+        '[' min=Time ',' max=Time ']'
 ;
 
 MathExpression:

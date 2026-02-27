@@ -43,6 +43,7 @@ class Condition(object):
         self.parent = parent
         self.cond_lambda = None
         self.cond_raw = None
+        self._compiled = None
 
     @staticmethod
     def transform_operand(node) -> str:
@@ -125,6 +126,8 @@ class Condition(object):
 
     def build(self):
         Condition.process_node_condition(self)
+        if self.cond_lambda:
+            self._compiled = compile(self.cond_lambda, "<smauto-condition>", "eval")
         return self.cond_lambda
 
     # Post-Order traversal of Condition tree, generating the condition for each node
@@ -145,6 +148,8 @@ class Condition(object):
             )
         elif textx_isinstance(cond_node, metamodel.namespaces["condition"]["InRangeCondition"]):
             cond_node.process_node_condition()
+        elif textx_isinstance(cond_node, metamodel.namespaces["condition"]["TimeRangeCondition"]):
+            cond_node.process_node_condition()
         elif textx_isinstance(
             cond_node, metamodel.namespaces["condition"]["AutomationStatusCondition"]
         ):
@@ -157,31 +162,49 @@ class Condition(object):
             operand2 = Condition.transform_operand(cond_node.operand2)
             cond_node.cond_lambda = (OPERATORS[cond_node.operator])(operand1, operand2)
 
+    # Restricted builtins whitelist — no __import__, exec, open, etc.
+    _SAFE_BUILTINS = {
+        "True": True,
+        "False": False,
+        "None": None,
+        "abs": abs,
+        "round": round,
+        "int": int,
+        "float": float,
+        "bool": bool,
+        "len": len,
+    }
+
     def evaluate(self):
-        if self.cond_lambda not in (None, ""):
-            try:
-                model = self.parent.parent
-                entities = model.entities_dict
-                automations = getattr(model, "automations_dict", {})
-                if eval(
-                    self.cond_lambda,
-                    {"entities": entities, "automations": automations},
-                    {
-                        "std": statistics.stdev,
-                        "var": statistics.variance,
-                        "mean": statistics.mean,
-                        "min": min,
-                        "max": max,
-                    },
-                ):
-                    return True, f"{self.parent.name}: triggered."
-                else:
-                    return False, f"{self.parent.name}: not triggered."
-            except Exception as e:
-                print(e)
-                return False, f"{self.parent.name}: not triggered."
-        else:
+        code = self._compiled if self._compiled is not None else self.cond_lambda
+        if code is None or (isinstance(code, str) and code == ""):
             return False, f"{self.parent.name}: condition not built."
+        try:
+            model = self.parent.parent
+            entities = model.entities_dict
+            automations = getattr(model, "automations_dict", {})
+            result = eval(
+                code,
+                {
+                    "__builtins__": Condition._SAFE_BUILTINS,
+                    "entities": entities,
+                    "automations": automations,
+                },
+                {
+                    "std": statistics.stdev,
+                    "var": statistics.variance,
+                    "mean": statistics.mean,
+                    "min": min,
+                    "max": max,
+                },
+            )
+            if result:
+                return True, f"{self.parent.name}: triggered."
+            else:
+                return False, f"{self.parent.name}: not triggered."
+        except Exception as e:
+            print(e)
+            return False, f"{self.parent.name}: not triggered."
 
 
 class ConditionGroup(Condition):
@@ -213,6 +236,31 @@ class InRangeCondition(AdvancedCondition):
         operand1 = self.transform_operand(self.attribute)
         cond_lambda = (OPERATORS["InRange"])(operand1, self.min, self.max)
         self.cond_lambda = cond_lambda
+
+
+class TimeRangeCondition(AdvancedCondition):
+    """Time range condition with midnight wrap support.
+
+    If min <= max (e.g., [08:00, 22:00]): attr >= min AND attr <= max
+    If min > max  (e.g., [22:00, 06:00]): attr >= min OR  attr <= max  (wraps midnight)
+    """
+
+    def __init__(self, parent, attribute, min, max):
+        self.attribute = attribute
+        self.min = min
+        self.max = max
+        super().__init__(parent)
+
+    def process_node_condition(self):
+        operand1 = self.transform_operand(self.attribute)
+        min_int = self.min.to_int()
+        max_int = self.max.to_int()
+        if min_int <= max_int:
+            # Normal range: attr >= min AND attr <= max
+            self.cond_lambda = f"({operand1} >= {min_int} and {operand1} <= {max_int})"
+        else:
+            # Midnight wrap: attr >= min OR attr <= max
+            self.cond_lambda = f"({operand1} >= {min_int} or {operand1} <= {max_int})"
 
 
 class NumericCondition(PrimitiveCondition):

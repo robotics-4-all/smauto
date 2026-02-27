@@ -23,6 +23,7 @@ from smauto.lib.automation import (
     StringSetAction,
     ListSetAction,
     DictSetAction,
+    ExprSetAction,
 )
 from smauto.lib.types import Dict, List, Time, Date
 from smauto.lib.broker import (
@@ -58,6 +59,7 @@ from smauto.lib.condition import (
     StringCondition,
     DictCondition,
     InRangeCondition,
+    TimeRangeCondition,
     ListCondition,
     AutomationStatusCondition,
     AutomationStatusRef,
@@ -80,6 +82,7 @@ CUSTOM_CLASSES = [
     DictCondition,
     TimeCondition,
     InRangeCondition,
+    TimeRangeCondition,
     AutomationStatusCondition,
     AutomationStatusRef,
     Attribute,
@@ -106,6 +109,7 @@ CUSTOM_CLASSES = [
     BoolSetAction,
     ListSetAction,
     DictSetAction,
+    ExprSetAction,
     List,
     Dict,
     Time,
@@ -218,12 +222,57 @@ def verify_entity_semantics(model):
                 )
 
 
+def verify_entity_sources_for_codegen(model):
+    """Warn about entities using REST endpoints — codegen only supports broker-based sources."""
+    entities = get_children_of_type("Entity", model)
+    for e in entities:
+        source = e.source
+        if source.__class__.__name__ == "RESTEndpoint":
+            print(
+                f"[bold yellow][WARNING] Entity '{e.name}' uses REST endpoint "
+                f"'{source.name}' as source. Code generation only supports "
+                f"broker-based sources (MQTT, AMQP, Redis). Generated code "
+                f"for this entity will not function correctly.[/bold yellow]"
+            )
+
+
+def verify_action_targets(model):
+    """Validate that all SetAction targets point to actuator or hybrid entities."""
+    automations = get_children_of_type("Automation", model)
+    for auto in automations:
+        all_actions = list(auto.actions) + list(auto.elseActions or [])
+        for action in all_actions:
+            entity = action.attribute.parent
+            if entity.etype == "sensor":
+                raise TextXSemanticError(
+                    f"Automation '{auto.name}' action targets sensor entity "
+                    f"'{entity.name}.{action.attribute.name}' — "
+                    f"actions can only target actuator or hybrid entities",
+                    **get_location(action),
+                )
+
+
+def verify_automation_status_refs(model):
+    """Validate that AutomationStatusCondition references existing automations."""
+    automation_names = {a.name for a in get_children_of_type("Automation", model)}
+    status_refs = get_children_of_type("AutomationStatusRef", model)
+    for ref in status_refs:
+        if ref.automation not in automation_names:
+            raise TextXSemanticError(
+                f"AutomationStatusCondition references non-existent automation '{ref.automation}'",
+                **get_location(ref),
+            )
+
+
 def model_proc(model, metamodel):
     process_time_class(model)
     verify_entity_names(model)
     verify_automation_names(model)
     verify_source_names(model)
     verify_entity_semantics(model)
+    verify_action_targets(model)
+    verify_automation_status_refs(model)
+    verify_entity_sources_for_codegen(model)
 
 
 def get_metamodel(debug: bool = False, global_repo: bool = False):

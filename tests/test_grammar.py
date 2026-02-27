@@ -1,5 +1,8 @@
 """Tests for SmAuto grammar — parsing various DSL constructs."""
 
+import pytest
+from textx import TextXSemanticError
+
 from smauto.language import build_model
 from smauto.lib.broker import MQTTBroker, AMQPBroker, RedisBroker
 from smauto.lib.entity import (
@@ -984,3 +987,666 @@ end
         action = model.automations[0].actions[0]
         assert action.value == 100
         assert action.attribute.name == "level"
+
+
+# ── §2.1 Action target validation ────────────────────────────────
+
+
+class TestActionTargetValidation:
+    """Verify that actions targeting sensor entities are rejected."""
+
+    def test_action_targeting_sensor_rejected(self, tmp_model):
+        """Writing to a sensor attribute must raise TextXSemanticError."""
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity my_sensor
+    type: sensor
+    freq: 1
+    uri: "s"
+    source: b
+    attributes:
+        - temp: float
+end
+
+Entity my_actuator
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - level: float
+end
+
+Automation bad_auto
+    when
+        my_sensor.temp > 30
+    then
+        my_sensor.temp <- 0.0
+    config
+        continuous: true
+end
+"""
+        with pytest.raises(TextXSemanticError, match="sensor"):
+            build_model(tmp_model(content))
+
+    def test_action_targeting_actuator_accepted(self, tmp_model):
+        """Writing to an actuator attribute must succeed."""
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity my_sensor
+    type: sensor
+    freq: 1
+    uri: "s"
+    source: b
+    attributes:
+        - temp: float
+end
+
+Entity my_actuator
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - level: float
+end
+
+Automation good_auto
+    when
+        my_sensor.temp > 30
+    then
+        my_actuator.level <- 0.0
+    config
+        continuous: true
+end
+"""
+        model = build_model(tmp_model(content))
+        assert len(model.automations) == 1
+        assert model.automations[0].actions[0].attribute.name == "level"
+
+    def test_action_targeting_hybrid_accepted(self, tmp_model):
+        """Writing to a hybrid entity attribute must succeed."""
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity my_sensor
+    type: sensor
+    freq: 1
+    uri: "s"
+    source: b
+    attributes:
+        - temp: float
+end
+
+Entity my_hybrid
+    type: hybrid
+    freq: 1
+    uri: "h"
+    source: b
+    attributes:
+        - level: float
+end
+
+Automation hybrid_auto
+    when
+        my_sensor.temp > 30
+    then
+        my_hybrid.level <- 0.0
+    config
+        continuous: true
+end
+"""
+        model = build_model(tmp_model(content))
+        assert len(model.automations) == 1
+
+    def test_action_targeting_sensor_in_else_rejected(self, tmp_model):
+        """Writing to a sensor in else branch must also be rejected."""
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity my_sensor
+    type: sensor
+    freq: 1
+    uri: "s"
+    source: b
+    attributes:
+        - temp: float
+end
+
+Entity my_actuator
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - level: float
+end
+
+Automation bad_else_auto
+    when
+        my_sensor.temp > 30
+    then
+        my_actuator.level <- 1.0
+    else
+        my_sensor.temp <- 0.0
+    config
+        continuous: true
+end
+"""
+        with pytest.raises(TextXSemanticError, match="sensor"):
+            build_model(tmp_model(content))
+
+
+# ── §2.2 AutomationStatusRef validation ─────────────────────────
+
+
+class TestAutomationStatusRefValidation:
+    """Verify that referencing non-existent automations is rejected."""
+
+    def test_nonexistent_automation_ref_rejected(self, tmp_model):
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity s
+    type: sensor
+    freq: 1
+    uri: "t"
+    source: b
+    attributes:
+        - v: int
+end
+
+Entity act
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - on: bool
+end
+
+Automation my_auto
+    when
+        ghost_auto.status == SUCCESS
+    then
+        act.on <- true
+    config
+        continuous: true
+end
+"""
+        with pytest.raises(TextXSemanticError, match="non-existent"):
+            build_model(tmp_model(content))
+
+    def test_existing_automation_ref_accepted(self, tmp_model):
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity s
+    type: sensor
+    freq: 1
+    uri: "t"
+    source: b
+    attributes:
+        - v: int
+end
+
+Entity act
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - on: bool
+end
+
+Automation first_auto
+    when
+        s.v > 10
+    then
+        act.on <- true
+    config
+        continuous: true
+end
+
+Automation second_auto
+    when
+        first_auto.status == SUCCESS
+    then
+        act.on <- false
+    config
+        continuous: true
+end
+"""
+        model = build_model(tmp_model(content))
+        assert len(model.automations) == 2
+
+
+# ── §1.1 Else branch parsing ────────────────────────────────────
+
+
+class TestElseBranchParsing:
+    def test_else_branch_populated(self, tmp_model):
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity s
+    type: sensor
+    freq: 1
+    uri: "t"
+    source: b
+    attributes:
+        - temp: float
+end
+
+Entity act
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - on: bool
+        - level: int
+end
+
+Automation else_auto
+    when
+        s.temp > 30
+    then
+        act.on <- true
+        act.level <- 100
+    else
+        act.on <- false
+        act.level <- 0
+    config
+        continuous: true
+end
+"""
+        model = build_model(tmp_model(content))
+        auto = model.automations[0]
+        assert len(auto.actions) == 2
+        assert len(auto.elseActions) == 2
+        # Verify else actions target correct attributes
+        else_attrs = {a.attribute.name for a in auto.elseActions}
+        assert "on" in else_attrs
+        assert "level" in else_attrs
+
+    def test_no_else_branch_empty(self, tmp_model):
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity s
+    type: sensor
+    freq: 1
+    uri: "t"
+    source: b
+    attributes:
+        - v: int
+end
+
+Entity act
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - on: bool
+end
+
+Automation no_else_auto
+    when
+        s.v > 10
+    then
+        act.on <- true
+    config
+        continuous: true
+end
+"""
+        model = build_model(tmp_model(content))
+        auto = model.automations[0]
+        assert auto.elseActions == []
+
+
+# ── §1.4 Cooldown parsing ───────────────────────────────────────
+
+
+class TestCooldownParsing:
+    def test_cooldown_parsed(self, tmp_model):
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity s
+    type: sensor
+    freq: 1
+    uri: "t"
+    source: b
+    attributes:
+        - v: int
+end
+
+Entity act
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - on: bool
+end
+
+Automation cooldown_auto
+    when
+        s.v > 10
+    then
+        act.on <- true
+    config
+        continuous: true
+        cooldown: 30.0
+end
+"""
+        model = build_model(tmp_model(content))
+        auto = model.automations[0]
+        assert auto.cooldown == 30.0
+
+    def test_cooldown_default_zero(self, tmp_model):
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity s
+    type: sensor
+    freq: 1
+    uri: "t"
+    source: b
+    attributes:
+        - v: int
+end
+
+Entity act
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - on: bool
+end
+
+Automation no_cooldown_auto
+    when
+        s.v > 10
+    then
+        act.on <- true
+    config
+        continuous: true
+end
+"""
+        model = build_model(tmp_model(content))
+        auto = model.automations[0]
+        assert auto.cooldown == 0
+
+
+# ── §1.3 TimeRangeCondition parsing ─────────────────────────────
+
+
+class TestTimeRangeConditionParsing:
+    def test_normal_time_range(self, tmp_model):
+        """Normal range [08:00, 22:00] — uses AND logic."""
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity clock
+    type: sensor
+    freq: 1
+    uri: "sys.clock"
+    source: b
+    attributes:
+        - time: time
+end
+
+Entity act
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - on: bool
+end
+
+Automation time_range_auto
+    when
+        clock.time in range [08:00, 22:00]
+    then
+        act.on <- true
+    config
+        continuous: true
+end
+"""
+        model = build_model(tmp_model(content))
+        auto = model.automations[0]
+        auto.condition.build()
+        assert auto.condition.cond_lambda is not None
+        # Normal range uses AND
+        assert "and" in auto.condition.cond_lambda
+        assert ">=" in auto.condition.cond_lambda
+        assert "<=" in auto.condition.cond_lambda
+
+    def test_midnight_wrap_time_range(self, tmp_model):
+        """Midnight wrap [22:00, 06:00] — uses OR logic."""
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity clock
+    type: sensor
+    freq: 1
+    uri: "sys.clock"
+    source: b
+    attributes:
+        - time: time
+end
+
+Entity act
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - on: bool
+end
+
+Automation midnight_auto
+    when
+        clock.time in range [22:00, 06:00]
+    then
+        act.on <- true
+    config
+        continuous: true
+end
+"""
+        model = build_model(tmp_model(content))
+        auto = model.automations[0]
+        auto.condition.build()
+        assert auto.condition.cond_lambda is not None
+        # Midnight wrap uses OR
+        assert "or" in auto.condition.cond_lambda
+        assert ">=" in auto.condition.cond_lambda
+        assert "<=" in auto.condition.cond_lambda
+
+
+# ── §1.2 ExprSetAction parsing ──────────────────────────────────
+
+
+class TestExprSetActionParsing:
+    def test_expr_action_parsed(self, tmp_model):
+        content = """\
+Metadata
+    name: Test
+    version: "0.1.0"
+end
+
+Broker<MQTT> b
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity my_sensor
+    type: sensor
+    freq: 1
+    uri: "s"
+    source: b
+    attributes:
+        - val: float
+end
+
+Entity my_actuator
+    type: actuator
+    uri: "a"
+    source: b
+    attributes:
+        - level: float
+end
+
+Automation expr_auto
+    when
+        my_sensor.val > 10
+    then
+        my_actuator.level <- expr(my_sensor.val * 0.8 + 10)
+    config
+        continuous: true
+end
+"""
+        model = build_model(tmp_model(content))
+        auto = model.automations[0]
+        action = auto.actions[0]
+        assert action.__class__.__name__ == "ExprSetAction"
+        assert action.attribute.name == "level"
+        # Build the expression
+        expr_str = action.build_expr()
+        assert expr_str is not None
+        assert action.value is not None
+        # Should reference the sensor attribute and contain operators
+        assert "my_sensor" in expr_str
+        assert "val" in expr_str
+        assert "*" in expr_str or "+" in expr_str

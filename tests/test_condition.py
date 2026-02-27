@@ -7,6 +7,7 @@ from smauto.lib.condition import (
     PrimitiveCondition,
     AdvancedCondition,
     InRangeCondition,
+    TimeRangeCondition,
     NumericCondition,
     BoolCondition,
     StringCondition,
@@ -302,3 +303,41 @@ class TestConditionEvaluate:
         c.cond_lambda = "(automations['auto1'].status == 'SUCCESS')"
         result, msg = c.evaluate()
         assert result is True
+
+
+# ── §1.3 TimeRangeCondition unit tests ──────────────────────────
+
+
+class TestTimeRangeConditionUnit:
+    def test_init(self):
+        min_t = Time(None, 8, 0, 0)
+        max_t = Time(None, 22, 0, 0)
+        trc = TimeRangeCondition(None, "attr", min_t, max_t)
+        assert trc.attribute == "attr"
+        assert trc.min is min_t
+        assert trc.max is max_t
+        assert isinstance(trc, AdvancedCondition)
+
+    def test_normal_range_uses_and(self):
+        min_t = Time(None, 8, 0, 0)
+        max_t = Time(None, 22, 0, 0)
+        trc = TimeRangeCondition(None, 800, min_t, max_t)
+        trc.process_node_condition()
+        assert "and" in trc.cond_lambda
+        assert ">=" in trc.cond_lambda
+        assert "<=" in trc.cond_lambda
+
+    def test_midnight_wrap_uses_or(self):
+        min_t = Time(None, 22, 0, 0)
+        max_t = Time(None, 6, 0, 0)
+        trc = TimeRangeCondition(None, 2200, min_t, max_t)
+        trc.process_node_condition()
+        assert "or" in trc.cond_lambda
+        assert ">=" in trc.cond_lambda
+        assert "<=" in trc.cond_lambda
+
+    def test_equal_boundaries_uses_and(self):
+        t = Time(None, 12, 0, 0)
+        trc = TimeRangeCondition(None, 1200, t, t)
+        trc.process_node_condition()
+        assert "and" in trc.cond_lambda

@@ -9,6 +9,7 @@ Automation:
     (
         ('when' condition=Condition)?
         ('then' actions*=SetAction)?
+        ('else' elseActions*=SetAction)?
         ('config'
             (
                 ('description:' description=STRING)?
@@ -17,6 +18,7 @@ Automation:
                 ('continuous:' continuous=BOOL)?
                 ('checkOnce:' checkOnce=BOOL)?
                 ('delay:' delay=FLOAT)?
+                ('cooldown:' cooldown=FLOAT)?
             )#
         )?
         ('triggers' triggers*=[Automation:FQN|+m:automations][','])?
@@ -32,7 +34,39 @@ Action:
 ;
 
 SetAction:
-    FloatSetAction | IntSetAction | BoolSetAction | StringSetAction | ListSetAction | DictSetAction
+    FloatSetAction | IntSetAction | BoolSetAction | StringSetAction | ListSetAction | DictSetAction | ExprSetAction
+;
+
+ExprSetAction:
+    attribute=[NumericAttribute:FQN|+m:entities.attributes] '<-'
+    'expr' '(' expr=ActionExpr ')'
+;
+
+ActionExpr:
+    op=ActionTerm (op=ActionAddOp op=ActionTerm)*
+;
+
+ActionAddOp: '+' | '-';
+ActionMulOp: '*' | '/';
+
+ActionTerm:
+    op=ActionFactor (op=ActionMulOp op=ActionFactor)*
+;
+
+ActionFactor:
+    op=ActionOperand
+;
+
+ActionOperand:
+    AttrRefOperand | NumberOperand
+;
+
+NumberOperand:
+    val=NUMBER
+;
+
+AttrRefOperand:
+    ref=[NumericAttribute:FQN|+m:entities.attributes]
 ;
 
 IntSetAction:

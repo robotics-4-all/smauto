@@ -250,15 +250,6 @@ class SystemClock(Node):
             username='{{ system_clock.source.auth.username }}',
             password='{{ system_clock.source.auth.password }}',
         )
-        {% elif system_clock.source.__class__.__name__ == 'KafkaBroker' %}
-        from commlib.transports.kafka import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='{{ system_clock.source.host }}',
-            port={{ system_clock.source.port }},
-            ssl={{ system_clock.source.ssl }},
-            username='{{ system_clock.source.auth.username }}',
-            password='{{ system_clock.source.auth.password }}',
-        )
         {% endif %}
         super().__init__(
             node_name='{{ system_clock.name }}',
@@ -357,15 +348,6 @@ class {{ entity.camel_name }}Node(Node):
             port={{ entity.source.port }},
             ssl={{ entity.source.ssl }},
             db={{ entity.source.db }},
-            username='{{ entity.source.auth.username }}',
-            password='{{ entity.source.auth.password }}',
-        )
-        {% elif entity.source.__class__.__name__ == 'KafkaBroker' %}
-        from commlib.transports.kafka import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='{{ entity.source.host }}',
-            port={{ entity.source.port }},
-            ssl={{ entity.source.ssl }},
             username='{{ entity.source.auth.username }}',
             password='{{ entity.source.auth.password }}',
         )
@@ -516,15 +498,6 @@ class {{ entity.camel_name }}Node(Node):
             port={{ entity.source.port }},
             ssl={{ entity.source.ssl }},
             db={{ entity.source.db }},
-            username='{{ entity.source.auth.username }}',
-            password='{{ entity.source.auth.password }}',
-        )
-        {% elif entity.source.__class__.__name__ == 'KafkaBroker' %}
-        from commlib.transports.kafka import ConnectionParameters
-        conn_params = ConnectionParameters(
-            host='{{ entity.source.host }}',
-            port={{ entity.source.port }},
-            ssl={{ entity.source.ssl }},
             username='{{ entity.source.auth.username }}',
             password='{{ entity.source.auth.password }}',
         )

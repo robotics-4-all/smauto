@@ -57,8 +57,14 @@ def energy_management_path():
 
 
 @pytest.fixture
+def smart_hvac_path():
+    """Path to example showcasing else, cooldown, time ranges, and expressions."""
+    return _example_path("09_smart_hvac")
+
+
+@pytest.fixture
 def all_example_paths():
-    """All 8 example model paths."""
+    """All 9 example model paths."""
     return [
         _example_path(f"{i:02d}_{name}")
         for i, name in [
@@ -70,6 +76,7 @@ def all_example_paths():
             (6, "smart_building"),
             (7, "startup_sequence"),
             (8, "energy_management"),
+            (9, "smart_hvac"),
         ]
     ]
 

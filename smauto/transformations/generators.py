@@ -6,6 +6,7 @@ from smauto.transformations.smauto_m2t import build_smauto_code, rtm_set_default
 from smauto.transformations.entity_to_code import build_entity_code, build_system_clock
 from smauto.transformations.ventities_merged import build_source_code
 from smauto.utils import make_executable, inject_system_clock
+from smauto.lib.automation import ExprSetAction
 
 
 def _write(content, filepath):
@@ -23,6 +24,9 @@ def smauto_gen_automations(metamodel, model, output_path, overwrite, debug, **kw
     inject_system_clock(model)
     for auto in model.automations:
         auto.condition.build()
+        for action in list(auto.actions) + list(auto.elseActions or []):
+            if isinstance(action, ExprSetAction):
+                action.build_expr()
 
     rtm_set_defaults(model)
     code = build_smauto_code(model)
