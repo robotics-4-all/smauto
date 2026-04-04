@@ -5,6 +5,16 @@ import statistics
 from smauto.lib.types import List, Dict, Time
 
 
+def _time_to_int(t) -> int:
+    """Convert any Time-like object (lib or textX auto-class) to a packed integer."""
+    if hasattr(t, "to_int") and callable(t.to_int):
+        return t.to_int()
+    h = getattr(t, "hour", 0) or 0
+    m = getattr(t, "minute", 0) or 0
+    s = getattr(t, "second", 0) or 0
+    return s + int(m << 8) + int(h << 16)
+
+
 # List of primitive types that can be directly printed
 PRIMITIVES = (int, float, str, bool)
 
@@ -394,8 +404,8 @@ class TimeRangeCondition(AdvancedCondition):
 
     def process_node_condition(self):
         operand1 = Condition.transform_operand(self.attribute)
-        min_int = self.min.to_int()
-        max_int = self.max.to_int()
+        min_int = _time_to_int(self.min)
+        max_int = _time_to_int(self.max)
         if min_int <= max_int:
             # Normal range: attr >= min AND attr <= max
             self.cond_lambda = f"({operand1} >= {min_int} and {operand1} <= {max_int})"
