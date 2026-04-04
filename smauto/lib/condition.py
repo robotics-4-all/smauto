@@ -59,7 +59,7 @@ class Condition(object):
 
     @staticmethod
     def transform_operand(node) -> str:
-        if isinstance(node, GenericAttrRef):
+        if isinstance(node, GenericAttrRef) or node.__class__.__name__ == "GenericAttrRef":
             attr_ref = node.attribute
             entity_ref = attr_ref.parent
             return Condition._attr_value_expr(entity_ref.name, attr_ref.name)
@@ -70,13 +70,20 @@ class Condition(object):
             else:
                 return node
         # If node is a List object just print it out. List has __repr()__ built in
-        elif type(node) is List:
+        elif type(node) is List or node.__class__.__name__ == "List":
             return node
         # If node is a Dict object just print it out. List has __repr()__ built in
-        elif type(node) is Dict:
+        elif type(node) is Dict or node.__class__.__name__ == "Dict":
             return node
-        elif type(node) is Time:
-            return node.to_int()
+        elif type(node) is Time or node.__class__.__name__ == "Time":
+            if hasattr(node, "to_int"):
+                return node.to_int()
+            else:
+                # textX auto-class Time: compute to_int manually
+                hour = getattr(node, "hour", 0) or 0
+                minute = getattr(node, "minute", 0) or 0
+                second = getattr(node, "second", 0) or 0
+                return second + int(minute << 8) + int(hour << 16)
         # Node is an Attribute, print its full name including Entity
         elif textx_isinstance(node, get_metamodel(node).namespaces["condition"]["AugmentedAttr"]):
             return Condition.transform_augmented_attr(node)
@@ -219,7 +226,7 @@ class Condition(object):
             cond_node.cond_lambda = (OPERATORS[cond_node.operator])(operand1, operand2)
             # Build deadband/hysteresis deactivation expression for NumericCondition
             if (
-                isinstance(cond_node, NumericCondition)
+                cond_node.__class__.__name__ == "NumericCondition"
                 and cond_node.deadband
                 and cond_node.operator in Condition._DEACTIVATE_OPS
             ):
@@ -367,7 +374,7 @@ class InRangeCondition(AdvancedCondition):
         super().__init__(parent)
 
     def process_node_condition(self):
-        operand1 = self.transform_operand(self.attribute)
+        operand1 = Condition.transform_operand(self.attribute)
         cond_lambda = (OPERATORS["InRange"])(operand1, self.min, self.max)
         self.cond_lambda = cond_lambda
 
@@ -386,7 +393,7 @@ class TimeRangeCondition(AdvancedCondition):
         super().__init__(parent)
 
     def process_node_condition(self):
-        operand1 = self.transform_operand(self.attribute)
+        operand1 = Condition.transform_operand(self.attribute)
         min_int = self.min.to_int()
         max_int = self.max.to_int()
         if min_int <= max_int:

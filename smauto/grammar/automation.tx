@@ -4,6 +4,9 @@ import condition
 import types
 import utils
 
+// Wrapper rule for optional BOOL — allows distinguishing absent (None) from false
+OptBool: val=BOOL;
+
 // === Automation (ECA Rule) ===
 Automation:
     'Automation' name=ID
@@ -15,8 +18,8 @@ Automation:
             (
                 ('description:' description=STRING)?
                 ('freq:' freq=INT)?
-                ('enabled:' enabled=BOOL)?
-                ('continuous:' continuous=BOOL)?
+                ('enabled:' enabled=OptBool)?
+                ('continuous:' continuous=OptBool)?
                 ('checkOnce:' checkOnce=BOOL)?
                 ('delay:' delay=FLOAT)?
                 ('cooldown:' cooldown=FLOAT)?

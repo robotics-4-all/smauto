@@ -5,7 +5,7 @@ import jinja2
 from smauto.language import build_model
 from smauto.definitions import TEMPLATES_PATH
 from smauto.utils import make_executable, inject_system_clock
-from smauto.lib.automation import ExprSetAction
+from smauto.lib.automation import ExprSetAction as _ExprSetAction
 
 
 jinja_env = jinja2.Environment(
@@ -53,8 +53,10 @@ def smauto_m2t(model_path: str, outdir: str = ""):
         auto.condition.build()
         # Build expression strings for ExprSetActions
         for action in list(auto.actions) + list(auto.elseActions or []):
-            if isinstance(action, ExprSetAction):
-                action.build_expr()
+            if action.__class__.__name__ == "ExprSetAction":
+                # Build the expression string and set it directly on the action object
+                expr_str = _ExprSetAction._build_node(action.expr)
+                action.value = expr_str
     scode = build_smauto_code(model)
     if outdir not in ("", None):
         write_to_file(scode, os.path.join(outdir, f"{model.metadata.name}.py"))

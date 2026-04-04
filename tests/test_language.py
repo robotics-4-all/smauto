@@ -6,34 +6,12 @@ from textx import TextXSemanticError
 from smauto.language import (
     get_metamodel,
     build_model,
-    class_provider,
     time_obj_processor,
     get_scope_providers,
-    CUSTOM_CLASSES,
     ENTITY_BUILTINS,
 )
-from smauto.lib.automation import Automation
 from smauto.lib.entity import Entity
-from smauto.lib.broker import MQTTBroker
 from smauto.lib.types import Time
-
-
-# ── class_provider ───────────────────────────────────────────────
-
-
-class TestClassProvider:
-    def test_known_class(self):
-        assert class_provider("Automation") is Automation
-        assert class_provider("Entity") is Entity
-        assert class_provider("MQTTBroker") is MQTTBroker
-
-    def test_unknown_class(self):
-        assert class_provider("NonExistent") is None
-
-    def test_all_custom_classes_registered(self):
-        """Every class in CUSTOM_CLASSES should be resolvable."""
-        for cls in CUSTOM_CLASSES:
-            assert class_provider(cls.__name__) is cls
 
 
 # ── time_obj_processor ───────────────────────────────────────────

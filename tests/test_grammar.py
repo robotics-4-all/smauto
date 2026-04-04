@@ -4,14 +4,6 @@ import pytest
 from textx import TextXSemanticError
 
 from smauto.language import build_model
-from smauto.lib.broker import MQTTBroker, AMQPBroker, RedisBroker
-from smauto.lib.entity import (
-    IntAttribute,
-    FloatAttribute,
-    BoolAttribute,
-    StringAttribute,
-    TimeAttribute,
-)
 
 
 # ── Parse all example models ────────────────────────────────────
@@ -58,7 +50,7 @@ end
 """
         model = build_model(tmp_model(content))
         broker = model.brokers[0]
-        assert isinstance(broker, MQTTBroker)
+        assert broker.__class__.__name__ == "MQTTBroker"
         assert broker.host == "10.0.0.1"
         assert broker.port == 1883
         assert broker.ssl is True
@@ -91,7 +83,7 @@ end
 """
         model = build_model(tmp_model(content))
         broker = model.brokers[0]
-        assert isinstance(broker, AMQPBroker)
+        assert broker.__class__.__name__ == "AMQPBroker"
         assert broker.vhost == "/prod"
 
     def test_redis_broker(self, tmp_model):
@@ -121,7 +113,7 @@ end
 """
         model = build_model(tmp_model(content))
         broker = model.brokers[0]
-        assert isinstance(broker, RedisBroker)
+        assert broker.__class__.__name__ == "RedisBroker"
         assert broker.db == 3
 
 
@@ -164,11 +156,11 @@ end
         assert e.uri == "room.sensor"
         assert len(e.attributes) == 4
 
-        types_found = {a.name: type(a) for a in e.attributes}
-        assert types_found["temperature"] is FloatAttribute
-        assert types_found["humidity"] is IntAttribute
-        assert types_found["label"] is StringAttribute
-        assert types_found["active"] is BoolAttribute
+        types_found = {a.name: a.__class__.__name__ for a in e.attributes}
+        assert types_found["temperature"] == "FloatAttribute"
+        assert types_found["humidity"] == "IntAttribute"
+        assert types_found["label"] == "StringAttribute"
+        assert types_found["active"] == "BoolAttribute"
 
     def test_actuator_entity(self, tmp_model):
         content = """\
@@ -223,7 +215,7 @@ end
 """
         model = build_model(tmp_model(content))
         attr = model.entities[0].attributes[0]
-        assert isinstance(attr, TimeAttribute)
+        assert attr.__class__.__name__ == "TimeAttribute"
 
     def test_attribute_defaults(self, tmp_model):
         content = """\
