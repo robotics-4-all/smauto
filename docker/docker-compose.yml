@@ -8,6 +8,7 @@ services:
     ports:
       - "${API_PORT:-8080}:8080"
       - "${LSP_PORT:-2087}:2087"
+      - "${WS_PORT:-2088}:2088"
     environment:
       - TX_LSP_API_KEY=${API_KEY:-}
       - TX_LSP_LOG_LEVEL=${LOG_LEVEL:-INFO}

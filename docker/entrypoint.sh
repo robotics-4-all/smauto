@@ -14,6 +14,7 @@ fi
 tx-lsp --tcp --host "$HOST" --port "${TX_LSP_LSP_PORT:-2087}" \
     $EXTRA_PATTERN $LOG_LEVEL &
 
-# Start REST API in foreground
+tx-lsp --ws --host "$HOST" --port "${TX_LSP_WS_PORT:-2088}" &
+
 exec tx-lsp --api --host "$HOST" --api-port "${TX_LSP_API_PORT:-8080}" \
     $EXTRA_PATTERN $LOG_LEVEL $API_KEY_ARG
