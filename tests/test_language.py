@@ -6,35 +6,12 @@ from textx import TextXSemanticError
 from smauto.language import (
     get_metamodel,
     build_model,
-    get_model_grammar,
-    class_provider,
     time_obj_processor,
     get_scope_providers,
-    CUSTOM_CLASSES,
     ENTITY_BUILTINS,
 )
-from smauto.lib.automation import Automation
 from smauto.lib.entity import Entity
-from smauto.lib.broker import MQTTBroker
 from smauto.lib.types import Time
-
-
-# ── class_provider ───────────────────────────────────────────────
-
-
-class TestClassProvider:
-    def test_known_class(self):
-        assert class_provider("Automation") is Automation
-        assert class_provider("Entity") is Entity
-        assert class_provider("MQTTBroker") is MQTTBroker
-
-    def test_unknown_class(self):
-        assert class_provider("NonExistent") is None
-
-    def test_all_custom_classes_registered(self):
-        """Every class in CUSTOM_CLASSES should be resolvable."""
-        for cls in CUSTOM_CLASSES:
-            assert class_provider(cls.__name__) is cls
 
 
 # ── time_obj_processor ───────────────────────────────────────────
@@ -382,10 +359,90 @@ end
             build_model(path)
 
 
-class TestGetModelGrammar:
-    def test_raises_on_missing_method(self, minimal_model_path):
-        with pytest.raises(AttributeError):
-            get_model_grammar(minimal_model_path)
+class TestValidationActuatorSemantics:
+    def test_generator_on_actuator_raises(self, tmp_model):
+        content = """\
+Metadata
+    name: BadActuator
+    version: "0.1.0"
+end
+
+Broker<MQTT> broker1
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity bad_actuator
+    type: actuator
+    uri: "a"
+    source: broker1
+    attributes:
+        - level: int -> constant(42)
+end
+"""
+        path = tmp_model(content)
+        with pytest.raises(TextXSemanticError, match="cannot have a value generator"):
+            build_model(path)
+
+    def test_actuator_without_generator_ok(self, tmp_model):
+        content = """\
+Metadata
+    name: GoodActuator
+    version: "0.1.0"
+end
+
+Broker<MQTT> broker1
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity good_actuator
+    type: actuator
+    uri: "a"
+    source: broker1
+    attributes:
+        - power: bool
+end
+"""
+        path = tmp_model(content)
+        model = build_model(path)
+        assert model is not None
+
+    def test_actuator_with_freq_warns(self, tmp_model, capsys):
+        content = """\
+Metadata
+    name: FreqActuator
+    version: "0.1.0"
+end
+
+Broker<MQTT> broker1
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity freq_actuator
+    type: actuator
+    freq: 5
+    uri: "a"
+    source: broker1
+    attributes:
+        - power: bool
+end
+"""
+        path = tmp_model(content)
+        build_model(path)
+        captured = capsys.readouterr()
+        output = " ".join(captured.out.split())
+        assert "semantically meaningless" in output
 
 
 class TestSmautoLanguage:

@@ -1,0 +1,209 @@
+Metadata
+    name: ConstantsDemo
+    version: "0.1.0"
+    description: "Demonstrates model-level constants, scenes, wait/log actions."
+    author: "smauto"
+    email: "smauto@2023"
+end
+
+// Named constants — single source of truth for thresholds and config values
+Const MAX_TEMP = 30.0
+Const COMFORT_TEMP = 22.0
+Const HUMIDITY_UPPER = 65
+Const HUMIDITY_LOWER = 30
+Const ALARM_ENABLED = true
+Const ALERT_MODE = "critical"
+
+Broker<MQTT> office_broker
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity temp_sensor
+    type: sensor
+    freq: 2
+    uri: "office.temperature"
+    source: office_broker
+    attributes:
+        - temperature: float -> gaussian(25, 40, 3) with noise gaussian(0, 0.5)
+        - humidity: int -> saw(20, 80, 1)
+end
+
+Entity hvac
+    type: actuator
+    uri: "office.hvac"
+    source: office_broker
+    attributes:
+        - power: bool
+        - setpoint: float
+        - mode: str
+end
+
+Entity dehumidifier
+    type: actuator
+    uri: "office.dehumidifier"
+    source: office_broker
+    attributes:
+        - active: bool
+end
+
+// Hybrid entity: reads air quality AND accepts filter control commands
+Entity air_purifier
+    type: hybrid
+    freq: 1
+    uri: "office.air_purifier"
+    source: office_broker
+    attributes:
+        - pm25: float -> gaussian(15, 50, 5) with noise uniform(-1, 1)
+        - filter_speed: int
+end
+
+// Scenes: reusable action presets (must appear as contiguous block)
+Scene emergency_shutdown
+    hvac.power <- false
+    hvac.mode <- "off"
+    hvac.setpoint <- 0.0
+    log "Emergency shutdown activated" level WARNING
+end
+
+Scene comfort_mode
+    hvac.power <- true
+    hvac.mode <- "auto"
+    hvac.setpoint <- const(COMFORT_TEMP)
+end
+
+// Constant in numeric condition and float action
+Automation cooling
+    when
+        temp_sensor.temperature > const(MAX_TEMP)
+    then
+        hvac.power <- true
+        hvac.setpoint <- const(COMFORT_TEMP)
+    config
+        continuous: true
+end
+
+// Constant in string action
+Automation alert_mode
+    when
+        temp_sensor.temperature > const(MAX_TEMP)
+    then
+        hvac.mode <- const(ALERT_MODE)
+    config
+        continuous: true
+end
+
+// Constants in InRange condition bounds
+Automation humidity_control
+    when
+        temp_sensor.humidity in range [const(HUMIDITY_LOWER), const(HUMIDITY_UPPER)]
+    then
+        dehumidifier.active <- false
+    else
+        dehumidifier.active <- true
+    config
+        continuous: true
+end
+
+// Constant in bool action
+Automation system_arm
+    when
+        temp_sensor.temperature > const(MAX_TEMP)
+    then
+        hvac.power <- const(ALARM_ENABLED)
+    config
+        continuous: true
+end
+
+// Apply scene in automation
+Automation emergency_trigger
+    when
+        temp_sensor.temperature > 45
+    then
+        apply emergency_shutdown
+    config
+        continuous: true
+end
+
+Automation restore_comfort
+    when
+        temp_sensor.temperature < const(MAX_TEMP)
+    then
+        apply comfort_mode
+    else
+        apply emergency_shutdown
+    config
+        continuous: true
+end
+
+// Hysteresis/deadband: prevent HVAC chattering near threshold
+// Activates when temp > 30, deactivates only when temp < 28 (30 - 2)
+Automation cooling_deadband
+    when
+        temp_sensor.temperature > const(MAX_TEMP) deadband 2
+    then
+        hvac.power <- true
+        hvac.mode <- "cooling"
+        hvac.setpoint <- const(COMFORT_TEMP)
+    else
+        hvac.power <- false
+    config
+        continuous: true
+end
+
+// Hybrid entity: use air_purifier readings in condition, control its filter
+Automation air_quality_control
+    when
+        air_purifier.pm25 > 35
+    then
+        air_purifier.filter_speed <- 3
+        log "Air quality poor — filter speed increased" level WARNING
+    else
+        air_purifier.filter_speed <- 1
+    config
+        continuous: true
+end
+
+// Duration-based condition: temp must stay high for 30s before alerting
+Automation sustained_heat_alert
+    when
+        temp_sensor.temperature > const(MAX_TEMP) for 30
+    then
+        hvac.mode <- "emergency"
+        log "Sustained high temperature detected" level ERROR
+    config
+        continuous: true
+end
+
+// Rate-of-change: detect rapid temperature spike (delta > 5 over 10 samples)
+Automation rapid_temp_change
+    when
+        delta(temp_sensor.temperature, 10) > 5
+    then
+        hvac.mode <- "rapid_cool"
+        log "Rapid temperature increase detected" level WARNING
+    config
+        continuous: true
+end
+
+// Wait actions: staged HVAC startup sequence
+Automation staged_startup
+    when
+        temp_sensor.temperature < const(COMFORT_TEMP)
+    then
+        log "Starting HVAC warmup sequence"
+        hvac.power <- true
+        hvac.mode <- "warmup"
+        wait 5
+        log "Switching to heating mode"
+        hvac.mode <- "heating"
+        hvac.setpoint <- const(COMFORT_TEMP)
+        wait 10
+        hvac.mode <- "auto"
+        log "HVAC startup complete" level INFO
+    config
+        continuous: false
+end

@@ -1,0 +1,158 @@
+Metadata
+    name: SmartHVAC
+    version: "0.1.0"
+    description: "Smart HVAC showcasing else branches, cooldown, time ranges, and expression actions."
+    author: "smauto"
+    email: "smauto@2023"
+end
+
+RTMonitor
+    source: office_broker
+    namespace: "smauto.hvac"
+    eventTopic: "event"
+    logsTopic: "logs"
+end
+
+Broker<MQTT> office_broker
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity temperature_sensor
+    type: sensor
+    freq: 5
+    uri: "office.temperature"
+    source: office_broker
+    attributes:
+        - temperature: float -> gaussian(22, 35, 5) with noise gaussian(0, 0.3)
+        - humidity: float -> saw(30, 70, 1) with noise uniform(-2, 2)
+end
+
+Entity outdoor_sensor
+    type: sensor
+    freq: 2
+    uri: "outdoor.weather"
+    source: office_broker
+    attributes:
+        - temperature: float -> gaussian(15, 30, 8) with noise gaussian(0, 1)
+end
+
+Entity hvac_unit
+    type: actuator
+    uri: "office.hvac"
+    source: office_broker
+    attributes:
+        - power: bool
+        - mode: str
+        - fan_speed: int = 50
+        - setpoint: float
+end
+
+Entity dehumidifier
+    type: actuator
+    uri: "office.dehumidifier"
+    source: office_broker
+    attributes:
+        - active: bool
+        - target_humidity: float
+end
+
+// === ELSE BRANCH: Comfort mode with fallback ===
+// When temperature is high → cool; else → maintain idle mode
+Automation comfort_control
+    when
+        temperature_sensor.temperature > 26
+    then
+        hvac_unit.power <- true
+        hvac_unit.mode <- "cooling"
+        hvac_unit.fan_speed <- 80
+    else
+        hvac_unit.mode <- "idle"
+        hvac_unit.fan_speed <- 30
+    config
+        description: "Comfort cooling with idle fallback"
+        continuous: true
+        cooldown: 60
+end
+
+// === COOLDOWN: Prevent rapid toggling of dehumidifier ===
+Automation humidity_control
+    when
+        temperature_sensor.humidity > 60
+    then
+        dehumidifier.active <- true
+    else
+        dehumidifier.active <- false
+    config
+        description: "Dehumidifier with 120s cooldown to prevent rapid cycling"
+        continuous: true
+        cooldown: 120
+end
+
+// === TIME RANGE: Night setback during work hours ===
+// Only run full HVAC during office hours (08:00 - 18:00)
+Automation work_hours_mode
+    when
+        system_clock.time in range [08:00, 18:00]
+    then
+        hvac_unit.power <- true
+        hvac_unit.setpoint <- 22.0
+    config
+        description: "Full HVAC during work hours"
+        continuous: true
+end
+
+// === TIME RANGE WITH MIDNIGHT WRAP: Night mode ===
+// Reduce power during night hours (22:00 - 06:00, wraps midnight)
+Automation night_setback
+    when
+        system_clock.time in range [22:00, 06:00]
+    then
+        hvac_unit.power <- false
+        hvac_unit.fan_speed <- 0
+    config
+        description: "Night setback spanning midnight"
+        continuous: true
+    terminates
+        comfort_control
+end
+
+// === EXPRESSION ACTIONS: Adaptive setpoint from outdoor temp ===
+// Set indoor target 5 degrees above outdoor temperature
+Automation adaptive_setpoint
+    when
+        outdoor_sensor.temperature < 20
+    then
+        hvac_unit.setpoint <- expr(outdoor_sensor.temperature + 5)
+    config
+        description: "Adaptive setpoint based on outdoor temperature"
+        continuous: true
+        cooldown: 300
+end
+
+// === STATUS CONDITIONS + TRIGGERS: Staged startup ===
+Automation morning_startup
+    when
+        system_clock.time >= 07:30
+    then
+        hvac_unit.power <- true
+        hvac_unit.mode <- "warmup"
+    config
+        continuous: true
+    triggers
+        post_warmup
+end
+
+Automation post_warmup
+    when
+        morning_startup.status == SUCCESS
+    then
+        hvac_unit.mode <- "auto"
+        hvac_unit.fan_speed <- 60
+    config
+        enabled: false
+        continuous: false
+end

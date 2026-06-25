@@ -1,0 +1,70 @@
+Metadata
+    name: WebhookActions
+    version: "0.1.0"
+    description: "Webhook/HTTP actions for IoT event notifications."
+    author: "smauto"
+    email: "smauto@2023"
+end
+
+Broker<MQTT> home_broker
+    host: "localhost"
+    port: 1883
+    auth:
+        username: ""
+        password: ""
+end
+
+Entity temperature_sensor
+    type: sensor
+    freq: 5
+    uri: "warehouse.temperature"
+    source: home_broker
+    attributes:
+        - temperature: float -> gaussian(22, 45, 3)
+        - humidity: float -> saw(30, 80, 1)
+end
+
+Entity alarm_panel
+    type: actuator
+    uri: "warehouse.alarm"
+    source: home_broker
+    attributes:
+        - active: bool
+        - severity: str = "low"
+end
+
+Automation notify_high_temp
+    when
+        temperature_sensor.temperature > 40
+    then
+        alarm_panel.active <- true
+        alarm_panel.severity <- "critical"
+        http POST "https://hooks.example.com/alerts"
+            headers:
+                - "Content-Type" = "application/json"
+                - "Authorization" = "Bearer tok123"
+            body: "alert=high_temp"
+            timeout: 5
+        end
+        log "High temperature alert sent" level WARNING
+    config
+        description: "Send webhook when warehouse temperature exceeds 40C"
+        continuous: true
+        cooldown: 120
+end
+
+Automation health_check_ping
+    when
+        temperature_sensor.temperature > 0
+    then
+        http GET "https://health.example.com/ping"
+            timeout: 3
+        end
+    else
+        http POST "https://hooks.example.com/alerts"
+            body: "status=sensor_offline"
+        end
+    config
+        continuous: true
+        cooldown: 60
+end

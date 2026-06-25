@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir /app/smauto
 # Uses SSH agent forwarding via BuildKit: --ssh default
 RUN mkdir -p -m 0700 ~/.ssh && \
     ssh-keyscan github.com >> ~/.ssh/known_hosts
-RUN --mount=type=ssh pip install --no-cache-dir \
-    "tx-lsp[api] @ git+ssh://git@github.com/robotics-4-all/tx-lsp.git"
+RUN pip install --no-cache-dir \
+    "tx-lsp[api] @ git+https://github.com/robotics-4-all/tx-lsp.git"
 
 # Entrypoint script runs both LSP (TCP) and REST API
 COPY docker/entrypoint.sh /app/entrypoint.sh

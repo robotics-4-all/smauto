@@ -30,11 +30,13 @@ def _make_automation(**overrides):
         name="test_auto",
         condition=_make_condition(),
         actions=[],
+        elseActions=[],
         freq=1,
         enabled=True,
         continuous=True,
         checkOnce=False,
         delay=0,
+        cooldown=0,
         triggers=[],
         terminates=[],
         description="",
@@ -328,3 +330,53 @@ class TestAutomationMethods:
         a = _make_automation(condition=cond, delay=0.5, checkOnce=True, freq=100)
         a.start()
         assert mock_time.sleep.call_count >= 2
+
+
+# ── §1.4 Cooldown defaults ──────────────────────────────────────
+
+
+class TestCooldownDefaults:
+    def test_cooldown_default_zero(self):
+        a = _make_automation(cooldown=None)
+        assert a.cooldown == 0
+
+    def test_cooldown_explicit_value(self):
+        a = _make_automation(cooldown=30)
+        assert a.cooldown == 30
+
+    def test_cooldown_zero_stays_zero(self):
+        a = _make_automation(cooldown=0)
+        assert a.cooldown == 0
+
+
+# ── §1.1 Else branch unit tests ─────────────────────────────────
+
+
+class TestElseActions:
+    def test_else_actions_default_empty(self):
+        a = _make_automation(elseActions=None)
+        assert a.elseActions == []
+
+    def test_else_actions_stored(self):
+        attr = BoolAttribute(None, "power", False, None)
+        entity = MagicMock()
+        entity.publisher = MagicMock()
+        attr.parent = entity
+        else_action = SetAction(None, attr, False)
+        a = _make_automation(elseActions=[else_action])
+        assert len(a.elseActions) == 1
+        assert a.elseActions[0].value is False
+
+    def test_trigger_else_actions_executes(self):
+        attr = BoolAttribute(None, "power", False, None)
+        entity = MagicMock()
+        entity.publisher = MagicMock()
+        attr.parent = entity
+        else_action = SetAction(None, attr, False)
+        a = _make_automation(elseActions=[else_action])
+        a.trigger_else_actions()
+        entity.publisher.publish.assert_called_once()
+
+    def test_trigger_else_actions_noop_when_empty(self):
+        a = _make_automation(elseActions=[])
+        a.trigger_else_actions()

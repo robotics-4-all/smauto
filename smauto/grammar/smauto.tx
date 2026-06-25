@@ -1,5 +1,6 @@
 import automation
 import communication
+import constants
 import entity
 import types
 import utils
@@ -11,7 +12,10 @@ SmAutoModel:
     (monitor=RTMonitor)?
     brokers*=MessageBroker
     endpoints*=RESTEndpoint
+    constants*=ConstDef
+    scenes*=SceneDef
     entities*=Entity
+    groups*=EntityGroup
     automations*=Automation
     )#
 ;

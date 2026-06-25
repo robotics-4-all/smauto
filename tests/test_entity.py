@@ -117,6 +117,11 @@ class TestDictAttribute:
         assert a.value == {}
         assert a.items == []
 
+    def test_none_items(self):
+        a = DictAttribute(None, "null", None, None)
+        assert a.value == {}
+        assert a.items == []
+
 
 # ── Entity class ─────────────────────────────────────────────────
 

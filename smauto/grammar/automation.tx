@@ -1,22 +1,28 @@
+import constants
 import entity
 import condition
 import types
 import utils
+
+// Wrapper rule for optional BOOL — allows distinguishing absent (None) from false
+OptBool: val=BOOL;
 
 // === Automation (ECA Rule) ===
 Automation:
     'Automation' name=ID
     (
         ('when' condition=Condition)?
-        ('then' actions*=SetAction)?
+        ('then' actions*=Action)?
+        ('else' elseActions*=Action)?
         ('config'
             (
                 ('description:' description=STRING)?
                 ('freq:' freq=INT)?
-                ('enabled:' enabled=BOOL)?
-                ('continuous:' continuous=BOOL)?
+                ('enabled:' enabled=OptBool)?
+                ('continuous:' continuous=OptBool)?
                 ('checkOnce:' checkOnce=BOOL)?
                 ('delay:' delay=FLOAT)?
+                ('cooldown:' cooldown=FLOAT)?
             )#
         )?
         ('triggers' triggers*=[Automation:FQN|+m:automations][','])?
@@ -26,13 +32,92 @@ Automation:
 ;
 
 
+// === Scene Definition ===
+SceneDef:
+    'Scene' name=ID
+        actions+=Action
+    'end'
+;
+
 // === Actions ===
 Action:
-    SetAction
+    HttpAction | LogAction | WaitAction | ApplySceneAction | GroupSetAction | SetAction
+;
+
+// === HTTP / Webhook Action ===
+HttpAction:
+    'http' method=HttpMethod url=STRING
+    (
+        ('headers:' headers*=HttpHeader)?
+        ('body:' body=STRING)?
+        ('timeout:' timeout=NUMBER)?
+    )#
+    'end'
+;
+
+HttpMethod: 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+HttpHeader:
+    '-' key=STRING '=' value=STRING
+;
+
+
+GroupSetAction:
+    'set' group=[EntityGroup:ID|+m:groups] '.' attr=ID '<-' (value=BOOL | value=STRING | value=NUMBER)
+;
+
+ApplySceneAction:
+    'apply' name=ID
+;
+
+LogAction:
+    'log' message=STRING ('level' level=LogLevel)?
+;
+
+LogLevel: 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR';
+
+WaitAction:
+    'wait' duration=NUMBER
 ;
 
 SetAction:
-    FloatSetAction | IntSetAction | BoolSetAction | StringSetAction | ListSetAction | DictSetAction
+    FloatSetAction | IntSetAction | BoolSetAction | StringSetAction | ListSetAction | DictSetAction | ExprSetAction | ConstSetAction
+;
+
+ConstSetAction:
+    attribute=[Attribute:FQN|+m:entities.attributes] '<-' value=ConstRef
+;
+
+ExprSetAction:
+    attribute=[NumericAttribute:FQN|+m:entities.attributes] '<-'
+    'expr' '(' expr=ActionExpr ')'
+;
+
+ActionExpr:
+    op=ActionTerm (op=ActionAddOp op=ActionTerm)*
+;
+
+ActionAddOp: '+' | '-';
+ActionMulOp: '*' | '/';
+
+ActionTerm:
+    op=ActionFactor (op=ActionMulOp op=ActionFactor)*
+;
+
+ActionFactor:
+    op=ActionOperand
+;
+
+ActionOperand:
+    AttrRefOperand | NumberOperand
+;
+
+NumberOperand:
+    val=NUMBER
+;
+
+AttrRefOperand:
+    ref=[NumericAttribute:FQN|+m:entities.attributes]
 ;
 
 IntSetAction:

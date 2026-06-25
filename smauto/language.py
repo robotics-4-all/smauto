@@ -1,4 +1,7 @@
 from os.path import join
+import types as python_types
+
+from rich import print
 from textx import (
     language,
     metamodel_from_file,
@@ -10,125 +13,13 @@ import pathlib
 import textx.scoping.providers as scoping_providers
 from textx.scoping import GlobalModelRepository
 from smauto.definitions import MODEL_REPO_PATH, BUILTIN_MODELS
-
-from smauto.lib.automation import (
-    Action,
-    Automation,
-    SetAction,
-    BoolSetAction,
-    FloatSetAction,
-    IntSetAction,
-    StringSetAction,
-    ListSetAction,
-    DictSetAction,
-)
-from smauto.lib.types import Dict, List, Time, Date
-from smauto.lib.broker import (
-    AMQPBroker,
-    Broker,
-    BrokerAuthPlain,
-    EntitySource,
-    MQTTBroker,
-    Property,
-    RedisBroker,
-    RESTEndpoint,
-)
-from smauto.lib.entity import (
-    Attribute,
-    BoolAttribute,
-    DictAttribute,
-    Entity,
-    FloatAttribute,
-    IntAttribute,
-    ListAttribute,
-    StringAttribute,
-    TimeAttribute,
-)
-
-from smauto.lib.condition import (
-    Condition,
-    ConditionGroup,
-    PrimitiveCondition,
-    AdvancedCondition,
-    NumericCondition,
-    BoolCondition,
-    TimeCondition,
-    StringCondition,
-    DictCondition,
-    InRangeCondition,
-    ListCondition,
-    AutomationStatusCondition,
-    AutomationStatusRef,
-)
+from smauto._processors import get_obj_processors
+from smauto._builtins import ENTITY_BUILTINS  # noqa: F401 — re-exported for backward compat
 
 
 CURRENT_FPATH = pathlib.Path(__file__).parent.resolve()
 
-CUSTOM_CLASSES = [
-    Automation,
-    Entity,
-    Condition,
-    ConditionGroup,
-    PrimitiveCondition,
-    AdvancedCondition,
-    NumericCondition,
-    BoolCondition,
-    StringCondition,
-    ListCondition,
-    DictCondition,
-    TimeCondition,
-    InRangeCondition,
-    AutomationStatusCondition,
-    AutomationStatusRef,
-    Attribute,
-    IntAttribute,
-    FloatAttribute,
-    TimeAttribute,
-    StringAttribute,
-    BoolAttribute,
-    ListAttribute,
-    DictAttribute,
-    Broker,
-    MQTTBroker,
-    AMQPBroker,
-    RedisBroker,
-    RESTEndpoint,
-    EntitySource,
-    Property,
-    BrokerAuthPlain,
-    Action,
-    SetAction,
-    IntSetAction,
-    FloatSetAction,
-    StringSetAction,
-    BoolSetAction,
-    ListSetAction,
-    DictSetAction,
-    List,
-    Dict,
-    Time,
-    Date,
-]
-
-
-ENTITY_BUILTINS = {
-    "system_clock": Entity(
-        None,
-        name="system_clock",
-        etype="sensor",
-        freq=1,
-        uri="system.clock",
-        source=MQTTBroker(None, name="fake", host="localhost", port=1883, auth=None),
-        attributes=[TimeAttribute(None, "time", None)],
-    )
-}
-
 GLOBAL_REPO = GlobalModelRepository()
-
-
-def class_provider(name):
-    classes = {x.__name__: x for x in CUSTOM_CLASSES}
-    return classes.get(name)
 
 
 def time_obj_processor(t):
@@ -167,14 +58,22 @@ def verify_source_names(model):
 
 def verify_entity_names(model):
     _ids = []
+    _errors = []
     entities = get_children_of_type("Entity", model)
     for e in entities:
         if e.name in _ids:
-            raise TextXSemanticError(
-                f"Entity with name <{e.name}> already exists", **get_location(e)
+            _errors.append(
+                TextXSemanticError(
+                    f"Entity with name <{e.name}> already exists", **get_location(e)
+                )
             )
         _ids.append(e.name)
-        verify_entity_attrs(e)
+        try:
+            verify_entity_attrs(e)
+        except TextXSemanticError as err:
+            _errors.append(err)
+    if _errors:
+        raise TextXSemanticError("\n".join(str(e) for e in _errors))
 
 
 def verify_entity_attrs(entity):
@@ -189,33 +88,296 @@ def verify_entity_attrs(entity):
 
 def verify_automation_names(model):
     _ids = []
+    _errors = []
     autos = get_children_of_type("Automation", model)
     for a in autos:
         if a.name in _ids:
-            raise TextXSemanticError(
-                f"Automation with name <{a.name}> already exists", **get_location(a)
+            _errors.append(
+                TextXSemanticError(
+                    f"Automation with name <{a.name}> already exists", **get_location(a)
+                )
             )
         _ids.append(a.name)
+    if _errors:
+        raise TextXSemanticError("\n".join(str(e) for e in _errors))
+
+
+def verify_entity_semantics(model):
+    entities = get_children_of_type("Entity", model)
+    for e in entities:
+        if e.etype == "actuator":
+            for attr in e.attributes:
+                if hasattr(attr, "generator") and attr.generator is not None:
+                    raise TextXSemanticError(
+                        f"Actuator entity '{e.name}' attribute '{attr.name}' "
+                        f"cannot have a value generator",
+                        **get_location(attr),
+                    )
+            if e.freq not in (None, 0, 1):
+                print(
+                    f"[bold yellow][WARNING] Actuator entity '{e.name}' has freq={e.freq} "
+                    f"which is semantically meaningless for actuators[/bold yellow]"
+                )
+
+
+def verify_entity_sources_for_codegen(model):
+    """Warn about entities using REST endpoints — codegen only supports broker-based sources."""
+    entities = get_children_of_type("Entity", model)
+    for e in entities:
+        source = e.source
+        if source.__class__.__name__ == "RESTEndpoint":
+            print(
+                f"[bold yellow][WARNING] Entity '{e.name}' uses REST endpoint "
+                f"'{source.name}' as source. Code generation only supports "
+                f"broker-based sources (MQTT, AMQP, Redis). Generated code "
+                f"for this entity will not function correctly.[/bold yellow]"
+            )
+
+
+def verify_action_targets(model):
+    """Validate that all SetAction targets point to actuator or hybrid entities."""
+    _errors = []
+    automations = get_children_of_type("Automation", model)
+    for auto in automations:
+        all_actions = list(auto.actions) + list(auto.elseActions or [])
+        for action in all_actions:
+            if action.__class__.__name__ in (
+                "WaitAction",
+                "LogAction",
+                "ApplySceneAction",
+                "GroupSetAction",
+                "HttpAction",
+            ):
+                continue
+            entity = action.attribute.parent
+            if entity.etype == "sensor":
+                _errors.append(
+                    TextXSemanticError(
+                        f"Automation '{auto.name}' action targets sensor entity "
+                        f"'{entity.name}.{action.attribute.name}' — "
+                        f"actions can only target actuator or hybrid entities",
+                        **get_location(action),
+                    )
+                )
+    if _errors:
+        raise TextXSemanticError("\n".join(str(e) for e in _errors))
+
+
+def verify_automation_status_refs(model):
+    """Validate that AutomationStatusCondition references existing automations."""
+    automation_names = {a.name for a in get_children_of_type("Automation", model)}
+    status_refs = get_children_of_type("AutomationStatusRef", model)
+    for ref in status_refs:
+        if ref.automation not in automation_names:
+            raise TextXSemanticError(
+                f"AutomationStatusCondition references non-existent automation '{ref.automation}'",
+                **get_location(ref),
+            )
+
+
+def verify_const_names(model):
+    """Validate that constant names are unique."""
+    _ids = []
+    for c in model.constants or []:
+        if c.name in _ids:
+            raise TextXSemanticError(
+                f"Constant with name '{c.name}' already defined",
+                **get_location(c),
+            )
+        _ids.append(c.name)
+
+
+def _resolve_condition_consts(cond, const_dict):
+    """Walk condition tree and replace ConstRef operands with literal values."""
+    if cond is None:
+        return
+    cls_name = cond.__class__.__name__
+    if cls_name == "ConditionGroup":
+        _resolve_condition_consts(cond.r1, const_dict)
+        _resolve_condition_consts(cond.r2, const_dict)
+        return
+    if (
+        hasattr(cond, "operand2")
+        and hasattr(cond.operand2, "__class__")
+        and cond.operand2.__class__.__name__ == "ConstRef"
+    ):
+        name = cond.operand2.name
+        if name not in const_dict:
+            raise TextXSemanticError(
+                f"Undefined constant '{name}' in condition",
+                **get_location(cond),
+            )
+        cond.operand2 = const_dict[name]
+    if cls_name == "InRangeCondition":
+        if hasattr(cond.min, "__class__") and cond.min.__class__.__name__ == "ConstRef":
+            if cond.min.name not in const_dict:
+                raise TextXSemanticError(
+                    f"Undefined constant '{cond.min.name}' in range bound",
+                    **get_location(cond),
+                )
+            cond.min = const_dict[cond.min.name]
+        if hasattr(cond.max, "__class__") and cond.max.__class__.__name__ == "ConstRef":
+            if cond.max.name not in const_dict:
+                raise TextXSemanticError(
+                    f"Undefined constant '{cond.max.name}' in range bound",
+                    **get_location(cond),
+                )
+            cond.max = const_dict[cond.max.name]
+
+
+def resolve_constants(model):
+    """Resolve all ConstRef objects to their literal values."""
+    const_dict = {c.name: c.value for c in (model.constants or [])}
+    for auto in get_children_of_type("Automation", model):
+        _resolve_condition_consts(auto.condition, const_dict)
+        all_actions = list(auto.actions or []) + list(auto.elseActions or [])
+        for action in all_actions:
+            if action.__class__.__name__ == "ConstSetAction":
+                name = action.value.name
+                if name not in const_dict:
+                    raise TextXSemanticError(
+                        f"Undefined constant '{name}' in action",
+                        **get_location(action),
+                    )
+                action.value = const_dict[name]
+
+
+def verify_scene_names(model):
+    _ids = []
+    _errors = []
+    for s in model.scenes or []:
+        if s.name in _ids:
+            _errors.append(
+                TextXSemanticError(
+                    f"Scene with name '{s.name}' already defined",
+                    **get_location(s),
+                )
+            )
+        _ids.append(s.name)
+    if _errors:
+        raise TextXSemanticError("\n".join(str(e) for e in _errors))
+
+
+def verify_group_names(model):
+    _ids = []
+    _errors = []
+    for g in model.groups or []:
+        if g.name in _ids:
+            _errors.append(
+                TextXSemanticError(
+                    f"Group with name '{g.name}' already defined",
+                    **get_location(g),
+                )
+            )
+        _ids.append(g.name)
+    if _errors:
+        raise TextXSemanticError("\n".join(str(e) for e in _errors))
+
+
+def expand_groups(model):
+    """Expand GroupSetAction into individual SetActions for each entity in the group."""
+    for auto in get_children_of_type("Automation", model):
+        auto.actions = _expand_group_actions(auto.actions)
+        if auto.elseActions:
+            auto.elseActions = _expand_group_actions(auto.elseActions)
+
+
+def _expand_group_actions(actions):
+    expanded = []
+    for action in actions or []:
+        if action.__class__.__name__ == "GroupSetAction":
+            group = action.group
+            for entity in group.members:
+                attr = entity.attributes_dict.get(action.attr)
+                if attr is None:
+                    raise TextXSemanticError(
+                        f"Entity '{entity.name}' in group '{group.name}' "
+                        f"has no attribute '{action.attr}'",
+                        **get_location(action),
+                    )
+                # Synthesise a plain action object — templates only need .attribute and .value
+                val = action.value
+                new_action = python_types.SimpleNamespace(
+                    parent=action.parent,
+                    attribute=attr,
+                    value=val,
+                )
+                expanded.append(new_action)
+        else:
+            expanded.append(action)
+    return expanded
+
+
+def expand_scenes(model):
+    scene_dict = {s.name: s for s in (model.scenes or [])}
+    for auto in get_children_of_type("Automation", model):
+        auto.actions = _expand_action_list(auto.actions, scene_dict)
+        if auto.elseActions:
+            auto.elseActions = _expand_action_list(auto.elseActions, scene_dict)
+
+
+def _expand_action_list(actions, scene_dict):
+    expanded = []
+    for action in actions or []:
+        if action.__class__.__name__ == "ApplySceneAction":
+            if action.name not in scene_dict:
+                raise TextXSemanticError(
+                    f"Undefined scene '{action.name}'",
+                    **get_location(action),
+                )
+            expanded.extend(scene_dict[action.name].actions)
+        else:
+            expanded.append(action)
+    return expanded
 
 
 def model_proc(model, metamodel):
-    process_time_class(model)
-    verify_entity_names(model)
-    verify_automation_names(model)
-    verify_source_names(model)
+    errors = []
+    _collect_errors(errors, process_time_class, model)
+    _collect_errors(errors, verify_entity_names, model)
+    _collect_errors(errors, verify_automation_names, model)
+    _collect_errors(errors, verify_source_names, model)
+    _collect_errors(errors, verify_const_names, model)
+    _collect_errors(errors, verify_entity_semantics, model)
+    _collect_errors(errors, verify_action_targets, model)
+    _collect_errors(errors, verify_automation_status_refs, model)
+    _collect_errors(errors, verify_scene_names, model)
+    _collect_errors(errors, verify_group_names, model)
+    verify_entity_sources_for_codegen(model)
+    if errors:
+        msg = f"Found {len(errors)} validation error(s):\n"
+        msg += "\n".join(f"  - {e}" for e in errors)
+        raise TextXSemanticError(msg)
+    expand_scenes(model)
+    expand_groups(model)
+    resolve_constants(model)
+    # Build derived model-level dicts used by Condition.evaluate() at runtime
+    model.entities_dict = {e.name: e for e in model.entities}
+    model.automations_dict = {a.name: a for a in model.automations}
+
+
+def _collect_errors(errors, func, model):
+    try:
+        func(model)
+    except TextXSemanticError as e:
+        errors.append(str(e))
+        return
+    except Exception as e:
+        errors.append(str(e))
+        return
 
 
 def get_metamodel(debug: bool = False, global_repo: bool = False):
     metamodel = metamodel_from_file(
         CURRENT_FPATH.joinpath("grammar/smauto.tx"),
-        classes=class_provider,
-        auto_init_attributes=False,
+        auto_init_attributes=True,
         textx_tools_support=True,
         # global_repository=GLOBAL_REPO,
         global_repository=global_repo,
         debug=debug,
     )
 
+    metamodel.register_obj_processors(get_obj_processors())
     metamodel.register_scope_providers(get_scope_providers())
     metamodel.register_model_processor(model_proc)
     return metamodel
@@ -240,12 +402,6 @@ def build_model(model_path):
     mm = get_metamodel(debug=False)
     model = mm.model_from_file(model_path)
     return model
-
-
-def get_model_grammar(model_path):
-    mm = get_metamodel()
-    grammar_model = mm.grammar_model_from_file(model_path)
-    return grammar_model
 
 
 @language("smauto", "*.smauto")

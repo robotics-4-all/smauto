@@ -1,0 +1,9 @@
+// === Model-Level Constants ===
+
+ConstDef:
+    'Const' name=ID '=' (value=NUMBER | value=BOOL | value=STRING)
+;
+
+ConstRef:
+    'const' '(' name=ID ')'
+;

@@ -122,6 +122,15 @@ class Entity:
                 root[attribute].value = value
 
 
+class EntityGroup:
+    """A named group of entities for batch action targeting."""
+
+    def __init__(self, parent, name, members):
+        self.parent = parent
+        self.name = name
+        self.members = members if members else []
+
+
 class Attribute:
     def __init__(self, parent, name, value=None):
         self.parent = parent
@@ -185,11 +194,10 @@ class ListAttribute(Attribute):
 
 class DictAttribute(Attribute):
     def __init__(self, parent, name, items, generator):
-        # Create dictionary structure from items
+        if items is None:
+            items = []
         value = {item.name: item for item in items}
         self.generator = generator
         self.type = "dict"
         super().__init__(parent, name, value=value)
         self.items = items
-        if self.items is None:
-            self.items = []

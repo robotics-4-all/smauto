@@ -67,3 +67,20 @@ class Date:
         self.month = month
         self.day = day
         self.year = year
+
+
+class ConstDef:
+    """Model-level named constant (e.g., Const MAX_TEMP = 30.0)."""
+
+    def __init__(self, parent, name, value):
+        self.parent = parent
+        self.name = name
+        self.value = value
+
+
+class ConstRef:
+    """Reference to a named constant (e.g., const(MAX_TEMP))."""
+
+    def __init__(self, parent, name):
+        self.parent = parent
+        self.name = name
